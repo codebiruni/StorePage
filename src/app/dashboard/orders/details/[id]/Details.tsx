@@ -21,6 +21,8 @@ import {
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import Image from "next/image"
+import { publicEnv } from "@/lib/env"
+import { useSiteConfig } from "@/defaults/context/SiteConfigProvider"
 
 interface Product {
   _id: string
@@ -80,6 +82,12 @@ export default function OrderDetails() {
   const [order, setOrder] = useState<OrderData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Brand identity for printed vouchers. siteConfig (DB-backed) wins when
+  // populated, otherwise fall back to the env-loader default so an empty
+  // siteInfo document never renders an empty shop name on a printed voucher.
+  const siteConfig = useSiteConfig()
+  const shopName = siteConfig.brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || 'Our Shop'
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -408,7 +416,7 @@ export default function OrderDetails() {
                 alt="Logo" 
                 className="h-12 w-12 object-contain"
               />
-              <h1 className="text-2xl font-bold">{process.env.NEXT_PUBLIC_NAME}</h1>
+              <h1 className="text-2xl font-bold">{shopName}</h1>
             </div>
             <p className="text-gray-600">Order Voucher</p>
           </div>
@@ -487,7 +495,7 @@ export default function OrderDetails() {
               Thank you for your purchase!
             </p>
             <p className="text-xs text-gray-500 mt-2">
-              {process.env.NEXT_PUBLIC_NAME} - Quality Products & Services
+              {shopName} - Quality Products & Services
             </p>
           </div>
         </div>

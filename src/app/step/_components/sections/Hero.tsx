@@ -5,7 +5,7 @@
 // attr and selects dark/light styling; themes don't yet rely on visual variant.
 import Link from "next/link";
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
-import type { ILandingPage } from "@/interface/product.interface";
+import type { ILandingPage } from "@/app/step/_lib/landing-shared";
 
 export default function Hero({
   product,

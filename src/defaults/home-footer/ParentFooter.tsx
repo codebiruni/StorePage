@@ -3,9 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Facebook,
@@ -33,10 +31,11 @@ import { useSiteConfig } from "@/defaults/context/SiteConfigProvider";
 export default function ParentFooter() {
   // Same landing-funnel suppression as ParentNav: /step/[id] pages render
   // without site chrome. See ParentNav for the rationale.
+  // Hooks must be called unconditionally before any early return.
   const pathname = usePathname();
-  if (pathname?.startsWith("/step")) return null;
-
   const { config } = useSiteConfig();
+
+  if (pathname?.startsWith("/step")) return null;
 
   const name = config?.name ?? "My Store";
   const tagline =

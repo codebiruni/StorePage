@@ -23,15 +23,15 @@ export default function SingleImageUpload({ onUpload }: any) {
       formData.append("file", file);
       formData.append(
         "upload_preset",
-        process.env.NEXT_PUBLIC_PRESET as string
+        process.env.NEXT_PUBLIC_CLOUDINARY_PRESET as string
       );
       formData.append(
         "cloud_name",
-        process.env.NEXT_PUBLIC_CLOUD_NAME as string
+        process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME as string
       );
 
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_IMAGE_API as string,
+        process.env.NEXT_PUBLIC_CLOUDINARY_IMAGE_API as string,
         formData
       );
 
@@ -43,7 +43,11 @@ export default function SingleImageUpload({ onUpload }: any) {
     } catch (error) {
       console.error("Error uploading image:", error);
       setUploadStatus("error");
-      setErrorMessage("Failed to upload image");
+      const message =
+        axios.isAxiosError(error) && error.response
+          ? `Upload failed (${error.response.status})`
+          : "Failed to upload image";
+      setErrorMessage(message);
     } finally {
       setIsUploading(false);
     }

@@ -1,4 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * User model.
+ *
+ * Follows docs/DATA_RULES.md: optional fields carry `default: "" | false` so
+ * older documents never expose `undefined` to API consumers.
+ */
 import { Iuser } from "@/interface/user.interface";
 import mongoose, { Schema, Model } from "mongoose";
 import bcrypt from "bcrypt";

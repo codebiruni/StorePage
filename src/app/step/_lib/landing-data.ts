@@ -6,7 +6,16 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import connectDB from "@/lib/connectdb";
 import Product from "@/models/product.model";
-import type { ILandingPage } from "@/interface/product.interface";
+import type { ILandingPage } from "./landing-shared";
+
+// Re-export the client-safe pieces so existing imports of `landing-data`
+// keep working without dragging the server-only module into a client bundle.
+export type {
+  ILandingPage,
+  LandingTheme,
+  SerializedLandingProduct,
+} from "./landing-shared";
+export { resolveLandingTheme } from "./landing-shared";
 
 /**
  * JSON-safe view of a product for the public landing page.

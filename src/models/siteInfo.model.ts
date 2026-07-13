@@ -1,6 +1,20 @@
 import { ISiteInfo } from "@/interface/siteInfo.interface";
 import mongoose, { Schema, model, models } from "mongoose";
 
+/**
+ * siteInfo — multi-tenant branding document.
+ *
+ * Every non-required field has a `default: "" | [] | {}` so that older docs
+ * (or brand-new tenants that haven't seeded anything yet) never expose
+ * `undefined` to `getSiteConfig()`. This is the schema-level half of the
+ * defensive-read pattern — see docs/DATA_RULES.md.
+ *
+ * When extending this schema:
+ *   1. Mark the new field optional (no `required: true`).
+ *   2. Always provide a `default`.
+ *   3. Add a corresponding line in `getSiteConfig()` (src/lib/siteConfig.ts)
+ *      so the env-default fallback still applies.
+ */
 const SiteInfoSchema: Schema = new Schema<ISiteInfo>(
   {
     number: { type: String, required: true },
@@ -11,27 +25,27 @@ const SiteInfoSchema: Schema = new Schema<ISiteInfo>(
     banner: {
       carousel: [
         {
-          image: { type: String },
-          link: { type: String },
+          image: { type: String, default: "" },
+          link: { type: String, default: "" },
         },
       ],
       firstImage: {
-        image: { type: String },
-        link: { type: String },
+        image: { type: String, default: "" },
+        link: { type: String, default: "" },
       },
       secondImage: {
-        image: { type: String },
-        link: { type: String },
+        image: { type: String, default: "" },
+        link: { type: String, default: "" },
       },
     },
 
     socialContact: {
       facebook: { type: String, required: true },
-      youtube: { type: String },
-      instagrame: { type: String },
-      linkedIn: { type: String },
-      whatsApp: { type: String },
-      twitter: { type: String },
+      youtube: { type: String, default: "" },
+      instagrame: { type: String, default: "" },
+      linkedIn: { type: String, default: "" },
+      whatsApp: { type: String, default: "" },
+      twitter: { type: String, default: "" },
     },
 
     addresses: [

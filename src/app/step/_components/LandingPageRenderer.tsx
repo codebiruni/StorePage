@@ -13,8 +13,10 @@
 // resolved to the closest modern theme via `resolveLandingTheme`.
 
 import dynamic from "next/dynamic";
-import type { SerializedLandingProduct } from "../_lib/landing-data";
-import { resolveLandingTheme } from "@/interface/product.interface";
+import {
+  resolveLandingTheme,
+  type SerializedLandingProduct,
+} from "../_lib/landing-shared";
 
 // Eager-load Atelier as the safe default — it ships with the bundle so a
 // bad/missing theme still renders something intentional.

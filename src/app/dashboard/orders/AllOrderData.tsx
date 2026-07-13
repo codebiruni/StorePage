@@ -72,6 +72,8 @@ import {
 import { toast } from "sonner"
 import Image from 'next/image'
 import Link from 'next/link'
+import { publicEnv } from '@/lib/env'
+import { useSiteConfig } from '@/defaults/context/SiteConfigProvider'
 
 interface Product {
   _id: string
@@ -182,6 +184,13 @@ export default function AllOrderData() {
     isDelivered: false,
     isPaid: false
   })
+
+  // Brand identity for printed receipts. siteConfig (DB-backed) wins when
+  // populated, otherwise fall back to the env-loader default so an empty
+  // siteInfo document never renders an empty shop name on a printed invoice.
+  const siteConfig = useSiteConfig()
+  const shopName = siteConfig.brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || 'Our Shop'
+  const shopLogo = siteConfig.brandLogo || publicEnv.NEXT_PUBLIC_DEFAULT_LOGO
 
   const fetchOrders = async () => {
     try {
@@ -1044,16 +1053,16 @@ export default function AllOrderData() {
         <div className="space-y-6">
           {/* Receipt Header */}
           <div className="text-center border-b pb-4">
-            {process.env.NEXT_PUBLIC_LOGO && (
+            {shopLogo && (
               <Image
-                src={process.env.NEXT_PUBLIC_LOGO}
+                src={shopLogo}
                 alt="Shop Logo"
                 width={80}
                 height={80}
                 className="mx-auto mb-2"
               />
             )}
-            <h2 className="text-2xl font-bold">{process.env.NEXT_PUBLIC_NAME || 'Our Shop'}</h2>
+            <h2 className="text-2xl font-bold">{shopName}</h2>
             <p className="text-muted-foreground">Order Receipt</p>
           </div>
 
@@ -1123,7 +1132,7 @@ export default function AllOrderData() {
                   alt="Shop Logo" 
                   className="h-16 w-16 mx-auto mb-2 object-contain"
                 />
-              <h2 className="text-xl font-bold">{process.env.NEXT_PUBLIC_NAME || 'Our Shop'}</h2>
+              <h2 className="text-xl font-bold">{shopName}</h2>
               <p className="text-sm text-gray-600">Order Receipt</p>
             </div>
 

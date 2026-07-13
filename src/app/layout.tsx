@@ -10,7 +10,7 @@ import "./globals.css";
 import ParentNav from "@/defaults/home-nav/ParentNav";
 import ParentFooter from "@/defaults/home-footer/ParentFooter";
 import AosWrapper from "@/defaults/aos-wrapper/AosWrapper";
-import GlobalLoaderProvider from "@/shired-component/GlobalLoader";
+import NextTopLoader from "nextjs-toploader";
 import Context from "@/defaults/context/Context";
 import ThemeProvider from "@/components/theme-provider";
 import { Toaster } from "sonner";
@@ -234,29 +234,30 @@ export default async function RootLayout({
         />
       </head>
       <body
-        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${displayFraunces.variable} ${displayInstrumentSerif.variable} ${displaySpaceGrotesk.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AosWrapper>
-            <Suspense fallback={null}>
-              <GlobalLoaderProvider>
-                <SiteConfigProvider initialConfig={cfg}>
-                  <Context>
-                    <Suspense fallback={null}>
-                        <MetaPixel pixelId={cfg.metaPixelId} />
-                        <GoogleAnalytics gaId={cfg.gaMeasurementId} />
-                    </Suspense>
+            <NextTopLoader
+              color={cfg.themeColor}
+              showSpinner={true}
+              height={3}
+              zIndex={99999999999}
+            />
+            <SiteConfigProvider initialConfig={cfg}>
+              <Context>
+                <Suspense fallback={null}>
+                    <MetaPixel pixelId={cfg.metaPixelId} />
+                    <GoogleAnalytics gaId={cfg.gaMeasurementId} />
+                </Suspense>
 
-                    <Toaster className="z-[999999]" />
-                    <ParentNav />
-                    {/* <ChatbotComponent /> */}
-                    {children}
-                    <ParentFooter />
-                  </Context>
-                </SiteConfigProvider>
-              </GlobalLoaderProvider>
-            </Suspense>
+                <Toaster className="z-[999999]" />
+                <ParentNav />
+                {/* <ChatbotComponent /> */}
+                {children}
+                <ParentFooter />
+              </Context>
+            </SiteConfigProvider>
           </AosWrapper>
         </ThemeProvider>
       </body>

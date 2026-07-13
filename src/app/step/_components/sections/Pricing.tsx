@@ -2,7 +2,7 @@
 // Accepts both { product, landing, variant? } and { product, variant? } —
 // landing is derived from product.landingPage when not supplied.
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
-import type { ILandingPage } from "@/interface/product.interface";
+import type { ILandingPage } from "@/app/step/_lib/landing-shared";
 
 export default function Pricing({
   product,

@@ -1,3 +1,10 @@
+/**
+ * Management (staff) model.
+ *
+ * Follows docs/DATA_RULES.md: optional fields carry `default: "" | false`
+ * so older documents never expose `undefined` to API consumers.
+ */
+
 import { IManagement } from "@/interface/menagement.interface";
 import { Schema, model, models } from "mongoose";
 

@@ -16,7 +16,7 @@ import PhoneWhatsapp from "../sections/PhoneWhatsapp";
 import ShowcaseVideo from "../sections/ShowcaseVideo";
 import { toEmbedUrl } from "@/lib/youtube";
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
-import type { ILandingPage } from "@/interface/product.interface";
+import type { ILandingPage } from "@/app/step/_lib/landing-shared";
 
 export default function VideoHero({
   product,

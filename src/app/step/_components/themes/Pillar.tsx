@@ -34,7 +34,7 @@ import {
 import { Reveal, Stagger } from "@/app/step/_components/primitives/Reveal";
 
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
-import type { ILandingPage } from "@/interface/product.interface";
+import type { ILandingPage } from "@/app/step/_lib/landing-shared";
 
 interface Props {
   product: SerializedLandingProduct;

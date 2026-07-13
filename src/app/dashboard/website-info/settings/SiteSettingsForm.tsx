@@ -90,94 +90,107 @@ export default function SiteSettingsForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="shadow-none border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
-            Delivery Charges
-          </CardTitle>
-          <CardDescription>
-            The storefront checkout applies <strong>Inside Dhaka</strong> when
-            the district matches <code>/dhaka|ঢাকা/i</code>; everything else
-            uses <strong>Outside Dhaka</strong>. Landing-page orders don&apos;t
-            ask for a district, so they always use{" "}
-            <strong>Outside Dhaka</strong>. Both amounts are in BDT.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="inside-dhaka">Inside Dhaka (BDT)</Label>
-              <Input
-                id="inside-dhaka"
-                type="number"
-                min={0}
-                value={deliveryInsideDhaka}
-                onChange={(e) =>
-                  setDeliveryInsideDhaka(Number(e.target.value))
-                }
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="outside-dhaka">Outside Dhaka (BDT)</Label>
-              <Input
-                id="outside-dhaka"
-                type="number"
-                min={0}
-                value={deliveryOutsideDhaka}
-                onChange={(e) =>
-                  setDeliveryOutsideDhaka(Number(e.target.value))
-                }
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+<TabsContent value="delivery">
+          <Card className="shadow-none border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5" />
+                Delivery Charges
+              </CardTitle>
+              <CardDescription>
+                The storefront checkout applies <strong>Inside Dhaka</strong>{" "}
+                when the district matches <code>/dhaka|ঢাকা/i</code>;
+                everything else uses <strong>Outside Dhaka</strong>. Landing-page
+                orders don&apos;t ask for a district, so they always use{" "}
+                <strong>Outside Dhaka</strong>. Both amounts are in BDT.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="inside-dhaka">Inside Dhaka (BDT)</Label>
+                  <Input
+                    id="inside-dhaka"
+                    type="number"
+                    min={0}
+                    value={deliveryInsideDhaka}
+                    onChange={(e) =>
+                      setDeliveryInsideDhaka(Number(e.target.value))
+                    }
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="outside-dhaka">Outside Dhaka (BDT)</Label>
+                  <Input
+                    id="outside-dhaka"
+                    type="number"
+                    min={0}
+                    value={deliveryOutsideDhaka}
+                    onChange={(e) =>
+                      setDeliveryOutsideDhaka(Number(e.target.value))
+                    }
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      <Card className="shadow-none border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Megaphone className="h-5 w-5" />
-            Analytics &amp; Tracking
-          </CardTitle>
-          <CardDescription>
-            Paste your IDs from Meta Events Manager and Google Analytics. Leave a
-            field blank to skip loading that tracker.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="meta-pixel-id">Meta (Facebook) Pixel ID</Label>
-              <Input
-                id="meta-pixel-id"
-                placeholder="e.g. 123456789012345"
-                value={metaPixelId}
-                onChange={(e) => setMetaPixelId(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ga-measurement-id">
-                Google Analytics Measurement ID
-              </Label>
-              <Input
-                id="ga-measurement-id"
-                placeholder="e.g. G-XXXXXXXXXX"
-                value={gaMeasurementId}
-                onChange={(e) => setGaMeasurementId(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
-            <BarChart3 className="h-3 w-3" />
-            The storefront tracks page views automatically when an ID is set.
-          </p>
-        </CardContent>
-      </Card>
+
+          <Card className="shadow-none border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5" />
+                Meta (Facebook) Pixel
+              </CardTitle>
+              <CardDescription>
+                Paste your Pixel ID from Meta Events Manager. Leave it blank to
+                skip loading the tracker.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-w-md">
+                <Label htmlFor="meta-pixel-id">Pixel ID</Label>
+                <Input
+                  id="meta-pixel-id"
+                  placeholder="e.g. 123456789012345"
+                  value={metaPixelId}
+                  onChange={(e) => setMetaPixelId(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+
+          <Card className="shadow-none border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Google Analytics
+              </CardTitle>
+              <CardDescription>
+                Paste your GA4 Measurement ID. Leave it blank to skip loading
+                the tracker. Page views are tracked automatically when the ID is
+                set.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-w-md">
+                <Label htmlFor="ga-measurement-id">Measurement ID</Label>
+                <Input
+                  id="ga-measurement-id"
+                  placeholder="e.g. G-XXXXXXXXXX"
+                  value={gaMeasurementId}
+                  onChange={(e) => setGaMeasurementId(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+    
 
       <div className="flex justify-end">
         <Button

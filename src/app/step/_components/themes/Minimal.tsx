@@ -13,7 +13,7 @@ import CheckoutForm from "../sections/CheckoutForm";
 import StickyCTA from "../sections/StickyCTA";
 import PhoneWhatsapp from "../sections/PhoneWhatsapp";
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
-import type { ILandingPage } from "@/interface/product.interface";
+import type { ILandingPage } from "@/app/step/_lib/landing-shared";
 
 export default function Minimal({
   product,

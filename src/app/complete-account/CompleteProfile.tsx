@@ -14,16 +14,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { format } from "date-fns";
-import { Plus, Trash2, User, ArrowLeft, Loader2 } from "lucide-react";
+import { Plus, Trash2, User, ArrowLeft } from "lucide-react";
 import SingleImageUpload from "@/shired-component/SingleImageUpload";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import LogedUser from "@/defaults/functions/LogedUser";
-
-interface IContact {
-  contactName: string;
-  contact: string;
-}
 
 interface IAddress {
   addressName: string;
@@ -38,7 +33,6 @@ interface IProfileForm {
   email: string;
   number?: string;
   dateOfBirth?: Date;
-  contacts: IContact[];
   address: IAddress[];
   image?: string;
   referralCode?: string;
@@ -52,7 +46,6 @@ interface IProfileResponse {
     email?: string;
     number?: string;
     dateOfBirth?: string | null;
-    contacts?: { contactName: string; contact: string }[];
     address?: {
       addressName: string;
       district: string;
@@ -70,7 +63,6 @@ interface CompleteProfileProps {
 
 const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(isEdit);
   const router = useRouter();
 
   const form = useForm<IProfileForm>({
@@ -80,21 +72,11 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
       email: "",
       number: "",
       dateOfBirth: undefined,
-      contacts: [{ contactName: "", contact: "" }],
       address: [{ addressName: "", district: "", city: "", addressLine: "" }],
       image: "",
       referralCode: "",
     },
     mode: "onChange",
-  });
-
-  const {
-    fields: contactFields,
-    append: appendContact,
-    remove: removeContact,
-  } = useFieldArray({
-    control: form.control,
-    name: "contacts",
   });
 
   const {
@@ -110,7 +92,6 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
   useEffect(() => {
     if (!isEdit) return;
 
-    let active = true;
     (async () => {
       try {
         const res = await fetch("/api/v1/profile", {
@@ -119,7 +100,7 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
         });
         if (!res.ok) throw new Error("Failed to load profile");
         const json: IProfileResponse = await res.json();
-        if (!active || !json.success || !json.data) return;
+        if (!json.success || !json.data) return;
 
         const d = json.data;
         form.reset({
@@ -128,13 +109,6 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
           email: d.email ?? "",
           number: d.number ?? "",
           dateOfBirth: d.dateOfBirth ? new Date(d.dateOfBirth) : undefined,
-          contacts:
-            d.contacts && d.contacts.length > 0
-              ? d.contacts.map((c) => ({
-                  contactName: c.contactName ?? "",
-                  contact: c.contact ?? "",
-                }))
-              : [{ contactName: "", contact: "" }],
           address:
             d.address && d.address.length > 0
               ? d.address.map((a) => ({
@@ -149,14 +123,8 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
         });
       } catch (err) {
         console.error("Failed to prefill profile", err);
-      } finally {
-        if (active) setIsFetching(false);
       }
     })();
-
-    return () => {
-      active = false;
-    };
   }, [isEdit, form]);
 
   const onSubmit = async (data: IProfileForm) => {
@@ -189,7 +157,7 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
   };
 
   return (
-    <div className="container mx-auto pb-12 pt-2 max-w-4xl px-4">
+    <div className="container mx-auto pb-10 pt-2 mt-6 max-w-4xl px-4">
       <div className="flex justify-between items-center mb-6">
         <Link href={isEdit ? "/profile" : "/"}>
           <Button variant="outline" className="gap-2">
@@ -212,16 +180,11 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
           </p>
         </CardHeader>
         <CardContent>
-          {isFetching ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-6"
+            >
                 {/* Personal Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Personal Information</h3>
@@ -347,78 +310,6 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
                       </FormItem>
                     )}
                   />
-                </div>
-
-                {/* Contacts */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Contacts</h3>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        appendContact({ contactName: "", contact: "" })
-                      }
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Add Contact
-                    </Button>
-                  </div>
-
-                  {contactFields.map((field, index) => (
-                    <div
-                      key={field.id}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg"
-                    >
-                      <FormField
-                        control={form.control}
-                        name={`contacts.${index}.contactName`}
-                        rules={{ required: "Contact name is required" }}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Contact Name</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Work, Home, etc."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name={`contacts.${index}.contact`}
-                        rules={{ required: "Contact is required" }}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Contact Info</FormLabel>
-                            <div className="flex gap-2">
-                              <FormControl className="flex-1">
-                                <Input
-                                  placeholder="Email or phone"
-                                  {...field}
-                                />
-                              </FormControl>
-                              {contactFields.length > 1 && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => removeContact(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  ))}
                 </div>
 
                 {/* Addresses */}
@@ -563,7 +454,6 @@ const CompleteProfile = ({ isEdit = false }: CompleteProfileProps) => {
                 </div>
               </form>
             </Form>
-          )}
         </CardContent>
       </Card>
     </div>

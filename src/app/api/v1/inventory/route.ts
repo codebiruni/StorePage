@@ -322,24 +322,54 @@ async function getStockAnalysis() {
   // Effective stock = top-level `quentity` plus the sum of
   // `priceVariants[].quentity`. Products with no top-level field still bucket
   // correctly off the variant total.
+  //
+  // Legacy rows sometimes stored `quentity` as a string, which makes
+  // `$add` throw "$add only supports numeric or date types, not string".
+  // Coerce to a number defensively before summing so the dashboard keeps
+  // loading even if the schema invariant is broken.
   const stockLevels = await Product.aggregate([
     inventoryValueMatch,
     {
       $addFields: {
-        totalStock: {
-          $add: [
-            { $ifNull: ["$quentity", 0] },
+        quantityNum: {
+          $cond: [
+            { $eq: [{ $type: "$quentity" }, "number"] },
+            "$quentity",
             {
-              $sum: {
-                $map: {
-                  input: { $ifNull: ["$priceVariants", []] },
-                  as: "v",
-                  in: { $ifNull: ["$$v.quentity", 0] },
-                },
-              },
+              $cond: [
+                { $in: [{ $type: "$quentity" }, ["string", "long", "int", "double", "decimal"]] },
+                { $toDouble: "$quentity" },
+                0,
+              ],
             },
           ],
         },
+        variantQtyNum: {
+          $sum: {
+            $map: {
+              input: { $ifNull: ["$priceVariants", []] },
+              as: "v",
+              in: {
+                $cond: [
+                  { $eq: [{ $type: "$$v.quentity" }, "number"] },
+                  "$$v.quentity",
+                  {
+                    $cond: [
+                      { $in: [{ $type: "$$v.quentity" }, ["string", "long", "int", "double", "decimal"]] },
+                      { $toDouble: "$$v.quentity" },
+                      0,
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        totalStock: { $add: ["$quantityNum", "$variantQtyNum"] },
       },
     },
     inventoryValueAddFields,
@@ -393,20 +423,45 @@ async function getStockAnalysis() {
     inventoryValueMatch,
     {
       $addFields: {
-        totalStock: {
-          $add: [
-            { $ifNull: ["$quentity", 0] },
+        quantityNum: {
+          $cond: [
+            { $eq: [{ $type: "$quentity" }, "number"] },
+            "$quentity",
             {
-              $sum: {
-                $map: {
-                  input: { $ifNull: ["$priceVariants", []] },
-                  as: "v",
-                  in: { $ifNull: ["$$v.quentity", 0] },
-                },
-              },
+              $cond: [
+                { $in: [{ $type: "$quentity" }, ["string", "long", "int", "double", "decimal"]] },
+                { $toDouble: "$quentity" },
+                0,
+              ],
             },
           ],
         },
+        variantQtyNum: {
+          $sum: {
+            $map: {
+              input: { $ifNull: ["$priceVariants", []] },
+              as: "v",
+              in: {
+                $cond: [
+                  { $eq: [{ $type: "$$v.quentity" }, "number"] },
+                  "$$v.quentity",
+                  {
+                    $cond: [
+                      { $in: [{ $type: "$$v.quentity" }, ["string", "long", "int", "double", "decimal"]] },
+                      { $toDouble: "$$v.quentity" },
+                      0,
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        totalStock: { $add: ["$quantityNum", "$variantQtyNum"] },
       },
     },
     { $match: { totalStock: { $lt: 10, $gte: 0 } } },
@@ -459,20 +514,45 @@ async function getCategoryAnalysis() {
     inventoryValueAddFields,
     {
       $addFields: {
-        totalStock: {
-          $add: [
-            { $ifNull: ["$quentity", 0] },
+        quantityNum: {
+          $cond: [
+            { $eq: [{ $type: "$quentity" }, "number"] },
+            "$quentity",
             {
-              $sum: {
-                $map: {
-                  input: { $ifNull: ["$priceVariants", []] },
-                  as: "v",
-                  in: { $ifNull: ["$$v.quentity", 0] },
-                },
-              },
+              $cond: [
+                { $in: [{ $type: "$quentity" }, ["string", "long", "int", "double", "decimal"]] },
+                { $toDouble: "$quentity" },
+                0,
+              ],
             },
           ],
         },
+        variantQtyNum: {
+          $sum: {
+            $map: {
+              input: { $ifNull: ["$priceVariants", []] },
+              as: "v",
+              in: {
+                $cond: [
+                  { $eq: [{ $type: "$$v.quentity" }, "number"] },
+                  "$$v.quentity",
+                  {
+                    $cond: [
+                      { $in: [{ $type: "$$v.quentity" }, ["string", "long", "int", "double", "decimal"]] },
+                      { $toDouble: "$$v.quentity" },
+                      0,
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        totalStock: { $add: ["$quantityNum", "$variantQtyNum"] },
         averagePrice: { $ifNull: ["$generalPrice.currentPrice", 0] },
       },
     },

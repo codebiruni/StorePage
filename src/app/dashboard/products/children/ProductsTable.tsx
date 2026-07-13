@@ -325,19 +325,19 @@ export default function ProductsTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="z-[1000]">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                           <Link
                             href={`/dashboard/products/details/${product._id}`}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 cursor-pointer"
                           >
                             <PawPrintIcon className="h-4 w-4" />
                             Details
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                           <Link
                             href={`/dashboard/products/edit/${product._id}`}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 cursor-pointer"
                           >
                             <Edit className="h-4 w-4" />
                             Edit

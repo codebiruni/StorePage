@@ -1,3 +1,10 @@
+/**
+ * SubCategory model.
+ *
+ * Follows docs/DATA_RULES.md: optional fields carry `default: "" | false`
+ * so older documents never expose `undefined` to API consumers.
+ */
+
 import { ISubCategory } from "@/interface/sub-category.interace";
 import { Schema, models, model } from "mongoose";
 

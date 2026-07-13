@@ -1,3 +1,10 @@
+/**
+ * UserList (cart/wishlist) model.
+ *
+ * Follows docs/DATA_RULES.md: optional fields carry `default: "" | false`
+ * so older documents never expose `undefined` to API consumers.
+ */
+
 import { IUserList } from "@/interface/list.interface";
 import { Schema, model, models, Types } from "mongoose";
 

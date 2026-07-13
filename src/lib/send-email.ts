@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import nodemailer from "nodemailer";
 import Handlebars from "handlebars";
+import { env, publicEnv } from "@/lib/env";
 
 const ReadFile = fs.promises.readFile;
 
@@ -28,6 +29,14 @@ interface EmailTemplate {
 // Cache for compiled templates
 const templateCache = new Map<string, EmailTemplate>();
 
+/**
+ * Send a transactional email using the credentials in env.APP_EMAIL / env.APP_PASS.
+ * The brand name (used in the default `from:` display name) and APP_URL come
+ * from the multi-tenant siteConfig so the same code serves any deployment.
+ *
+ * Per the multi-tenant plan, callers pass `brandName` (read from `getSiteConfig()`
+ * at the API edge) instead of hardcoding "Elham Books" / "Madrasah Association".
+ */
 export const sendEmail = async ({
   to,
   subject,
@@ -36,47 +45,42 @@ export const sendEmail = async ({
   template,
   templateData = {},
   attachments = [],
-}: SendEmailOptions) => {
+  brandName,
+}: SendEmailOptions & { brandName?: string }) => {
   try {
-    // Validate required environment variables
-    if (
-      !process.env.NEXT_PUBLIC_APP_EMAIL ||
-      !process.env.NEXT_PUBLIC_APP_PASS
-    ) {
+    if (!env.APP_EMAIL || !env.APP_PASS) {
       throw new Error("Email credentials are not configured");
     }
 
     const transporter = nodemailer.createTransport({
-      host: process.env.NEXT_PUBLIC_STEMAIL_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.NEXT_PUBLIC_EMAIL_PORT || "587"),
-      secure: process.env.NEXT_PUBLIC_NODE_ENV === "production",
+      host: env.EMAIL_HOST || "smtp.gmail.com",
+      port: parseInt(env.EMAIL_PORT || "587", 10),
+      secure: env.NODE_ENV === "production",
       auth: {
-        user: process.env.NEXT_PUBLIC_APP_EMAIL,
-        pass: process.env.NEXT_PUBLIC_APP_PASS,
+        user: env.APP_EMAIL,
+        pass: env.APP_PASS,
       },
-      // Better connection handling
       pool: true,
       maxConnections: 5,
       maxMessages: 100,
     });
 
-    // Verify connection configuration
     await transporter.verify();
 
     let finalHtml = html;
 
-    // If template is specified, compile and use it
     if (template && !html) {
       finalHtml = await compileTemplate(template, templateData);
     }
 
-    // If no HTML content, use text as fallback
     if (!finalHtml && text) {
       finalHtml = `<pre style="font-family: sans-serif;">${text}</pre>`;
     }
 
+    const fromName = brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || "Store";
+
     const mailOptions: nodemailer.SendMailOptions = {
-      from: `"Madrasah Association" <${process.env.NEXT_PUBLIC_APP_EMAIL}>`,
+      from: `"${fromName}" <${env.APP_EMAIL}>`,
       to: Array.isArray(to) ? to.join(",") : to,
       subject,
       text: text || (finalHtml ? stripHtml(finalHtml) : ""),
@@ -93,7 +97,7 @@ export const sendEmail = async ({
     throw new Error(
       `Email sending failed: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
+      }`,
     );
   }
 };
@@ -101,25 +105,20 @@ export const sendEmail = async ({
 // Helper function to compile email templates
 export const compileTemplate = async (
   templateName: string,
-  data: Record<string, any> = {}
+  data: Record<string, any> = {},
 ): Promise<string> => {
   try {
-    // Check if template is already compiled and cached
     if (templateCache.has(templateName)) {
       const template = templateCache.get(templateName)!;
       return template.compile(data);
     }
 
-    // Load template file
     const templatesDir = path.join(process.cwd(), "src", "templates", "emails");
     const templatePath = path.join(templatesDir, `${templateName}.hbs`);
 
     const templateContent = await ReadFile(templatePath, "utf-8");
-
-    // Compile template
     const template = Handlebars.compile(templateContent);
 
-    // Cache the compiled template
     templateCache.set(templateName, { compile: template });
 
     return template(data);
@@ -128,7 +127,7 @@ export const compileTemplate = async (
     throw new Error(
       `Template compilation failed: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
+      }`,
     );
   }
 };
@@ -138,68 +137,84 @@ const stripHtml = (html: string): string => {
   return html.replace(/<[^>]*>/g, "");
 };
 
-// Predefined email templates for common use cases
+// Predefined email templates for common use cases.
+// `brandName` resolves from `getSiteConfig()` at the API edge so subjects like
+// "Welcome to <brand>" stay aligned with whichever tenant is deploying this build.
 export const EmailTemplates = {
-  // OTP Verification Email
-  sendOtpEmail: async (to: string, otp: string, userName?: string) => {
+  sendOtpEmail: async (
+    to: string,
+    otp: string,
+    userName?: string,
+    brandName?: string,
+  ) => {
+    const brand = brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || "Store";
     return sendEmail({
       to,
-      subject: "Your Verification Code - Madrasah Association",
+      subject: `Your Verification Code - ${brand}`,
       template: "otp-verification",
       templateData: {
         otp,
         userName: userName || "User",
         expiryTime: "15 minutes",
-        supportEmail:
-          process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@madrasah.org",
+        supportEmail: env.SUPPORT_EMAIL,
+        brandName: brand,
       },
+      brandName: brand,
     });
   },
 
-  // Welcome Email
-  sendWelcomeEmail: async (to: string, userName: string) => {
+  sendWelcomeEmail: async (
+    to: string,
+    userName: string,
+    brandName?: string,
+  ) => {
+    const brand = brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || "Store";
     return sendEmail({
       to,
-      subject: "Welcome to Elham Books",
+      subject: `Welcome to ${brand}`,
       template: "welcome",
       templateData: {
         userName,
-        loginUrl: `${process.env.NEXT_PUBLIC_APP_URL}/login`,
-        supportEmail:
-          process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@madrasah.org",
+        loginUrl: `${env.APP_URL}/login`,
+        supportEmail: env.SUPPORT_EMAIL,
+        brandName: brand,
       },
+      brandName: brand,
     });
   },
 
-  // Password Reset Email
   sendPasswordResetEmail: async (
     to: string,
     resetToken: string,
-    userName?: string
+    userName?: string,
+    brandName?: string,
   ) => {
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
+    const brand = brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || "Store";
+    const resetUrl = `${env.APP_URL}/reset-password?token=${resetToken}`;
 
     return sendEmail({
       to,
-      subject: "Password Reset Request - Madrasah Association",
+      subject: `Password Reset Request - ${brand}`,
       template: "password-reset",
       templateData: {
         userName: userName || "User",
         resetUrl,
         expiryTime: "1 hour",
-        supportEmail:
-          process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@madrasah.org",
+        supportEmail: env.SUPPORT_EMAIL,
+        brandName: brand,
       },
+      brandName: brand,
     });
   },
 
-  // General Notification Email
   sendNotificationEmail: async (
     to: string,
     title: string,
     message: string,
-    userName?: string
+    userName?: string,
+    brandName?: string,
   ) => {
+    const brand = brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || "Store";
     return sendEmail({
       to,
       subject: title,
@@ -208,10 +223,11 @@ export const EmailTemplates = {
         userName: userName || "User",
         title,
         message,
-        appUrl: process.env.NEXT_PUBLIC_APP_URL,
-        supportEmail:
-          process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@madrasah.org",
+        appUrl: env.APP_URL,
+        supportEmail: env.SUPPORT_EMAIL,
+        brandName: brand,
       },
+      brandName: brand,
     });
   },
 };

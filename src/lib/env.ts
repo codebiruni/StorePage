@@ -16,8 +16,6 @@
  * so we can refactor the naming convention centrally later.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 type EnvShape = {
   // --- Infra (server) ---
   MONGODB_URI: string;

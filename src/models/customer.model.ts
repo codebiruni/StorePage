@@ -1,3 +1,10 @@
+/**
+ * Customer model.
+ *
+ * Follows docs/DATA_RULES.md: optional fields carry `default: "" | false`
+ * so older documents never expose `undefined` to API consumers.
+ */
+
 import { ICustomer } from "@/interface/customer.interface";
 import mongoose, { Schema, Model } from "mongoose";
 

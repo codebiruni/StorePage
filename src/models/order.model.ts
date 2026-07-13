@@ -81,9 +81,11 @@ const orderSchema = new Schema<IOrder>(
     },
     trackingId: {
       type: String,
+      default: "",
     },
     note: {
       type: String,
+      default: "",
     },
     isDelivered: {
       type: Boolean,

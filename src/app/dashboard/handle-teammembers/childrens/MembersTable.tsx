@@ -238,24 +238,12 @@ export default function MembersTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredData.map((item) => (
-              <TableRow key={item._id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <User className="h-6 w-6 text-gray-500" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
+            (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <User className="h-6 w-6 text-gray-500" />
+                          </div>
+                        )
+                      </div>
                       <div>
                         <p className="font-medium">{item.name}</p>
                         {item.user?.username && (

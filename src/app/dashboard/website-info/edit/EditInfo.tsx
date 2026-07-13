@@ -237,14 +237,6 @@ export default function EditInfo() {
     await onSubmit(data);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
     <Card className="border-0 shadow-none p-0 w-full mx-auto mt-6">
       <CardHeader>
