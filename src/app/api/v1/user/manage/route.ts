@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import connectDb from "@/lib/connectdb";
+import { env } from "@/lib/env";
+import { getSiteConfig } from "@/lib/siteConfig";
 import UserModel from "@/models/user.model";
 import OtpModel from "@/models/otp.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -105,9 +107,12 @@ export async function POST(request: NextRequest) {
       });
 
       if (email) {
+        const siteConfig = await getSiteConfig();
         await EmailTemplates.sendOtpEmail(
           email,
           otp,
+          siteConfig.name,
+          siteConfig.name,
           email || email.split("@")[0]
         );
       } else if (number) {
@@ -192,27 +197,27 @@ export async function PATCH(request: NextRequest) {
     // Create JWT tokens
     const accessToken = jwt.sign(
       {
-        userId: user._id,
+        id: user._id.toString(),
         role: user.role,
         email: user.email,
         number: user.number,
       },
-      process.env.NEXT_PUBLIC_JWT_ACCESS_SECRET as string,
+      env.JWT_ACCESS_SECRET,
       {
-        expiresIn: process.env.NEXT_PUBLIC_EXPIRE_ACCESS_TOKEN_IN || "5h",
+        expiresIn: env.JWT_ACCESS_EXPIRES_IN,
       } as jwt.SignOptions
     );
 
     const refreshToken = jwt.sign(
       {
-        userId: user._id,
+        id: user._id.toString(),
         role: user.role,
         email: user.email,
         number: user.number,
       },
-      process.env.NEXT_PUBLIC_JWT_REFRESH_SECRET as string,
+      env.JWT_REFRESH_SECRET,
       {
-        expiresIn: process.env.NEXT_PUBLIC_EXPIRE_REFRESH_TOKEN_IN || "90d",
+        expiresIn: env.JWT_REFRESH_EXPIRES_IN,
       } as jwt.SignOptions
     );
 

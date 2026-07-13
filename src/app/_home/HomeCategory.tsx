@@ -64,7 +64,7 @@ export default function HomeCategory() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-2 pb-2">
+    <div className="container mx-auto px-4 pb-4">
       <h2 className="text-lg font-semibold text-gray-700 ">
         Explore Categories
       </h2>

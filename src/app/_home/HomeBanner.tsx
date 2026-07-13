@@ -7,10 +7,9 @@ import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function HomeBanner() {
-  const { data, isLoading, error } = useGetWebsiteInfo();
+  const { data, error } = useGetWebsiteInfo();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Extract banner data with fallback defaults
@@ -42,23 +41,9 @@ export default function HomeBanner() {
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-4">
-          <Skeleton className="w-full md:w-2/3 h-[400px]" />
-          <div className="w-full md:w-1/3 flex flex-col gap-4">
-            <Skeleton className="h-[192px] w-full" />
-            <Skeleton className="h-[192px] w-full" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error || !bannerData) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4">
         <Card className="p-4 text-center text-destructive">
           Failed to load banner data
         </Card>
@@ -67,7 +52,7 @@ export default function HomeBanner() {
   }
 
   return (
-    <div className="container mx-auto px-2 py-4 max-w-7xl">
+    <div className="container mx-auto px-4 py-2 mt-10">
       <div className="flex flex-col md:h-[400px] md:flex-row gap-2">
         {/* Carousel Section - 2/3 width on desktop */}
         <div className="w-full md:w-2/3 relative group">

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Check if customer profile already exists for this user
-    const existingCustomer = await UserModel.findOne({ user: decoded.id });
+    const existingCustomer = await CustomerModel.findOne({ user: decoded.id });
 
     if (existingCustomer) {
       return NextResponse.json(

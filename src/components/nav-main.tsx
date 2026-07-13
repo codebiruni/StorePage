@@ -1,6 +1,6 @@
 "use client";
 
-import { Album, ChevronRight, TvMinimal, type LucideIcon } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
 
 import {
   Collapsible,
@@ -19,32 +19,40 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 
+export type NavMainItem = {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+};
+
+export type NavMainGroup = {
+  title: string;
+  icon?: LucideIcon;
+  isActive?: boolean;
+  items?: { title: string; url: string }[];
+};
+
 export function NavMain({
+  topItems,
   items,
 }: {
-  items: {
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-    items?: {
-      title: string;
-      url: string;
-    }[];
-  }[];
+  topItems?: NavMainItem[];
+  items: NavMainGroup[];
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Nav items</SidebarGroupLabel>
+      <SidebarGroupLabel>Workspace</SidebarGroupLabel>
       <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild tooltip="Dashboard">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <TvMinimal  className="w-4 h-4" />
-              <span>Dashboard</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {topItems?.map((item) => (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild tooltip={item.title}>
+              <Link href={item.url} className="flex items-center gap-2">
+                <item.icon className="w-4 h-4" />
+                <span>{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
 
         {items.map((item) => (
           <Collapsible
@@ -77,15 +85,6 @@ export function NavMain({
             </SidebarMenuItem>
           </Collapsible>
         ))}
-
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild tooltip="order-analysis">
-            <Link href="/dashboard/order-analysis" className="flex items-center gap-2">
-              <Album   className="w-4 h-4" />
-              <span>Order Analysis</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   );

@@ -166,6 +166,46 @@ interface InventoryData {
       createdAt: string
     }>
   }
+  orderInsights: {
+    totals: {
+      totalOrders: number
+      totalRevenue: number
+      averageOrderValue: number
+      cancelledOrders: number
+      deliveredOrders: number
+      pendingOrders: number
+    }
+    statusBreakdown: Array<{
+      status: string
+      count: number
+      percentage: number
+    }>
+    paymentBreakdown: Array<{
+      method: string
+      count: number
+      percentage: number
+    }>
+    monthlyOrders: Array<{
+      month: string
+      orders: number
+      revenue: number
+    }>
+    sourceBreakdown: Array<{
+      source: string
+      count: number
+      percentage: number
+    }>
+    recentOrders: Array<{
+      orderId: string
+      name: string
+      number: string
+      grandTotal: number
+      orderStatus: string
+      paymentStatus: string
+      paymentMethod: string
+      createdAt: string
+    }>
+  }
 }
 
 // Color palettes for charts
@@ -181,6 +221,41 @@ const CATEGORY_COLORS = [
   '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
   '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
 ]
+
+// Order status palette — keep the same color across charts and badges so
+// merchants can scan the dashboard without cross-referencing legends.
+const ORDER_STATUS_COLORS: Record<string, string> = {
+  pending: '#f59e0b',
+  confirmed: '#3b82f6',
+  processing: '#6366f1',
+  shipped: '#0ea5e9',
+  delivered: '#16a34a',
+  cancelled: '#ef4444',
+}
+
+const ORDER_STATUS_BADGE: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-800 border-amber-200',
+  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
+  processing: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  shipped: 'bg-sky-100 text-sky-800 border-sky-200',
+  delivered: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
+}
+
+const PAYMENT_STATUS_BADGE: Record<string, string> = {
+  paid: 'bg-green-100 text-green-800 border-green-200',
+  pending: 'bg-amber-100 text-amber-800 border-amber-200',
+  failed: 'bg-red-100 text-red-800 border-red-200',
+  refunded: 'bg-slate-100 text-slate-800 border-slate-200',
+}
+
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  'cash-on-delivery': 'Cash on Delivery',
+  bkash: 'bKash',
+  nagad: 'Nagad',
+  rocket: 'Rocket',
+  card: 'Card',
+}
 
 
 export default function DashboardInventory() {
@@ -263,6 +338,55 @@ export default function DashboardInventory() {
     sales: product.salesCount,
     revenue: product.revenue
   }))
+
+  // Order Insights — pulled once, used for the KPI strip, the trend chart,
+  // the status donut, and the recent-orders list card below.
+  const orderInsights = data?.orderInsights
+  const orderTotals = orderInsights?.totals
+  const monthlyOrdersData = orderInsights?.monthlyOrders ?? []
+  const statusBreakdownData = orderInsights?.statusBreakdown ?? []
+  const paymentBreakdownData = orderInsights?.paymentBreakdown ?? []
+  const sourceBreakdownData = orderInsights?.sourceBreakdown ?? []
+  const recentOrdersData = orderInsights?.recentOrders ?? []
+
+  // Orders trend area chart data. Revenue is converted to thousands for
+  // parity with the existing Inventory Trends chart so axes are comparable.
+  const ordersTrendChartData = monthlyOrdersData.map((row) => ({
+    name: row.month,
+    orders: row.orders,
+    revenue: Math.round(row.revenue / 1000),
+  }))
+
+  // Donut chart: order status breakdown. Colors fall back to a muted blue if
+  // the API ever returns an unfamiliar status (defensive — the enum should
+  // already cover every value).
+  const orderStatusChartData = statusBreakdownData.map((row) => ({
+    name: row.status,
+    value: row.count,
+    percentage: row.percentage,
+    fill: ORDER_STATUS_COLORS[row.status] ?? '#3b82f6',
+  }))
+
+  // Helper used everywhere we render a status/method/payment badge so the
+  // styling and labels stay consistent across the dashboard.
+  const getStatusBadgeClass = (status: string) =>
+    ORDER_STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-800 border-slate-200'
+  const getPaymentBadgeClass = (status: string) =>
+    PAYMENT_STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-800 border-slate-200'
+  const getPaymentMethodLabel = (method: string) =>
+    PAYMENT_METHOD_LABEL[method] ?? method
+
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString('en-BD', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    } catch {
+      return iso
+    }
+  }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -407,6 +531,206 @@ export default function DashboardInventory() {
         </Card>
       </div>
 
+      {/* Orders KPI Strip */}
+      {orderTotals && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber(orderTotals.totalOrders)}</div>
+              <p className="text-xs text-muted-foreground">
+                {orderTotals.pendingOrders} pending • {orderTotals.deliveredOrders} delivered
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(orderTotals.totalRevenue)}</div>
+              <p className="text-xs text-muted-foreground">
+                {orderTotals.cancelledOrders} cancelled
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(orderTotals.averageOrderValue)}</div>
+              <p className="text-xs text-muted-foreground">
+                Excluding cancelled orders
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Order Sources</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                {sourceBreakdownData.length > 0 ? (
+                  sourceBreakdownData.slice(0, 2).map((source) => (
+                    <div key={source.source} className="flex items-center justify-between text-xs">
+                      <span className="capitalize text-muted-foreground">{source.source}</span>
+                      <span className="font-medium">
+                        {formatNumber(source.count)}{' '}
+                        <span className="text-muted-foreground">
+                          ({source.percentage.toFixed(0)}%)
+                        </span>
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground">No orders yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Top Payment</CardTitle>
+              <Tag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {paymentBreakdownData.length > 0 ? (
+                <>
+                  <div className="text-base font-bold leading-tight">
+                    {getPaymentMethodLabel(paymentBreakdownData[0].method)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatNumber(paymentBreakdownData[0].count)} orders •{' '}
+                    {paymentBreakdownData[0].percentage.toFixed(0)}%
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">No payments yet</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Orders Charts Section */}
+      {orderInsights && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Orders Trend
+              </CardTitle>
+              <CardDescription>
+                Monthly order volume and revenue for the selected period
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ordersTrendChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={ordersTrendChartData}>
+                    <defs>
+                      <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
+                      </linearGradient>
+                      <linearGradient id="colorOrdersRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="orders"
+                      stroke="#3b82f6"
+                      fillOpacity={1}
+                      fill="url(#colorOrders)"
+                      name="Orders"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#16a34a"
+                      fillOpacity={1}
+                      fill="url(#colorOrdersRevenue)"
+                      name="Revenue (in 000's)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-sm text-muted-foreground">
+                  No orders in the selected period
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Order Status Breakdown
+              </CardTitle>
+              <CardDescription>
+                Distribution of orders across fulfilment statuses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {orderStatusChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={orderStatusChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {orderStatusChartData.map((entry, index) => (
+                        <Cell key={`status-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name) => [
+                        `${formatNumber(Number(value))} orders`,
+                        String(name),
+                      ]}
+                    />
+                    <Legend
+                      formatter={(value: string) => (
+                        <span className="capitalize text-xs">{value}</span>
+                      )}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-sm text-muted-foreground">
+                  No order data yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Inventory Trends Chart */}
@@ -535,7 +859,7 @@ export default function DashboardInventory() {
       </div>
 
       {/* Detailed Analysis Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
         {/* Critical Stock Alerts */}
         <Card className="col-span-1">
           <CardHeader>
@@ -667,6 +991,67 @@ export default function DashboardInventory() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Orders */}
+        <Card className="col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Recent Orders
+            </CardTitle>
+            <CardDescription>
+              The latest orders placed across the storefront and landing pages
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentOrdersData.length > 0 ? (
+              <div className="space-y-3">
+                {recentOrdersData.map((order) => (
+                  <div
+                    key={order.orderId}
+                    className="flex flex-col gap-2 p-3 border rounded-lg"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-mono text-xs font-semibold truncate">
+                        {order.orderId}
+                      </p>
+                      <span
+                        className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border ${getStatusBadgeClass(order.orderStatus)}`}
+                      >
+                        {order.orderStatus}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{order.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {order.number} • {getPaymentMethodLabel(order.paymentMethod)}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-bold text-sm">{formatCurrency(order.grandTotal)}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatDate(order.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border ${getPaymentBadgeClass(order.paymentStatus)}`}
+                      >
+                        {order.paymentStatus}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No orders yet.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

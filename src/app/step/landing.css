@@ -1,0 +1,515 @@
+:root {
+  --lp-bg: #ffffff;
+  --lp-bg-raised: #ffffff;
+  --lp-bg-sunken: #f4f1ec;
+  --lp-bg-ink: #0b0b0a;
+  --lp-fg: #0b0b0a;
+  --lp-fg-muted: #4a4a48;
+  --lp-fg-faint: #8a8a86;
+  --lp-fg-on-ink: #f6f4ef;
+  --lp-accent: #b8533a;
+  --lp-accent-soft: rgba(184, 83, 58, 0.12);
+  --lp-line: rgba(11, 11, 10, 0.1);
+  --lp-radius: 4px;
+  --lp-radius-lg: 12px;
+  --lp-shadow: 0 1px 2px rgba(11, 11, 10, 0.06),
+    0 8px 30px rgba(11, 11, 10, 0.08);
+
+  --lp-font-display: var(--font-display, ui-serif, Georgia, serif);
+  --lp-font-body: var(--font-body, ui-sans-serif, system-ui, sans-serif);
+  --lp-font-mono: var(--font-mono, ui-monospace, monospace);
+  --lp-leading-display: 1.05;
+  --lp-tracking-eyebrow: 0.18em;
+}
+
+.step-landing-body {
+  background: var(--lp-bg);
+  color: var(--lp-fg);
+  font-family: var(--lp-font-body);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.step-landing-body * {
+  box-sizing: border-box;
+}
+
+/* ─── Section primitive ───────────────────────────────────────────────── */
+.lp-section {
+  padding: clamp(56px, 8vw, 112px) 0;
+  position: relative;
+}
+
+.lp-section[data-tone="canvas"] {
+  background: var(--lp-bg);
+  color: var(--lp-fg);
+}
+.lp-section[data-tone="raised"] {
+  background: var(--lp-bg-raised);
+  color: var(--lp-fg);
+}
+.lp-section[data-tone="sunken"] {
+  background: var(--lp-bg-sunken);
+  color: var(--lp-fg);
+}
+.lp-section[data-tone="ink"] {
+  background: var(--lp-bg-ink);
+  color: var(--lp-fg-on-ink);
+}
+
+/* ─── Container primitive ─────────────────────────────────────────────── */
+.lp-container {
+  width: min(100%, 1200px);
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 56px);
+}
+.lp-container[data-width="narrow"] {
+  width: min(100%, 780px);
+}
+.lp-container[data-width="wide"] {
+  width: min(100%, 1320px);
+}
+
+/* ─── Eyebrow primitive ───────────────────────────────────────────────── */
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--lp-font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--lp-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lp-fg-muted);
+}
+.lp-eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: var(--lp-fg-muted);
+  flex: none;
+}
+
+/* ─── Headline primitive ──────────────────────────────────────────────── */
+.lp-headline {
+  font-family: var(--lp-font-display);
+  font-weight: 500;
+  line-height: var(--lp-leading-display);
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: inherit;
+}
+
+.lp-headline[data-size="display"] {
+  font-size: clamp(48px, 7vw, 96px);
+}
+.lp-headline[data-size="xl"] {
+  font-size: clamp(36px, 5vw, 64px);
+}
+.lp-headline[data-size="lg"] {
+  font-size: clamp(28px, 3.6vw, 44px);
+}
+.lp-headline[data-size="md"] {
+  font-size: clamp(22px, 2.4vw, 28px);
+}
+.lp-headline[data-size="sm"] {
+  font-size: 18px;
+}
+
+/* Inline accent span inside a headline (used for italic emphasis). */
+.lp-headline em,
+.lp-headline i {
+  font-style: italic;
+  color: var(--lp-accent);
+}
+
+/* ─── Lede primitive ──────────────────────────────────────────────────── */
+.lp-lede {
+  font-family: var(--lp-font-body);
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.55;
+  color: var(--lp-fg-muted);
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* ─── Marquee primitive ───────────────────────────────────────────────── */
+.lp-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+}
+.lp-marquee__track {
+  display: inline-flex;
+  gap: 56px;
+  white-space: nowrap;
+  animation: lp-marquee-scroll linear infinite;
+  will-change: transform;
+}
+.lp-marquee__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 56px;
+  font-family: var(--lp-font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--lp-fg-muted);
+}
+.lp-marquee__item::after {
+  content: "✦";
+  color: var(--lp-accent);
+  margin-left: 56px;
+  font-size: 10px;
+}
+
+@keyframes lp-marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ─── Button primitive ────────────────────────────────────────────────── */
+.lp-btn {
+  --_bg: var(--lp-accent);
+  --_fg: var(--lp-bg);
+  --_bd: var(--lp-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--lp-font-body);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid var(--_bd);
+  background: var(--_bg);
+  color: var(--_fg);
+  border-radius: 999px;
+  padding: 14px 24px;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.18s ease, background-color 0.18s ease,
+    color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.lp-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -10px var(--lp-accent);
+}
+.lp-btn:active {
+  transform: translateY(0);
+}
+
+.lp-btn[data-size="sm"] {
+  padding: 10px 18px;
+  font-size: 13px;
+}
+.lp-btn[data-size="lg"] {
+  padding: 18px 30px;
+  font-size: 17px;
+}
+
+.lp-btn[data-tone="ghost"] {
+  --_bg: transparent;
+  --_fg: var(--lp-fg);
+  --_bd: var(--lp-line);
+}
+.lp-btn[data-tone="outline"] {
+  --_bg: transparent;
+  --_fg: var(--lp-fg);
+  --_bd: currentColor;
+}
+.lp-btn[data-tone="ink"] {
+  --_bg: var(--lp-bg-ink);
+  --_fg: var(--lp-fg-on-ink);
+  --_bd: var(--lp-bg-ink);
+}
+
+/* ─── Step sticky CTA (kept from before) ──────────────────────────────── */
+.step-sticky-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  padding: 12px 16px calc(env(safe-area-inset-bottom, 0) + 12px);
+  background: color-mix(in srgb, var(--lp-bg) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-top: 1px solid var(--lp-line);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.06);
+}
+.step-sticky-cta__inner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ─── Step / lp shared utilities ──────────────────────────────────────── */
+.step-pulse {
+  animation: step-pulse 1.8s ease-in-out infinite;
+}
+@keyframes step-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.92;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee__track,
+  .step-pulse {
+    animation: none !important;
+  }
+}
+
+/* ─── A few legacy utility classes (kept for back-compat) ─────────────── */
+.step-section {
+  padding: 48px 0;
+}
+.step-section--tight {
+  padding: 32px 0;
+}
+.step-section--alt {
+  background: var(--lp-bg-sunken);
+}
+.step-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.step-container--narrow {
+  max-width: 760px;
+}
+.step-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.step-marquee-track {
+  display: inline-flex;
+  gap: 48px;
+  animation: step-marquee-scroll 30s linear infinite;
+}
+@keyframes step-marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+@media (max-width: 640px) {
+  .step-section {
+    padding: 36px 0;
+  }
+  .step-section--tight {
+    padding: 24px 0;
+  }
+}
+
+/* ─── Responsive helper: asymmetric grid collapses to a single column ─── */
+@media (max-width: 820px) {
+  .lp-atelier-grid,
+  .lp-midnight-grid,
+  .lp-pillar-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .lp-atelier-grid > * {
+    position: static !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THEME: Atelier — editorial serif. Quiet luxury. Generous whitespace.
+   Newsprint warm whites, ink black, a single persimmon accent.
+   ════════════════════════════════════════════════════════════════════════ */
+[data-theme="atelier"] {
+  --lp-bg: #f6f1e7;
+  --lp-bg-raised: #ffffff;
+  --lp-bg-sunken: #ede5d4;
+  --lp-bg-ink: #15110b;
+  --lp-fg: #1c1812;
+  --lp-fg-muted: #5a4f40;
+  --lp-fg-faint: #8c7f6c;
+  --lp-fg-on-ink: #f1ead9;
+  --lp-accent: #b8533a;
+  --lp-accent-soft: rgba(184, 83, 58, 0.14);
+  --lp-line: rgba(28, 24, 18, 0.12);
+  --lp-radius: 2px;
+  --lp-radius-lg: 4px;
+  --lp-shadow: 0 1px 0 rgba(28, 24, 18, 0.04),
+    0 30px 60px -40px rgba(28, 24, 18, 0.25);
+
+  --lp-font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --lp-font-body: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --lp-leading-display: 1.02;
+  --lp-tracking-eyebrow: 0.22em;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THEME: Midnight — dark editorial luxury. Champagne accent, full-bleed
+   dark hero, restrained italic serif, very long vertical rhythm.
+   ════════════════════════════════════════════════════════════════════════ */
+[data-theme="midnight"] {
+  --lp-bg: #0a0a0c;
+  --lp-bg-raised: #131316;
+  --lp-bg-sunken: #1a1a1f;
+  --lp-bg-ink: #050507;
+  --lp-fg: #ece9e1;
+  --lp-fg-muted: #a8a39a;
+  --lp-fg-faint: #6f6a62;
+  --lp-fg-on-ink: #f4f1e8;
+  --lp-accent: #d9b27a;
+  --lp-accent-soft: rgba(217, 178, 122, 0.16);
+  --lp-line: rgba(246, 244, 239, 0.12);
+  --lp-radius: 4px;
+  --lp-radius-lg: 8px;
+  --lp-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 60px 80px -50px rgba(0, 0, 0, 0.9);
+
+  --lp-font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --lp-font-body: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --lp-leading-display: 1.0;
+  --lp-tracking-eyebrow: 0.3em;
+}
+
+@media (max-width: 720px) {
+  .lp-midnight-stats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THEME: Kinetic — motion-led bold sans. Hot accent, sharp UI, mono
+   eyebrows. Built for energy.
+   ════════════════════════════════════════════════════════════════════════ */
+[data-theme="kinetic"] {
+  --lp-bg: #f3f3ef;
+  --lp-bg-raised: #ffffff;
+  --lp-bg-sunken: #e8e7e1;
+  --lp-bg-ink: #0d0d0f;
+  --lp-fg: #0d0d0f;
+  --lp-fg-muted: #4a4a4d;
+  --lp-fg-faint: #8b8b8e;
+  --lp-fg-on-ink: #f4f4ef;
+  --lp-accent: #ff4a1c;
+  --lp-accent-soft: rgba(255, 74, 28, 0.12);
+  --lp-line: rgba(13, 13, 15, 0.18);
+  --lp-radius: 0px;
+  --lp-radius-lg: 0px;
+  --lp-shadow: 0 0 0 1px rgba(13, 13, 15, 0.12);
+
+  --lp-font-display: var(--font-space-grotesk), ui-sans-serif, system-ui,
+    sans-serif;
+  --lp-font-body: var(--font-space-grotesk), ui-sans-serif, system-ui,
+    sans-serif;
+  --lp-font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --lp-leading-display: 0.98;
+  --lp-tracking-eyebrow: 0.14em;
+}
+
+@media (max-width: 720px) {
+  .lp-kinetic-stats {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THEME: Pillar — trust-led serif. Calm ivory ground, deep navy ink,
+   muted forest accent. Founder-voice copy, press logos, editorial
+   pull-quotes.
+   ════════════════════════════════════════════════════════════════════════ */
+[data-theme="pillar"] {
+  --lp-bg: #faf6ee;
+  --lp-bg-raised: #ffffff;
+  --lp-bg-sunken: #f0ead8;
+  --lp-bg-ink: #0f2034;
+  --lp-fg: #16273a;
+  --lp-fg-muted: #4d5b6c;
+  --lp-fg-faint: #8b95a3;
+  --lp-fg-on-ink: #f1ecdb;
+  --lp-accent: #2d5d4f;
+  --lp-accent-soft: rgba(45, 93, 79, 0.12);
+  --lp-line: rgba(22, 39, 58, 0.14);
+  --lp-radius: 6px;
+  --lp-radius-lg: 10px;
+  --lp-shadow: 0 1px 2px rgba(22, 39, 58, 0.06),
+    0 24px 48px -32px rgba(22, 39, 58, 0.22);
+
+  --lp-font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --lp-font-body: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --lp-leading-display: 1.05;
+  --lp-tracking-eyebrow: 0.18em;
+}
+
+@media (max-width: 820px) {
+  .lp-pillar-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+@media (max-width: 720px) {
+  .lp-pillar-stats {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THEME: Origin — minimal monochrome. White wall, single accent, one
+   product photo per page. Restraint is the moment.
+   ════════════════════════════════════════════════════════════════════════ */
+[data-theme="origin"] {
+  --lp-bg: #ffffff;
+  --lp-bg-raised: #ffffff;
+  --lp-bg-sunken: #f5f5f3;
+  --lp-bg-ink: #0c0c0c;
+  --lp-fg: #0c0c0c;
+  --lp-fg-muted: #4a4a4a;
+  --lp-fg-faint: #9b9b9b;
+  --lp-fg-on-ink: #f4f4f4;
+  --lp-accent: #ff5a1f;
+  --lp-accent-soft: rgba(255, 90, 31, 0.08);
+  --lp-line: rgba(12, 12, 12, 0.08);
+  --lp-radius: 0px;
+  --lp-radius-lg: 2px;
+  --lp-shadow: 0 1px 0 rgba(12, 12, 12, 0.04);
+
+  --lp-font-display: var(--font-space-grotesk), ui-sans-serif, system-ui,
+    sans-serif;
+  --lp-font-body: var(--font-space-grotesk), ui-sans-serif, system-ui,
+    sans-serif;
+  --lp-leading-display: 1.02;
+  --lp-tracking-eyebrow: 0.22em;
+}
+
+@media (max-width: 720px) {
+  .lp-origin-split {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 32px !important;
+  }
+}

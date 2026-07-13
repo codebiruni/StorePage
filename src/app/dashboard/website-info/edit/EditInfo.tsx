@@ -43,6 +43,8 @@ interface FormValues {
   mapLink: string;
   footerLinks: Array<{ name: string; url?: string }>;
   marqueeText: string;
+  metaPixelId?: string;
+  gaMeasurementId?: string;
 }
 
 export default function EditInfo() {
@@ -73,6 +75,8 @@ export default function EditInfo() {
       mapLink: "",
       footerLinks: [{ name: "", url: "" }],
       marqueeText: "",
+      metaPixelId: "",
+      gaMeasurementId: "",
     },
     mode: "onChange",
   });
@@ -130,6 +134,8 @@ export default function EditInfo() {
             url: link.url || "",
           })),
           marqueeText: fetchedData.marqueeText || "",
+          metaPixelId: fetchedData.metaPixelId || "",
+          gaMeasurementId: fetchedData.gaMeasurementId || "",
         });
       } catch (error) {
         console.error("Fetch error:", error);
@@ -765,6 +771,53 @@ export default function EditInfo() {
                 </FormItem>
               )}
             />
+
+            {/* Analytics IDs (optional) */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium">Analytics &amp; Tracking</h3>
+                <p className="text-sm text-muted-foreground">
+                  Paste your IDs from Meta Events Manager and Google Analytics.
+                  Leave a field blank to skip loading that tracker.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="metaPixelId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meta (Facebook) Pixel ID</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. 123456789012345"
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gaMeasurementId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Google Analytics Measurement ID</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. G-XXXXXXXXXX"
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             {/* Submit Button */}
             <div className="flex justify-end">

@@ -15,11 +15,9 @@ import { NavUser } from "./nav-user";
 import { data } from "@/app/data/nav-data";
 import useContextData from "@/defaults/custom-component/useContextData";
 import { usePathname, useRouter } from "next/navigation";
-// Import a loader icon if you want, or use text
-import { Loader2 } from "lucide-react";
+import { BarChart3, Loader2 } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  // 1. Pull your session loading state from context
   const { UserData, loading } = useContextData();
   const router = useRouter();
   const pathname = usePathname();
@@ -43,9 +41,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         router.push("/dashboard");
       }
     }
-  }, [UserData, loading, pathname, router]); // Add loading to dependencies
+  }, [UserData, loading, pathname, router]);
 
-  // 4. Optional: Render a loading state so the screen doesn't flicker or break layout
   if (loading) {
     return (
       <Sidebar collapsible="icon" {...props}>
@@ -62,8 +59,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain
+          topItems={[{ title: "Dashboard", url: "/dashboard", icon: BarChart3 }]}
+          items={data.navMain}
+        />
+        <NavProjects projects={data.quickLinks} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

@@ -2,7 +2,7 @@
 import mongoose from "mongoose";
 
 // Use the cleaner server-side variable name we configured in Vercel
-const mongoUri = process.env.NEXT_PUBLIC_MONGODBURI as string;
+const mongoUri = process.env.MONGODB_URI as string;
 
 if (!mongoUri) {
   throw new Error("❌ MongoDB URI is not defined in environment variables.");

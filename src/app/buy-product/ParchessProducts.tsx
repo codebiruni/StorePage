@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import useContextData from "@/defaults/custom-component/useContextData"
+import { useSiteConfig } from "@/defaults/context/SiteConfigProvider"
 import { toast } from "sonner"
 import { useRouter } from 'next/navigation'
 import EmptyCart from './EmptyCart'
@@ -88,8 +89,12 @@ export default function PurchaseProducts() {
   const subtotal = itemsWithQuantity.reduce((sum: number, item: PurchaseItem) =>
     sum + (item.price * item.quantity), 0)
 
-  const deliveryCharge = formData.district ?
-    (/dhaka|ঢাকা/i.test(formData.district) ? 70 : 90) : 0
+  const { config: siteConfig } = useSiteConfig()
+  const deliveryCharge = formData.district
+    ? (/dhaka|ঢাকা/i.test(formData.district)
+      ? siteConfig?.deliveryCharge?.insideDhaka ?? 70
+      : siteConfig?.deliveryCharge?.outsideDhaka ?? 90)
+    : 0
   const discount = 0
   const grandTotal = subtotal + deliveryCharge - discount
 
@@ -296,7 +301,7 @@ export default function PurchaseProducts() {
         paymentMethod: 'cash-on-delivery'
       })
       removeProductsFromStorage(orderedProductIds)
-      router.push(`/success/${finalOrderId}`)
+      router.push(`/step/thanks?orderId=${encodeURIComponent(finalOrderId)}`)
     } catch (error) {
       console.error('Order submission error:', error)
       toast.error('Failed to place order. Please try again.')

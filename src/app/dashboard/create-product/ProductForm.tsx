@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,10 @@ import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import ProductBasicInfo from "./ProductBasicInfo";
 import ProductPricingAndOffers from "./ProductPricingAndOffers";
+import LandingPageEditor, {
+  type LandingFormValue,
+  EMPTY_LANDING_VALUE,
+} from "@/app/dashboard/_shared/LandingPageEditor";
 
 interface PriceVariant {
   regularPrice: number;
@@ -55,7 +60,10 @@ interface ProductFormData {
 }
 
 const ProductForm = () => {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [landingValue, setLandingValue] =
+    useState<LandingFormValue>(EMPTY_LANDING_VALUE);
 
   const form = useForm<ProductFormData>({
     defaultValues: {
@@ -84,12 +92,26 @@ const ProductForm = () => {
   const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true);
     try {
-      // Format data for API
+      // Format data for API — merge the landing-page block from the editor.
       const formattedData = {
         ...data,
         offerEndDate: data.offerEndDate
           ? new Date(data.offerEndDate)
           : undefined,
+        landingPage: {
+          theme: landingValue.theme,
+          heroSubtitle: landingValue.heroSubtitle,
+          heroBadge: landingValue.heroBadge,
+          heroCtaLabel: landingValue.heroCtaLabel,
+          painPoints: landingValue.painPoints.filter(Boolean),
+          benefits: landingValue.benefits.filter(Boolean),
+          howToUse: landingValue.howToUse.filter(Boolean),
+          guarantee: landingValue.guarantee,
+          trustBadges: landingValue.trustBadges.filter(Boolean),
+          vslUrl: landingValue.vslUrl,
+          youtubeUrl: landingValue.youtubeUrl,
+          checkoutNote: landingValue.checkoutNote,
+        },
       };
 
       const res = await fetch("/api/v1/product", {
@@ -120,9 +142,24 @@ const ProductForm = () => {
       }
       // ------------------------------------------------
 
+      // Parse the created product so we can redirect to its edit page
+      // (where the live landing-page URL is available for copy/preview).
+      let createdId: string | undefined;
+      try {
+        const json = await res.json();
+        createdId = json?.data?._id || json?.data?.id;
+      } catch {
+        // Non-JSON success body — ignore.
+      }
+
       toast.success("Product created successfully!");
-      // form.reset();
+      form.reset();
+      setLandingValue(EMPTY_LANDING_VALUE);
       localStorage.removeItem("productFormData");
+
+      if (createdId) {
+        router.push(`/dashboard/products/edit/${createdId}`);
+      }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Caught error in form submission:", error);
@@ -145,12 +182,22 @@ const ProductForm = () => {
               <ProductBasicInfo form={form} />
               <ProductPricingAndOffers form={form} />
 
+              {/* Landing Page Builder — the editor is fully controlled by the
+                  parent so the create page owns its own state. The productId
+                  prop is omitted (no id until after save) so Copy/Preview
+                  buttons are disabled until then. */}
+              <LandingPageEditor
+                value={landingValue}
+                onChange={setLandingValue}
+              />
+
               <div className="flex justify-end space-x-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
                     form.reset();
+                    setLandingValue(EMPTY_LANDING_VALUE);
                     localStorage.removeItem("productFormData");
                   }}
                 >

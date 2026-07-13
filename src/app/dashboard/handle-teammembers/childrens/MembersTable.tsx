@@ -238,33 +238,24 @@ export default function MembersTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  <div className="w-full flex justify-center items-center">
-                    <RefreshCw className="animate-spin w-12" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : filteredManagement.length > 0 ? (
-              filteredManagement.map((item) => (
-                <TableRow key={item._id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                        {item.image ? (
-                          <Image
-                            src={item.image || "/placeholder-user.jpg"}
-                            alt={item.name}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-6 w-6 text-gray-500" />
-                          </div>
-                        )}
-                      </div>
+            {filteredData.map((item) => (
+              <TableRow key={item._id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <User className="h-6 w-6 text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
                       <div>
                         <p className="font-medium">{item.name}</p>
                         {item.user?.username && (

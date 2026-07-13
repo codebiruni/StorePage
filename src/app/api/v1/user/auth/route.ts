@@ -3,12 +3,12 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import UserModel from "@/models/user.model";
 import connectDb from "@/lib/connectdb";
+import { env } from "@/lib/env";
 
-const accessSecret = process.env.NEXT_PUBLIC_JWT_ACCESS_SECRET as string;
-const refreshSecret = process.env.NEXT_PUBLIC_JWT_REFRESH_SECRET as string;
-const accessExpiresIn = process.env.NEXT_PUBLIC_EXPIRE_ACCESS_TOKEN_IN || "5h";
-const refreshExpiresIn =
-  process.env.NEXT_PUBLIC_EXPIRE_REFRESH_TOKEN_IN || "90d";
+const accessSecret = env.JWT_ACCESS_SECRET;
+const refreshSecret = env.JWT_REFRESH_SECRET;
+const accessExpiresIn = env.JWT_ACCESS_EXPIRES_IN;
+const refreshExpiresIn = env.JWT_REFRESH_EXPIRES_IN;
 
 export async function POST(request: NextRequest) {
   try {

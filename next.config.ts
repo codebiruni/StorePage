@@ -9,7 +9,9 @@ const withPWA = nextPWA({
 });
 
 const nextConfig: NextConfig = {
-  turbopack: {},
+  turbopack: {
+    root: __dirname,
+  },
 
   /* config options here */
   webpack: (config, { isServer }) => {

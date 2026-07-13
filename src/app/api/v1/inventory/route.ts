@@ -9,6 +9,10 @@ import OrderModel from "@/models/order.model";
 import Branch from "@/models/branch.model";
 import Review from "@/models/review.model";
 import QuestionAnswer from "@/models/quesAndAns.model";
+import {
+  inventoryValueAddFields,
+  inventoryValueMatch,
+} from "@/lib/inventoryValue";
 
 interface InventoryDashboardResponse {
   success: boolean;
@@ -134,6 +138,46 @@ interface InventoryDashboardResponse {
         createdAt: string;
       }>;
     };
+    orderInsights: {
+      totals: {
+        totalOrders: number;
+        totalRevenue: number;
+        averageOrderValue: number;
+        cancelledOrders: number;
+        deliveredOrders: number;
+        pendingOrders: number;
+      };
+      statusBreakdown: Array<{
+        status: string;
+        count: number;
+        percentage: number;
+      }>;
+      paymentBreakdown: Array<{
+        method: string;
+        count: number;
+        percentage: number;
+      }>;
+      monthlyOrders: Array<{
+        month: string;
+        orders: number;
+        revenue: number;
+      }>;
+      sourceBreakdown: Array<{
+        source: string;
+        count: number;
+        percentage: number;
+      }>;
+      recentOrders: Array<{
+        orderId: string;
+        name: string;
+        number: string;
+        grandTotal: number;
+        orderStatus: string;
+        paymentStatus: string;
+        paymentMethod: string;
+        createdAt: string;
+      }>;
+    };
   };
   message?: string;
 }
@@ -155,7 +199,8 @@ export async function GET(request: NextRequest) {
       productPerformance,
       inventoryTrends,
       branchAnalysis,
-      recentActivity
+      recentActivity,
+      orderInsights
     ] = await Promise.all([
       getOverviewStats(),
       getStockAnalysis(),
@@ -165,7 +210,8 @@ export async function GET(request: NextRequest) {
       getProductPerformance(),
       getInventoryTrends(timeRange),
       getBranchAnalysis(),
-      getRecentActivity()
+      getRecentActivity(),
+      getOrderInsights(timeRange)
     ]);
 
     const response: InventoryDashboardResponse = {
@@ -179,7 +225,8 @@ export async function GET(request: NextRequest) {
         productPerformance,
         inventoryTrends,
         branchAnalysis,
-        recentActivity
+        recentActivity,
+        orderInsights
       }
     };
 
@@ -215,26 +262,14 @@ async function getOverviewStats() {
     Category.countDocuments({ isDeleted: false }),
     SubCategory.countDocuments({ isDeleted: false }),
     Product.aggregate([
-      { 
-        $match: { 
-          isDeleted: false,
-          quentity: { $type: "number" },
-          "generalPrice.currentPrice": { $type: "number" }
-        } 
+      inventoryValueMatch,
+      inventoryValueAddFields,
+      {
+        $group: {
+          _id: null,
+          total: { $sum: { $ifNull: ["$inventoryValue", 0] } },
+        },
       },
-      { 
-        $group: { 
-          _id: null, 
-          total: { 
-            $sum: { 
-              $multiply: [
-                { $ifNull: ["$quentity", 0] }, 
-                { $ifNull: ["$generalPrice.currentPrice", 0] }
-              ] 
-            } 
-          } 
-        } 
-      }
     ]),
     Product.countDocuments({ 
       isDeleted: false, 
@@ -273,134 +308,211 @@ async function getOverviewStats() {
 
 // Stock Level Analysis
 async function getStockAnalysis() {
-  // First get total count for percentage calculation
-  const totalProducts = await Product.countDocuments({ 
+  // Total non-deleted products with any trackable stock (variants or
+  // top-level `quentity`). Used as the denominator for percentage labels so
+  // the radial chart stays stable even if some products lack a price.
+  const totalProducts = await Product.countDocuments({
     isDeleted: false,
-    quentity: { $type: "number" }
+    $or: [
+      { "priceVariants.0": { $exists: true } },
+      { quentity: { $exists: true } },
+    ],
   });
 
+  // Effective stock = top-level `quentity` plus the sum of
+  // `priceVariants[].quentity`. Products with no top-level field still bucket
+  // correctly off the variant total.
   const stockLevels = await Product.aggregate([
-    { 
-      $match: { 
-        isDeleted: false,
-        quentity: { $type: "number" }
-      } 
+    inventoryValueMatch,
+    {
+      $addFields: {
+        totalStock: {
+          $add: [
+            { $ifNull: ["$quentity", 0] },
+            {
+              $sum: {
+                $map: {
+                  input: { $ifNull: ["$priceVariants", []] },
+                  as: "v",
+                  in: { $ifNull: ["$$v.quentity", 0] },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    inventoryValueAddFields,
+    {
+      $addFields: {
+        stockLevel: {
+          $switch: {
+            branches: [
+              { case: { $eq: ["$totalStock", 0] }, then: "Out of Stock" },
+              { case: { $lt: ["$totalStock", 10] }, then: "Critical" },
+              { case: { $lt: ["$totalStock", 30] }, then: "Low" },
+              { case: { $lt: ["$totalStock", 100] }, then: "Medium" },
+            ],
+            default: "High",
+          },
+        },
+      },
     },
     {
-      $bucket: {
-        groupBy: "$quentity",
-        boundaries: [0, 1, 10, 30, 100, Infinity],
-        default: "Other",
-        output: {
-          count: { $sum: 1 },
-          totalValue: {
-            $sum: { 
-              $multiply: [
-                { $ifNull: ["$quentity", 0] }, 
-                { $ifNull: ["$generalPrice.currentPrice", 0] }
-              ] 
-            }
-          }
-        }
-      }
-    }
+      $group: {
+        _id: "$stockLevel",
+        count: { $sum: 1 },
+        totalValue: { $sum: { $ifNull: ["$inventoryValue", 0] } },
+      },
+    },
   ]);
 
-  const formattedStockLevels = [
-    { level: "Out of Stock", range: [0, 0] },
-    { level: "Critical", range: [1, 10] },
-    { level: "Low", range: [11, 30] },
-    { level: "Medium", range: [31, 100] },
-    { level: "High", range: [101, Infinity] }
-  ].map(level => {
-    const stockData = stockLevels.find(s => 
-      s._id >= level.range[0] && s._id < level.range[1]
-    ) || { count: 0, totalValue: 0 };
-    
+  // Stable ordering independent of the aggregate ordering.
+  const LEVEL_ORDER = [
+    "Out of Stock",
+    "Critical",
+    "Low",
+    "Medium",
+    "High",
+  ] as const;
+
+  const formattedStockLevels = LEVEL_ORDER.map((level) => {
+    const stockData = stockLevels.find((s) => s._id === level) || {
+      count: 0,
+      totalValue: 0,
+    };
     return {
-      level: level.level,
+      level,
       count: stockData.count,
       percentage: totalProducts > 0 ? (stockData.count / totalProducts) * 100 : 0,
-      value: stockData.totalValue
+      value: stockData.totalValue,
     };
   });
 
-  const criticalProducts = await Product.find({
-    isDeleted: false,
-    quentity: { $lt: 10, $gte: 0, $type: "number" },
-    "generalPrice.currentPrice": { $type: "number" }
-  })
-  .populate("category", "name")
-  .sort({ quentity: 1 })
-  .limit(10)
-  .select("name quentity generalPrice.currentPrice category")
-  .lean();
+  const criticalProducts = await Product.aggregate([
+    inventoryValueMatch,
+    {
+      $addFields: {
+        totalStock: {
+          $add: [
+            { $ifNull: ["$quentity", 0] },
+            {
+              $sum: {
+                $map: {
+                  input: { $ifNull: ["$priceVariants", []] },
+                  as: "v",
+                  in: { $ifNull: ["$$v.quentity", 0] },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    { $match: { totalStock: { $lt: 10, $gte: 0 } } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "categoryInfo",
+      },
+    },
+    { $unwind: { path: "$categoryInfo", preserveNullAndEmptyArrays: true } },
+    inventoryValueAddFields,
+    { $sort: { totalStock: 1 } },
+    { $limit: 10 },
+    {
+      $project: {
+        name: 1,
+        quentity: 1,
+        priceVariants: 1,
+        generalPrice: 1,
+        categoryName: "$categoryInfo.name",
+        inventoryValue: 1,
+        totalStock: 1,
+      },
+    },
+  ]);
 
   return {
     stockLevels: formattedStockLevels,
-    criticalProducts: criticalProducts.map((product: any) => ({
-      _id: product._id.toString(),
-      name: product.name,
-      quantity: product.quentity || 0,
-      currentPrice: product.generalPrice?.currentPrice || 0,
-      category: product.category?.name || "Uncategorized",
-      stockValue: (product.quentity || 0) * (product.generalPrice?.currentPrice || 0)
-    }))
+    criticalProducts: criticalProducts.map((product: any) => {
+      const currentPrice = product.generalPrice?.currentPrice ?? 0;
+      const stockValue = product.inventoryValue ?? 0;
+      return {
+        _id: product._id.toString(),
+        name: product.name,
+        quantity: product.totalStock ?? 0,
+        currentPrice,
+        category: product.categoryName || "Uncategorized",
+        stockValue,
+      };
+    }),
   };
 }
 
 // Category-wise Analysis - FIXED VERSION
 async function getCategoryAnalysis() {
   const categoryData = await Product.aggregate([
-    { 
-      $match: { 
-        isDeleted: false,
-        quentity: { $type: "number" },
-        "generalPrice.currentPrice": { $type: "number" }
-      } 
+    inventoryValueMatch,
+    inventoryValueAddFields,
+    {
+      $addFields: {
+        totalStock: {
+          $add: [
+            { $ifNull: ["$quentity", 0] },
+            {
+              $sum: {
+                $map: {
+                  input: { $ifNull: ["$priceVariants", []] },
+                  as: "v",
+                  in: { $ifNull: ["$$v.quentity", 0] },
+                },
+              },
+            },
+          ],
+        },
+        averagePrice: { $ifNull: ["$generalPrice.currentPrice", 0] },
+      },
     },
     {
       $lookup: {
         from: "categories",
         localField: "category",
         foreignField: "_id",
-        as: "categoryInfo"
-      }
+        as: "categoryInfo",
+      },
     },
     {
       $unwind: {
         path: "$categoryInfo",
-        preserveNullAndEmptyArrays: true
-      }
+        preserveNullAndEmptyArrays: true,
+      },
     },
     {
       $group: {
         _id: "$categoryInfo.name",
         productCount: { $sum: 1 },
-        totalValue: {
-          $sum: { 
-            $multiply: [
-              { $ifNull: ["$quentity", 0] }, 
-              { $ifNull: ["$generalPrice.currentPrice", 0] }
-            ] 
-          }
-        },
-        averagePrice: { $avg: "$generalPrice.currentPrice" },
+        totalValue: { $sum: { $ifNull: ["$inventoryValue", 0] } },
+        averagePrice: { $avg: "$averagePrice" },
         lowStockCount: {
           $sum: {
             $cond: [
-              { $and: [
-                { $lt: ["$quentity", 10] },
-                { $gte: ["$quentity", 0] }
-              ]}, 
-              1, 
-              0
-            ]
-          }
-        }
-      }
+              {
+                $and: [
+                  { $lt: ["$totalStock", 10] },
+                  { $gte: ["$totalStock", 0] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
     },
-    { $sort: { productCount: -1 } }
+    { $sort: { productCount: -1 } },
   ]);
 
   const totalProducts = categoryData.reduce((sum, cat) => sum + cat.productCount, 0);
@@ -744,6 +856,185 @@ async function getRecentActivity() {
       price: product.generalPrice?.currentPrice || 0,
       createdAt: product.createdAt ? product.createdAt.toISOString() : new Date().toISOString() // Safe access
     }))
+  };
+}
+
+// Order Insights — single round-trip payload that powers the dashboard's
+// orders KPI strip, trend chart, status donut, and recent-orders list.
+// `timeRange` controls only the trend chart; KPI totals always reflect the
+// lifetime view so merchants can see the whole picture at a glance.
+async function getOrderInsights(timeRange: string) {
+  const dateFilter = getDateFilter(timeRange);
+
+  const [
+    lifetimeTotals,
+    statusAgg,
+    paymentAgg,
+    sourceAgg,
+    monthlyOrders,
+    recentOrders,
+  ] = await Promise.all([
+    // Lifetime headline numbers. Cancelled orders are excluded from revenue
+    // so the average order value isn't dragged down by voids.
+    OrderModel.aggregate([
+      { $match: { isDeleted: false } },
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          totalRevenue: {
+            $sum: {
+              $cond: [
+                { $ne: ["$orderStatus", "cancelled"] },
+                "$grandTotal",
+                0,
+              ],
+            },
+          },
+          cancelledOrders: {
+            $sum: {
+              $cond: [{ $eq: ["$orderStatus", "cancelled"] }, 1, 0],
+            },
+          },
+          deliveredOrders: {
+            $sum: {
+              $cond: [{ $eq: ["$orderStatus", "delivered"] }, 1, 0],
+            },
+          },
+          pendingOrders: {
+            $sum: {
+              $cond: [{ $in: ["$orderStatus", ["pending", "confirmed", "processing"]] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]),
+    OrderModel.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: "$orderStatus", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
+    OrderModel.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: "$paymentMethod", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
+    OrderModel.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: "$source", count: { $sum: 1 } } },
+    ]),
+    OrderModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          orderStatus: { $ne: "cancelled" },
+          createdAt: dateFilter,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          orders: { $sum: 1 },
+          revenue: { $sum: "$grandTotal" },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+      { $limit: 6 },
+    ]),
+    OrderModel.find({ isDeleted: false })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select(
+        "orderId name number grandTotal orderStatus paymentStatus paymentMethod createdAt",
+      )
+      .lean(),
+  ]);
+
+  const totalsRaw = lifetimeTotals[0] || {
+    totalOrders: 0,
+    totalRevenue: 0,
+    cancelledOrders: 0,
+    deliveredOrders: 0,
+    pendingOrders: 0,
+  };
+  const totalRevenueSum = statusAgg.reduce((sum, s) => sum + s.count, 0);
+  const totalOrdersByPayment = paymentAgg.reduce(
+    (sum, p) => sum + p.count,
+    0,
+  );
+  const totalOrdersBySource = sourceAgg.reduce(
+    (sum, s) => sum + s.count,
+    0,
+  );
+
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  return {
+    totals: {
+      totalOrders: totalsRaw.totalOrders,
+      totalRevenue: totalsRaw.totalRevenue,
+      averageOrderValue:
+        totalsRaw.totalOrders - totalsRaw.cancelledOrders > 0
+          ? totalsRaw.totalRevenue /
+            (totalsRaw.totalOrders - totalsRaw.cancelledOrders)
+          : 0,
+      cancelledOrders: totalsRaw.cancelledOrders,
+      deliveredOrders: totalsRaw.deliveredOrders,
+      pendingOrders: totalsRaw.pendingOrders,
+    },
+    statusBreakdown: statusAgg.map((row) => ({
+      status: row._id || "unknown",
+      count: row.count,
+      percentage:
+        totalRevenueSum > 0 ? (row.count / totalRevenueSum) * 100 : 0,
+    })),
+    paymentBreakdown: paymentAgg.map((row) => ({
+      method: row._id || "cash-on-delivery",
+      count: row.count,
+      percentage:
+        totalOrdersByPayment > 0
+          ? (row.count / totalOrdersByPayment) * 100
+          : 0,
+    })),
+    monthlyOrders: monthlyOrders.map((row) => ({
+      month: `${monthNames[(row._id.month - 1) || 0]} ${row._id.year || new Date().getFullYear()}`,
+      orders: row.orders,
+      revenue: row.revenue,
+    })),
+    sourceBreakdown: sourceAgg.map((row) => ({
+      source: row._id || "storefront",
+      count: row.count,
+      percentage:
+        totalOrdersBySource > 0 ? (row.count / totalOrdersBySource) * 100 : 0,
+    })),
+    recentOrders: (recentOrders as any[]).map((order) => ({
+      orderId: order.orderId,
+      name: order.name,
+      number: order.number,
+      grandTotal: order.grandTotal,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      paymentMethod: order.paymentMethod,
+      createdAt: order.createdAt
+        ? new Date(order.createdAt).toISOString()
+        : new Date().toISOString(),
+    })),
   };
 }
 
