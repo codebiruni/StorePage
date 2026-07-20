@@ -143,7 +143,7 @@ export default function CheckoutForm({
             type="submit"
             disabled={loading}
             style={{
-              background: loading ? "#94a3b8" : "#16a34a",
+              background: loading ? "#94a3b8" : "var(--lp-accent, #dc2626)",
               color: "#fff",
               border: 0,
               padding: "12px 20px",

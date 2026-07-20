@@ -40,8 +40,8 @@ export default function Hero({
           <span
             style={{
               display: "inline-block",
-              background: dark ? "#1e293b" : "#fef3c7",
-              color: dark ? "#fde68a" : "#92400e",
+              background: dark ? "#1e293b" : "var(--lp-accent-soft, #fef3c7)",
+              color: dark ? "#fde68a" : "var(--lp-accent, #dc2626)",
               fontWeight: 600,
               fontSize: 12,
               padding: "4px 10px",
@@ -52,8 +52,16 @@ export default function Hero({
             {safeLp.heroBadge}
           </span>
         ) : null}
-        <h1 style={{ fontSize: 36, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>
-          {product.name}
+        <h1
+          style={{
+            fontSize: 36,
+            fontWeight: 800,
+            margin: 0,
+            lineHeight: 1.15,
+            color: "var(--lp-fg, #0f172a)",
+          }}
+        >
+          {safeLp.heroTitle ?? product.name}
         </h1>
         {safeLp.heroSubtitle ? (
           <p style={{ fontSize: 18, color: dark ? "#cbd5e1" : "#475569", margin: 0 }}>
@@ -99,10 +107,10 @@ export default function Hero({
           className="step-pulse"
           style={{
             display: "inline-block",
-            background: "#16a34a",
+            background: "var(--lp-accent, #dc2626)",
             color: "#fff",
             padding: "12px 24px",
-            borderRadius: 10,
+            borderRadius: "var(--lp-radius, 10px)",
             fontWeight: 700,
             textDecoration: "none",
             width: "fit-content",

@@ -56,14 +56,14 @@ export default function Pricing({
         </div>
         {discountPercentage > 0 ? (
           <div
-            style={{
-              background: "#16a34a",
-              color: "#fff",
-              padding: "6px 12px",
-              borderRadius: 8,
-              fontWeight: 700,
-            }}
-          >
+              style={{
+                background: "var(--lp-accent, #dc2626)",
+                color: "#fff",
+                padding: "6px 12px",
+                borderRadius: 8,
+                fontWeight: 700,
+              }}
+            >
             {discountPercentage}% ছাড়
           </div>
         ) : null}

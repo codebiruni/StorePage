@@ -6,10 +6,26 @@ export type LandingTheme =
   | "midnight"
   | "kinetic"
   | "pillar"
-  | "origin";
+  | "origin"
+  | "health";
+
+/**
+ * A single column of the optional comparison section ("We vs Others"). Each
+ * row is a short claim (e.g. "কাচা বিটরুট এর রস থেকে পাউডার"). Items are
+ * deliberately plain strings so admins can edit them from the dashboard
+ * without juggling a structured editor.
+ */
+export interface ILandingComparison {
+  oursTitle?: string;
+  oursItems?: string[];
+  othersTitle?: string;
+  othersItems?: string[];
+}
 
 export interface ILandingPage {
   theme: string;
+  /** Headline shown over the hero. Falls back to product.name. */
+  heroTitle?: string;
   heroSubtitle?: string;
   heroBadge?: string;
   heroCtaLabel?: string;
@@ -22,6 +38,16 @@ export interface ILandingPage {
   youtubeUrl?: string;
   socialProofStats?: string[];
   checkoutNote?: string;
+  /**
+   * Optional comparison block used by the Health theme (and any other
+   * theme that wants it). When absent, themes fall back to derived copy.
+   */
+  comparison?: ILandingComparison;
+  /**
+   * Optional headline for the full-bleed phone-CTA strip rendered between
+   * the social proof and the checkout form (e.g. "ফোনে অর্ডার করুন").
+   */
+  phoneStripNote?: string;
   [key: string]: unknown;
 }
 
@@ -61,6 +87,7 @@ export function resolveLandingTheme(raw: unknown): LandingTheme {
     case "kinetic":
     case "pillar":
     case "origin":
+    case "health":
       return raw;
     // Legacy themes → closest modern equivalent.
     case "classic":

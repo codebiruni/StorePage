@@ -112,6 +112,7 @@ export default function EditProductPage() {
           : null,
         landingPage: {
           theme: landingValue.theme,
+          heroTitle: landingValue.heroTitle,
           heroSubtitle: landingValue.heroSubtitle,
           heroBadge: landingValue.heroBadge,
           heroCtaLabel: landingValue.heroCtaLabel,

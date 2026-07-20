@@ -34,7 +34,7 @@ export default function StickyCTA({
         <Link
           href={`#order-${anchor}`}
           style={{
-            background: "#16a34a",
+            background: "var(--lp-accent, #dc2626)",
             color: "#fff",
             padding: "10px 18px",
             borderRadius: 8,
