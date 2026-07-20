@@ -1,238 +1,258 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
+
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import EditProductBasicInfo from "./EditProductBasicInfo";
-import EditProductPricingAndOffers from "./EditProductPricingAndOffers";
 
-interface PriceVariant {
-  _id?: string;
-  regularPrice: number;
-  salePrice?: number;
-  quentity: number;
-  sku: string;
-}
+import ProductWizard, {
+  type ProductWizardProps,
+} from "@/app/dashboard/_shared/product-form/ProductWizard";
+import type { ProductFormData } from "@/app/dashboard/_shared/product-form/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
-interface Specification {
-  _id?: string;
-  key: string;
-  value: string;
-}
-
-interface Coupon {
-  _id?: string;
-  name: string;
-  Type: "parcent" | "offer" | "freeDelevery";
-  totalOffer: number;
-}
-
-interface GeneralPrice {
-  currentPrice: number;
-  prevPrice: number;
-  discountPercentage: number;
-}
-
-interface ProductFormData {
-  name: string;
-  images: string[];
-  priceVariants: PriceVariant[];
-  quickOverview: string[];
-  specifications: Specification[];
-  details: string;
-  category: string;
-  subCategory: string;
-  coupon: Coupon[];
-  tags: string[];
-  brand?: string;
-  quentity: number;
-  isFeatured: boolean;
-  isDeleted: boolean;
-  hasOffer: boolean;
-  offerEndDate?: Date;
-  offerPercentage?: number;
-  generalPrice: GeneralPrice;
-}
-
+/**
+ * /dashboard/products/edit/[id] — fetches the existing product, then renders
+ * the shared wizard in `edit` mode. PATCH on save.
+ */
 export default function EditProductPage() {
-  const { id } = useParams();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+  const [initialData, setInitialData] = useState<Partial<ProductFormData> | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
-  const [defaultImage, setDafaultImage] = useState<string[]>([]);
-  const [initialData, setInitialData] = useState<ProductFormData | null>(null);
 
-  const form = useForm<ProductFormData>({
-    defaultValues: {
-      name: "",
-      images: [],
-      priceVariants: [{ regularPrice: 0, salePrice: 0, quentity: 1, sku: "" }],
-      quickOverview: [],
-      specifications: [{ key: "", value: "" }],
-      details: "",
-      category: "",
-      subCategory: "",
-      coupon: [],
-      tags: [],
-      brand: "",
-      quentity: 0,
-      isFeatured: false,
-      isDeleted: false,
-      hasOffer: false,
-      offerEndDate: undefined,
-      offerPercentage: 0,
-      generalPrice: { currentPrice: 0, prevPrice: 0, discountPercentage: 0 },
-    },
-  });
-
-  // Fetch product data on mount
   useEffect(() => {
-    const fetchProductData = async () => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
       try {
         setIsLoading(true);
         const res = await fetch(`/api/v1/product/status/${id}`, {
           method: "GET",
           credentials: "include",
-          
         });
+        if (!res.ok) throw new Error("Failed to fetch product");
+        const json = await res.json();
+        if (cancelled) return;
+        const product = json?.data ?? {};
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch product data");
+        const formatted: Partial<ProductFormData> = {
+          name: product.name ?? "",
+          details: product.details ?? "",
+          images: Array.isArray(product.images) ? product.images : [],
+          generalPrice: product.generalPrice ?? {
+            currentPrice: 0,
+            prevPrice: 0,
+            discountPercentage: 0,
+          },
+          stock: product.stock ?? product.quentity ?? 0,
+          priceVariants: Array.isArray(product.priceVariants)
+            ? product.priceVariants.map((v: ProductFormData["priceVariants"][number]) => ({
+                ...v,
+                stock: (v as { quentity?: number }).quentity ?? v.stock ?? 0,
+              }))
+            : [],
+          quickOverview: Array.isArray(product.quickOverview)
+            ? product.quickOverview
+            : [],
+          specifications: Array.isArray(product.specifications)
+            ? product.specifications
+            : [],
+          category: typeof product.category === "string"
+            ? product.category
+            : product.category?._id ?? "",
+          subCategory: typeof product.subCategory === "string"
+            ? product.subCategory
+            : product.subCategory?._id ?? "",
+          coupon: Array.isArray(product.coupon) ? product.coupon : [],
+          tags: Array.isArray(product.tags) ? product.tags : [],
+          brand: product.brand ?? "",
+          isFeatured: !!product.isFeatured,
+          isDeleted: !!product.isDeleted,
+          hasOffer: !!product.hasOffer,
+          offerEndDate: product.offerEndDate
+            ? new Date(product.offerEndDate)
+            : undefined,
+        };
+
+        // The primary GET already returns the full Mongoose document, so
+        // landingPage is right there on `product` — copy it directly. This
+        // avoids relying on a second auth-gated fetch which may silently
+        // fail for non-admin roles and leave `landingPage` undefined.
+        if (product?.landingPage) {
+          (formatted as ProductFormData & { landingPage?: unknown }).landingPage =
+            product.landingPage;
         }
 
-        const data = await res.json();
-
-        if (data.success && data.data) {
-          const productData = data.data;
-          setDafaultImage(productData.images);
-
-          // Format the data for the form
-          const formattedData: ProductFormData = {
-            name: productData.name || "",
-            images: productData.images || [],
-            priceVariants: productData.priceVariants || [],
-            quickOverview: productData.quickOverview || [],
-            specifications: productData.specifications || [],
-            details: productData.details || "",
-            category: productData.category || "",
-            subCategory: productData.subCategory || "",
-            coupon: productData.coupon || [],
-            tags: productData.tags || [],
-            brand: productData.brand || "",
-            quentity: productData.quentity || 0,
-            isFeatured: productData.isFeatured || false,
-            isDeleted: productData.isDeleted || false,
-            hasOffer: productData.hasOffer || false,
-            offerEndDate: productData.offerEndDate
-              ? new Date(productData.offerEndDate)
-              : undefined,
-            offerPercentage: productData.offerPercentage || 0,
-            generalPrice: productData.generalPrice || {
-              currentPrice: 0,
-              prevPrice: 0,
-              discountPercentage: 0,
-            },
-          };
-
-          setInitialData(formattedData);
-          form.reset(formattedData);
-        }
-      } catch (error) {
-        console.error("Error fetching product data:", error);
-        toast.error("Failed to load product data");
+        setInitialData(formatted);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load product");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    if (id) {
-      fetchProductData();
-    }
   }, [id]);
 
-  const onSubmit = async (data: ProductFormData) => {
-    setIsSubmitting(true);
+  const handleSave: ProductWizardProps["onSave"] = async ({
+    values,
+    landingValue,
+  }) => {
     try {
-      // Format data for API
-      const formattedData = {
-        ...data,
-        offerEndDate: data.offerEndDate
-          ? new Date(data.offerEndDate)
-          : undefined,
+      const payload = {
+        ...values,
+        quentity: values.stock,
+        offerEndDate: values.offerEndDate
+          ? new Date(values.offerEndDate).toISOString()
+          : null,
+        landingPage: {
+          theme: landingValue.theme,
+          heroSubtitle: landingValue.heroSubtitle,
+          heroBadge: landingValue.heroBadge,
+          heroCtaLabel: landingValue.heroCtaLabel,
+          painPoints: (landingValue.painPoints ?? []).filter(Boolean),
+          benefits: (landingValue.benefits ?? []).filter(Boolean),
+          howToUse: (landingValue.howToUse ?? []).filter(Boolean),
+          guarantee: landingValue.guarantee,
+          trustBadges: (landingValue.trustBadges ?? []).filter(Boolean),
+          vslUrl: landingValue.vslUrl,
+          youtubeUrl: landingValue.youtubeUrl,
+          checkoutNote: landingValue.checkoutNote,
+          comparison: {
+            oursTitle: landingValue.comparisonOursTitle,
+            oursItems: (landingValue.comparisonOursItems ?? []).filter(Boolean),
+            othersTitle: landingValue.comparisonOthersTitle,
+            othersItems: (landingValue.comparisonOthersItems ?? []).filter(Boolean),
+          },
+          phoneStripNote: landingValue.phoneStripNote,
+        },
       };
 
       const res = await fetch(`/api/v1/product/status/${id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(formattedData),
-        
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to update product");
+        let msg = "Failed to update product";
+        try {
+          const err = await res.json();
+          msg = err.message || err.error || msg;
+        } catch {
+          /* ignore */
+        }
+        return { ok: false, error: msg };
       }
 
-      toast.success("Product updated successfully!");
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast.error("Failed to update product");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      // Re-fetch the canonical product so the wizard's `initialData` updates.
+      // Without this, the wizard stays seeded from the original (pre-save)
+      // object and the next theme re-render can revert to whatever the
+      // original fetch had — which is why the theme "always came back to
+      // origin" when changing it.
+      try {
+        const refetch = await fetch(`/api/v1/product/status/${id}`, {
+          method: "GET",
+          credentials: "include",
+        });
+        if (refetch.ok) {
+          const j = await refetch.json();
+          const fresh = j?.data;
+          if (fresh) {
+            // Reuse the same formatter inline below — easiest is to call the
+            // fetcher again. We mirror it with a fresh formatted object so the
+            // reference changes (wizard re-seeds on reference change).
+            const formatted: Partial<ProductFormData> = {
+              name: fresh.name ?? "",
+              details: fresh.details ?? "",
+              images: Array.isArray(fresh.images) ? fresh.images : [],
+              generalPrice: fresh.generalPrice ?? {
+                currentPrice: 0,
+                prevPrice: 0,
+                discountPercentage: 0,
+              },
+              stock: fresh.stock ?? fresh.quentity ?? 0,
+              priceVariants: Array.isArray(fresh.priceVariants)
+                ? fresh.priceVariants.map(
+                    (v: ProductFormData["priceVariants"][number]) => ({
+                      ...v,
+                      stock:
+                        (v as { quentity?: number }).quentity ?? v.stock ?? 0,
+                    }),
+                  )
+                : [],
+              quickOverview: Array.isArray(fresh.quickOverview)
+                ? fresh.quickOverview
+                : [],
+              specifications: Array.isArray(fresh.specifications)
+                ? fresh.specifications
+                : [],
+              category:
+                typeof fresh.category === "string"
+                  ? fresh.category
+                  : fresh.category?._id ?? "",
+              subCategory:
+                typeof fresh.subCategory === "string"
+                  ? fresh.subCategory
+                  : fresh.subCategory?._id ?? "",
+              coupon: Array.isArray(fresh.coupon) ? fresh.coupon : [],
+              tags: Array.isArray(fresh.tags) ? fresh.tags : [],
+              brand: fresh.brand ?? "",
+              isFeatured: !!fresh.isFeatured,
+              isDeleted: !!fresh.isDeleted,
+              hasOffer: !!fresh.hasOffer,
+              offerEndDate: fresh.offerEndDate
+                ? new Date(fresh.offerEndDate)
+                : undefined,
+            };
+            if (fresh.landingPage) {
+              formatted.landingPage = fresh.landingPage;
+            }
+            setInitialData(formatted);
+          }
+        }
+      } catch (e) {
+        // Non-fatal — the save itself succeeded.
+        console.error("Refetch after save failed:", e);
+      }
 
-  const handleReset = () => {
-    if (initialData) {
-      form.reset(initialData);
-      toast.success("Form reset to original values");
+      return { ok: true };
+    } catch (err) {
+      console.error(err);
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Network error",
+      };
     }
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-center items-center h-64">
-          <p>Loading product data...</p>
-        </div>
+      <div className="container mx-auto max-w-7xl py-12">
+        <Card>
+          <CardContent className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading product…
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <Card className="p-0 border-0 shadow-none py-6">
-        <CardHeader>
-          <CardTitle>Edit Product</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <EditProductBasicInfo form={form} images={defaultImage} />
-              <EditProductPricingAndOffers form={form} />
-
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleReset}
-                  disabled={!initialData}
-                >
-                  Reset Changes
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Updating..." : "Update Product"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+    <ProductWizard
+      mode="edit"
+      productId={id as string}
+      initialData={initialData}
+      onSave={handleSave}
+      heading="Edit product"
+      subheading="Update details, pricing, or the landing page. Save when you're done."
+    />
   );
 }
