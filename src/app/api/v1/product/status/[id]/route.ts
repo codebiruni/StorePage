@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import connectDb from "@/lib/connectdb";
 import Product from "@/models/product.model";
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 type ParamsType = {
   params: Promise<{
@@ -62,7 +62,14 @@ export async function PATCH(req: NextRequest, context: ParamsType) {
       );
     }
 
+    // Bust both the public product-details page AND the /step landing page.
+    // The /step page is wrapped in `unstable_cache` keyed by tag
+    // `product:${id}` (see step/_lib/landing-data.ts), and also has its own
+    // `revalidate = 3600` page cache, so without both calls the landing page
+    // keeps serving the previous theme up to an hour after a save.
     revalidatePath(`/product/product-details/${id}`);
+    revalidatePath(`/step/${id}`);
+    revalidateTag(`product:${id}`, "max");
 
     return NextResponse.json({
       success: true,
