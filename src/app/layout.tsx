@@ -3,7 +3,9 @@ import {
   Fraunces,
   Geist,
   Geist_Mono,
+  Hind_Siliguri,
   Instrument_Serif,
+  Noto_Sans_Bengali,
   Space_Grotesk,
 } from "next/font/google";
 import "./globals.css";
@@ -57,6 +59,29 @@ const displayInstrumentSerif = Instrument_Serif({
 const displaySpaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// Bengali webfonts for the Health theme (and any future bn-first surfaces).
+//   --font-bangla         → Hind Siliguri (premium Bengali sans)
+//   --font-bangla-fallback → Noto Sans Bengali (broad glyph coverage)
+//
+// Both include the Bengali subset so conjuncts / reph / kar signs render
+// correctly without FOUT. Display=swap keeps first-paint fast.
+// ────────────────────────────────────────────────────────────────────────
+
+const banglaHind = Hind_Siliguri({
+  variable: "--font-bangla",
+  subsets: ["bengali", "latin"],
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const banglaNoto = Noto_Sans_Bengali({
+  variable: "--font-bangla-fallback",
+  subsets: ["bengali"],
   display: "swap",
   weight: ["400", "500", "600", "700"],
 });
@@ -234,7 +259,8 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${displayFraunces.variable} ${displayInstrumentSerif.variable} ${displaySpaceGrotesk.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${displayFraunces.variable} ${displayInstrumentSerif.variable} ${displaySpaceGrotesk.variable} ${banglaHind.variable} ${banglaNoto.variable} antialiased`}
+        suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AosWrapper>

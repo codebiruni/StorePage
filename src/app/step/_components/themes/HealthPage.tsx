@@ -300,7 +300,7 @@ function ComparisonSection({
         </p>
 
         <div className="hp-compare__grid">
-          <div className="hp-compare__col">
+          <div className="hp-compare__col hp-compare__col--ours">
             <h3 className="hp-compare__col-title hp-compare__col-title--ours">
               {ourTitle}
             </h3>
@@ -324,7 +324,7 @@ function ComparisonSection({
             )}
           </div>
 
-          <div className="hp-compare__col">
+          <div className="hp-compare__col hp-compare__col--theirs">
             <h3 className="hp-compare__col-title hp-compare__col-title--theirs">
               {otherTitle}
             </h3>
@@ -414,7 +414,7 @@ function OrderSection({
   return (
     <section className="hp-section hp-order" id={`order-${product._id}`}>
       <div className="hp-wrap">
-        <h2 className="hp-order__heading">অর্ডার করতে নিচের ফর্মটি পূরন করুন</h2>
+        <h2 className="hp-order__heading">অর্ডার করতে নিচের ফর্মটি পূরণ করুন</h2>
         <form onSubmit={submit} className="hp-order__box">
           <h3 className="hp-order__sub">Billing details</h3>
 
