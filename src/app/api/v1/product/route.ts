@@ -14,7 +14,65 @@ export async function POST(request: NextRequest) {
 
     console.log(USER_ROLE,"user will be there");
 
-    const createdProduct = await Product.create(payload);
+    // Whitelist editable fields (mirrors the PATCH route). Without this,
+    // Mongoose's `strict: true` silently drops `landingPage` (and any
+    // other schema-less payload field) on `Product.create()`, which is
+    // why the landing page "didn't save" on create as well as edit.
+    const {
+      name,
+      images,
+      priceVariants,
+      quickOverview,
+      specifications,
+      details,
+      questionsAndAnswers,
+      quentity,
+      reviews,
+      totalReviewCount,
+      averageRating,
+      category,
+      subCategory,
+      coupon,
+      tags,
+      brand,
+      isFeatured,
+      isDeleted,
+      hasOffer,
+      offerEndDate,
+      offerPercentage,
+      generalPrice,
+      landingPage,
+    } = payload ?? {};
+
+    const doc: Record<string, unknown> = {};
+    if (name !== undefined) doc.name = name;
+    if (images !== undefined) doc.images = images;
+    if (priceVariants !== undefined) doc.priceVariants = priceVariants;
+    if (quickOverview !== undefined) doc.quickOverview = quickOverview;
+    if (specifications !== undefined) doc.specifications = specifications;
+    if (details !== undefined) doc.details = details;
+    if (questionsAndAnswers !== undefined)
+      doc.questionsAndAnswers = questionsAndAnswers;
+    if (quentity !== undefined) doc.quentity = quentity;
+    if (reviews !== undefined) doc.reviews = reviews;
+    if (totalReviewCount !== undefined)
+      doc.totalReviewCount = totalReviewCount;
+    if (averageRating !== undefined) doc.averageRating = averageRating;
+    if (category !== undefined) doc.category = category;
+    if (subCategory !== undefined) doc.subCategory = subCategory;
+    if (coupon !== undefined) doc.coupon = coupon;
+    if (tags !== undefined) doc.tags = tags;
+    if (brand !== undefined) doc.brand = brand;
+    if (isFeatured !== undefined) doc.isFeatured = isFeatured;
+    if (isDeleted !== undefined) doc.isDeleted = isDeleted;
+    if (hasOffer !== undefined) doc.hasOffer = hasOffer;
+    if (offerEndDate !== undefined) doc.offerEndDate = offerEndDate;
+    if (offerPercentage !== undefined)
+      doc.offerPercentage = offerPercentage;
+    if (generalPrice !== undefined) doc.generalPrice = generalPrice;
+    if (landingPage !== undefined) doc.landingPage = landingPage;
+
+    const createdProduct = await Product.create(doc);
 
     return NextResponse.json(
       {

@@ -35,19 +35,77 @@ export async function PUT(
     await connectDb();
     await auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN);
 
-    const updated = await Product.findByIdAndUpdate(id, payload, {
-      new: true,
-      runValidators: true,
-    });
+      // Whitelist editable fields (mirrors PATCH /api/v1/product/status/[id]).
+      // Without this, Mongoose `strict: true` silently drops `landingPage`
+      // (and any other schema-less payload field) on `findByIdAndUpdate`.
+      const {
+        name,
+        images,
+        priceVariants,
+        quickOverview,
+        specifications,
+        details,
+        questionsAndAnswers,
+        quentity,
+        reviews,
+        totalReviewCount,
+        averageRating,
+        category,
+        subCategory,
+        coupon,
+        tags,
+        brand,
+        isFeatured,
+        isDeleted,
+        hasOffer,
+        offerEndDate,
+        offerPercentage,
+        generalPrice,
+        landingPage,
+      } = payload ?? {};
 
-    if (!updated) {
-      return NextResponse.json(
-        { success: false, message: "Product not found" },
-        { status: 404 },
+      const $set: Record<string, unknown> = {};
+      if (name !== undefined) $set.name = name;
+      if (images !== undefined) $set.images = images;
+      if (priceVariants !== undefined) $set.priceVariants = priceVariants;
+      if (quickOverview !== undefined) $set.quickOverview = quickOverview;
+      if (specifications !== undefined) $set.specifications = specifications;
+      if (details !== undefined) $set.details = details;
+      if (questionsAndAnswers !== undefined)
+        $set.questionsAndAnswers = questionsAndAnswers;
+      if (quentity !== undefined) $set.quentity = quentity;
+      if (reviews !== undefined) $set.reviews = reviews;
+      if (totalReviewCount !== undefined)
+        $set.totalReviewCount = totalReviewCount;
+      if (averageRating !== undefined) $set.averageRating = averageRating;
+      if (category !== undefined) $set.category = category;
+      if (subCategory !== undefined) $set.subCategory = subCategory;
+      if (coupon !== undefined) $set.coupon = coupon;
+      if (tags !== undefined) $set.tags = tags;
+      if (brand !== undefined) $set.brand = brand;
+      if (isFeatured !== undefined) $set.isFeatured = isFeatured;
+      if (isDeleted !== undefined) $set.isDeleted = isDeleted;
+      if (hasOffer !== undefined) $set.hasOffer = hasOffer;
+      if (offerEndDate !== undefined) $set.offerEndDate = offerEndDate;
+      if (offerPercentage !== undefined)
+        $set.offerPercentage = offerPercentage;
+      if (generalPrice !== undefined) $set.generalPrice = generalPrice;
+      if (landingPage !== undefined) $set.landingPage = landingPage;
+
+      const updated = await Product.findByIdAndUpdate(
+        id,
+        { $set },
+        { new: true, runValidators: true },
       );
-    }
 
-    bustLandingCache(id);
+      if (!updated) {
+        return NextResponse.json(
+          { success: false, message: "Product not found" },
+          { status: 404 },
+        );
+      }
+
+      bustLandingCache(id);
 
     return NextResponse.json(
       {

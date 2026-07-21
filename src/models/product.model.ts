@@ -158,10 +158,10 @@ const ProductSchema: Schema = new Schema<IProduct>(
      */
     landingPage: { type: LandingPageSchema, default: null },
   },
-    {
-      timestamps: true,
-    }
-  );
+  {
+    timestamps: true,
+  }
+);
 
 const Product = models.Product || model<IProduct>("Product", ProductSchema);
 
