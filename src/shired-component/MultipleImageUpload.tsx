@@ -15,6 +15,26 @@ interface MultipleImageUploadProps {
   initialImages?: string[];
 }
 
+/**
+ * Cloudinary upload targets — read the canonical NEXT_PUBLIC_CLOUDINARY_*
+ * names first (matching `.env`) and fall back to the legacy aliases so
+ * older deploys keep working. Surfacing a missing config early is the whole
+ * point of these fallbacks: a 404 from `axios.post(undefined, ...)` is what
+ * produced the "POST /dashboard/products/edit/undefined 404" trace.
+ */
+const CLOUDINARY_UPLOAD_URL =
+  process.env.NEXT_PUBLIC_CLOUDINARY_IMAGE_API ??
+  process.env.NEXT_PUBLIC_IMAGE_API ??
+  "";
+const CLOUDINARY_CLOUD_NAME =
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ??
+  process.env.NEXT_PUBLIC_CLOUD_NAME ??
+  "";
+const CLOUDINARY_UPLOAD_PRESET =
+  process.env.NEXT_PUBLIC_CLOUDINARY_PRESET ??
+  process.env.NEXT_PUBLIC_PRESET ??
+  "";
+
 export default function MultipleImageUpload({
   onUpload,
   initialImages = [],
@@ -62,6 +82,25 @@ export default function MultipleImageUpload({
   const uploadImages = useCallback(async () => {
     if (previews.length === 0) return;
 
+    if (!CLOUDINARY_UPLOAD_URL || !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      const missing = [
+        !CLOUDINARY_UPLOAD_URL && "NEXT_PUBLIC_CLOUDINARY_IMAGE_API",
+        !CLOUDINARY_CLOUD_NAME && "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+        !CLOUDINARY_UPLOAD_PRESET && "NEXT_PUBLIC_CLOUDINARY_PRESET",
+      ]
+        .filter(Boolean)
+        .join(", ");
+      setUploadStatus("error");
+      setErrorMessage(
+        `Image upload is not configured. Missing env: ${missing}.`,
+      );
+      console.error(
+        "[MultipleImageUpload] Cloudinary env not configured:",
+        missing,
+      );
+      return;
+    }
+
     setIsUploading(true);
     setUploadStatus(null);
     setErrorMessage("");
@@ -70,19 +109,10 @@ export default function MultipleImageUpload({
       const uploadPromises = previews.map(async (preview) => {
         const formData = new FormData();
         formData.append("file", preview.file);
-        formData.append(
-          "upload_preset",
-          process.env.NEXT_PUBLIC_PRESET as string
-        );
-        formData.append(
-          "cloud_name",
-          process.env.NEXT_PUBLIC_CLOUD_NAME as string
-        );
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        formData.append("cloud_name", CLOUDINARY_CLOUD_NAME);
 
-        const response = await axios.post(
-          process.env.NEXT_PUBLIC_IMAGE_API as string,
-          formData
-        );
+        const response = await axios.post(CLOUDINARY_UPLOAD_URL, formData);
 
         if (response.status !== 200) {
           throw new Error("Failed to upload image");
