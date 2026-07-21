@@ -49,10 +49,72 @@ export async function PATCH(req: NextRequest, context: ParamsType) {
 
     const body = await req.json();
 
+    // Whitelist editable scalar fields so we never accidentally write a
+    // server-only property (e.g. `_id`, `__v`) back to the document. The
+    // landing-page payload is forwarded explicitly because Mongoose's
+    // default `strict: true` would otherwise drop it whenever it isn't
+    // declared on the schema — this is exactly how landing edits used to
+    // look "saved" while never actually persisting.
+    const {
+      name,
+      images,
+      priceVariants,
+      quickOverview,
+      specifications,
+      details,
+      questionsAndAnswers,
+      quentity,
+      reviews,
+      totalReviewCount,
+      averageRating,
+      category,
+      subCategory,
+      coupon,
+      tags,
+      brand,
+      isFeatured,
+      isDeleted,
+      hasOffer,
+      offerEndDate,
+      offerPercentage,
+      generalPrice,
+      landingPage,
+    } = body ?? {};
+
+    const $set: Record<string, unknown> = {};
+    if (name !== undefined) $set.name = name;
+    if (images !== undefined) $set.images = images;
+    if (priceVariants !== undefined) $set.priceVariants = priceVariants;
+    if (quickOverview !== undefined) $set.quickOverview = quickOverview;
+    if (specifications !== undefined) $set.specifications = specifications;
+    if (details !== undefined) $set.details = details;
+    if (questionsAndAnswers !== undefined)
+      $set.questionsAndAnswers = questionsAndAnswers;
+    if (quentity !== undefined) $set.quentity = quentity;
+    if (reviews !== undefined) $set.reviews = reviews;
+    if (totalReviewCount !== undefined)
+      $set.totalReviewCount = totalReviewCount;
+    if (averageRating !== undefined) $set.averageRating = averageRating;
+    if (category !== undefined) $set.category = category;
+    if (subCategory !== undefined) $set.subCategory = subCategory;
+    if (coupon !== undefined) $set.coupon = coupon;
+    if (tags !== undefined) $set.tags = tags;
+    if (brand !== undefined) $set.brand = brand;
+    if (isFeatured !== undefined) $set.isFeatured = isFeatured;
+    if (isDeleted !== undefined) $set.isDeleted = isDeleted;
+    if (hasOffer !== undefined) $set.hasOffer = hasOffer;
+    if (offerEndDate !== undefined) $set.offerEndDate = offerEndDate;
+    if (offerPercentage !== undefined) $set.offerPercentage = offerPercentage;
+    if (generalPrice !== undefined) $set.generalPrice = generalPrice;
+    // `landingPage` may be an object (save), `null` (clear), or omitted
+    // (no change). We treat absence as "no change" so other field updates
+    // don't wipe an existing landing.
+    if (landingPage !== undefined) $set.landingPage = landingPage;
+
     const updatedproduct = await Product.findByIdAndUpdate(
       id,
-      { $set: body },
-      { new: true, runValidators: true }
+      { $set },
+      { new: true, runValidators: true },
     );
 
     if (!updatedproduct) {

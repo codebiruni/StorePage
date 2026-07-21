@@ -1,5 +1,64 @@
-import { IProduct } from "@/interface/product.interface";
+import { IProduct, ILandingPage } from "@/interface/product.interface";
 import { Schema, models, model } from "mongoose";
+
+/**
+ * Sub-schema for the per-product /step landing-page builder output.
+ *
+ * MUST stay in sync with `ILandingPage` and the editable shape in
+ * `LandingPageEditor` (`LandingFormValue`). Every field is optional in the
+ * schema so older products saved before each field was added keep loading
+ * without validation errors — the editor's `normalize()` fills in the UI
+ * defaults client-side.
+ *
+ * Declared with `strict: true` so that stray keys from a saved payload
+ * (typos, leftover experimental flags) are rejected instead of silently
+ * ending up on the document. The `landingPage` field on the parent
+ * schema is also optional, so saving an empty object clears the section.
+ */
+const LandingPageSchema = new Schema<ILandingPage>(
+  {
+    theme: {
+      type: String,
+      enum: [
+        "atelier",
+        "midnight",
+        "kinetic",
+        "pillar",
+        "origin",
+        "health",
+        "classic",
+        "bold",
+        "trust",
+        "minimal",
+        "videoHero",
+      ],
+      default: "atelier",
+    },
+    heroTitle: { type: String, default: "" },
+    heroSubtitle: { type: String, default: "" },
+    heroBadge: { type: String, default: "" },
+    heroCtaLabel: { type: String, default: "" },
+
+    painPoints: { type: [String], default: [] },
+    benefits: { type: [String], default: [] },
+    howToUse: { type: [String], default: [] },
+    trustBadges: { type: [String], default: [] },
+
+    guarantee: { type: String, default: "" },
+    vslUrl: { type: String, default: "" },
+    youtubeUrl: { type: String, default: "" },
+    checkoutNote: { type: String, default: "" },
+    phoneStripNote: { type: String, default: "" },
+
+    comparison: {
+      oursTitle: { type: String, default: "" },
+      oursItems: { type: [String], default: [] },
+      othersTitle: { type: String, default: "" },
+      othersItems: { type: [String], default: [] },
+    },
+  },
+  { _id: false, strict: true },
+);
 
 /**
  * Product model.
@@ -91,11 +150,18 @@ const ProductSchema: Schema = new Schema<IProduct>(
       prevPrice: { type: Number, required: true },
       discountPercentage: { type: Number, required: true },
     },
+
+    /**
+     * /step landing-page builder payload. Persisted as a sub-schema so
+     * Mongoose `strict: true` won't silently strip it the way it was
+     * before — see `LandingPageSchema` above and `ILandingPage`.
+     */
+    landingPage: { type: LandingPageSchema, default: null },
   },
-  {
-    timestamps: true,
-  }
-);
+    {
+      timestamps: true,
+    }
+  );
 
 const Product = models.Product || model<IProduct>("Product", ProductSchema);
 
