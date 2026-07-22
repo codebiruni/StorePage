@@ -79,7 +79,16 @@ export async function PUT(
         $set.totalReviewCount = totalReviewCount;
       if (averageRating !== undefined) $set.averageRating = averageRating;
       if (category !== undefined) $set.category = category;
+      // Defensive: empty-string `category` from older clients would crash
+      // Mongoose with "Cast to ObjectId failed for value \"\"". Treat
+      // empty/whitespace as "no change" so existing category survives.
+      if (typeof $set.category === "string" && ($set.category as string).trim() === "") {
+        delete $set.category;
+      }
       if (subCategory !== undefined) $set.subCategory = subCategory;
+      if (typeof $set.subCategory === "string" && ($set.subCategory as string).trim() === "") {
+        delete $set.subCategory;
+      }
       if (coupon !== undefined) $set.coupon = coupon;
       if (tags !== undefined) $set.tags = tags;
       if (brand !== undefined) $set.brand = brand;

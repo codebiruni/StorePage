@@ -40,6 +40,56 @@ import {
 } from "./types";
 import type { LandingFormValue } from "@/app/dashboard/_shared/LandingPageEditor";
 
+/**
+ * Map the API's nested landing-page shape (`ILandingPage`) onto the editor's
+ * flat `LandingFormValue`. Without this, every comparison / hero field
+ * appears empty in the form even when the database has values — because the
+ * editor reads `value.comparisonOursTitle` while the API sends
+ * `value.comparison.oursTitle`. Saving an empty form then overwrites the
+ * real values in Mongo, which is how the comparison block stopped
+ * persisting in the first place.
+ */
+function toLandingFormValue(
+  src: Partial<LandingFormValue> | null | undefined,
+): LandingFormValue {
+  const flat = (src ?? {}) as Partial<LandingFormValue> & {
+    comparison?: {
+      oursTitle?: string;
+      oursItems?: string[];
+      othersTitle?: string;
+      othersItems?: string[];
+    };
+  };
+  // Treat a nested `comparison.*` as authoritative — only fall back to the
+  // flat keys when the nested object isn't present (e.g. partial editor
+  // values handed back from onChange before the user reaches that field).
+  const cmp = flat.comparison;
+  return {
+    theme: (flat.theme as LandingFormValue["theme"]) ?? "health",
+    heroTitle: flat.heroTitle ?? "",
+    heroSubtitle: flat.heroSubtitle ?? "",
+    heroBadge: flat.heroBadge ?? "",
+    heroCtaLabel: flat.heroCtaLabel ?? "",
+    painPoints: flat.painPoints ?? [],
+    benefits: flat.benefits ?? [],
+    howToUse: flat.howToUse ?? [],
+    guarantee: flat.guarantee ?? "",
+    trustBadges: flat.trustBadges ?? [],
+    vslUrl: flat.vslUrl ?? "",
+    youtubeUrl: flat.youtubeUrl ?? "",
+    checkoutNote: flat.checkoutNote ?? "",
+    comparisonOursTitle:
+      cmp?.oursTitle ?? flat.comparisonOursTitle ?? "",
+    comparisonOursItems:
+      cmp?.oursItems ?? flat.comparisonOursItems ?? [],
+    comparisonOthersTitle:
+      cmp?.othersTitle ?? flat.comparisonOthersTitle ?? "",
+    comparisonOthersItems:
+      cmp?.othersItems ?? flat.comparisonOthersItems ?? [],
+    phoneStripNote: flat.phoneStripNote ?? "",
+  };
+}
+
 export type ProductWizardMode = "create" | "edit";
 
 interface BaseProps {
@@ -100,7 +150,7 @@ export default function ProductWizard(props: ProductWizardProps) {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
   const [landingValue, setLandingValue] = useState<LandingFormValue>(
-    () => initialData?.landingPage ?? ({} as LandingFormValue),
+    () => toLandingFormValue(initialData?.landingPage),
   );
 
   const form = useForm<ProductFormData>({
@@ -152,7 +202,7 @@ export default function ProductWizard(props: ProductWizardProps) {
       _useLanding: !!initialData.landingPage?.theme,
     } as ProductFormData);
     if (initialData.landingPage) {
-      setLandingValue(initialData.landingPage as LandingFormValue);
+      setLandingValue(toLandingFormValue(initialData.landingPage));
     }
   }, [mode, initialData, form]);
 
@@ -264,7 +314,7 @@ export default function ProductWizard(props: ProductWizardProps) {
       _useLanding: !!initialData.landingPage?.theme,
     } as ProductFormData);
     if (initialData.landingPage) {
-      setLandingValue(initialData.landingPage as LandingFormValue);
+      setLandingValue(toLandingFormValue(initialData.landingPage));
     }
     toast.success("Reverted to last saved values");
   };

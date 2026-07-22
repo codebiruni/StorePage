@@ -24,55 +24,19 @@ import { Copy, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import YouTubePreview from "@/shired-component/YouTubePreview";
 
-type ThemeKey =
-  | "atelier"
-  | "midnight"
-  | "kinetic"
-  | "pillar"
-  | "origin"
-  | "classic"
-  | "bold"
-  | "trust"
-  | "minimal"
-  | "videoHero";
+type ThemeKey = "health";
 
 const THEMES: { value: ThemeKey; label: string; hint: string }[] = [
   {
-    value: "atelier",
-    label: "Atelier",
-    hint: "Editorial serif — generous whitespace, persimmon accent. Quiet, considered, gallery-paced.",
+    value: "health",
+    label: "Health",
+    hint: "High-contrast funnel — red CTA, single product, repeated offer. Built for health / wellness / consumables.",
   },
-  {
-    value: "midnight",
-    label: "Midnight",
-    hint: "Dark luxury — champagne accent on ink. Cinematic pacing, full-bleed photography.",
-  },
-  {
-    value: "kinetic",
-    label: "Kinetic",
-    hint: "Motion-led sans — mono eyebrows, marquee stats, sharp UI. Bold and fast.",
-  },
-  {
-    value: "pillar",
-    label: "Pillar",
-    hint: "Trust-led serif — navy + forest accent. Press logos, founder voice, methodical proof.",
-  },
-  {
-    value: "origin",
-    label: "Origin",
-    hint: "Minimal monochrome — white wall, single accent. Restraint is the moment.",
-  },
-  // Legacy themes kept as opt-in fallbacks; the renderer auto-migrates
-  // saved products to the closest modern theme on next load.
-  { value: "classic", label: "↪ Classic (legacy)", hint: "Auto-migrates to Atelier." },
-  { value: "bold", label: "↪ Bold (legacy)", hint: "Auto-migrates to Kinetic." },
-  { value: "trust", label: "↪ Trust (legacy)", hint: "Auto-migrates to Pillar." },
-  { value: "minimal", label: "↪ Minimal (legacy)", hint: "Auto-migrates to Origin." },
-  { value: "videoHero", label: "↪ Video Hero (legacy)", hint: "Auto-migrates to Midnight." },
 ];
 
 export interface LandingFormValue {
   theme: ThemeKey;
+  heroTitle: string;
   heroSubtitle: string;
   heroBadge: string;
   heroCtaLabel: string;
@@ -84,10 +48,16 @@ export interface LandingFormValue {
   vslUrl: string;
   youtubeUrl: string;
   checkoutNote: string;
+  comparisonOursTitle: string;
+  comparisonOursItems: string[];
+  comparisonOthersTitle: string;
+  comparisonOthersItems: string[];
+  phoneStripNote: string;
 }
 
 const EMPTY: LandingFormValue = {
-  theme: "atelier",
+  theme: "health",
+  heroTitle: "",
   heroSubtitle: "",
   heroBadge: "Limited Time Offer",
   heroCtaLabel: "অর্ডার করুন",
@@ -99,6 +69,11 @@ const EMPTY: LandingFormValue = {
   vslUrl: "",
   youtubeUrl: "",
   checkoutNote: "",
+  comparisonOursTitle: "আমাদের পণ্য",
+  comparisonOursItems: [],
+  comparisonOthersTitle: "বাজারের অন্যান্য পণ্য",
+  comparisonOthersItems: [],
+  phoneStripNote: "ফোনে অর্ডার করুন অথবা প্রয়োজনে কল করুন",
 };
 
 interface Props {
@@ -107,29 +82,61 @@ interface Props {
   onChange?: (value: LandingFormValue) => void;
 }
 
+/**
+ * Coerce an incoming (possibly partial) value into a fully-populated
+ * `LandingFormValue`. Products saved before new fields were added to the
+ * editor will be missing those array fields, and calling `.map` on
+ * `undefined` blows up the form. Defaulting missing arrays to `[]` keeps
+ * the editor safe across all stored products.
+ */
+function normalize(input: Partial<LandingFormValue> | undefined): LandingFormValue {
+  const base = input ?? {};
+  return {
+    theme: (base.theme as ThemeKey) ?? EMPTY.theme,
+    heroTitle: base.heroTitle ?? "",
+    heroSubtitle: base.heroSubtitle ?? "",
+    heroBadge: base.heroBadge ?? EMPTY.heroBadge,
+    heroCtaLabel: base.heroCtaLabel ?? EMPTY.heroCtaLabel,
+    painPoints: base.painPoints ?? [],
+    benefits: base.benefits ?? [],
+    howToUse: base.howToUse ?? [],
+    guarantee: base.guarantee ?? "",
+    trustBadges: base.trustBadges ?? [],
+    vslUrl: base.vslUrl ?? "",
+    youtubeUrl: base.youtubeUrl ?? "",
+    checkoutNote: base.checkoutNote ?? "",
+    comparisonOursTitle: base.comparisonOursTitle ?? "",
+    comparisonOursItems: base.comparisonOursItems ?? [],
+    comparisonOthersTitle: base.comparisonOthersTitle ?? "",
+    comparisonOthersItems: base.comparisonOthersItems ?? [],
+    phoneStripNote: base.phoneStripNote ?? "",
+  };
+}
+
 function ListEditor({
   values,
   onChange,
   placeholder,
   rows = 2,
 }: {
-  values: string[];
+  values: string[] | undefined;
   onChange: (next: string[]) => void;
   placeholder: string;
   rows?: number;
 }) {
+  const list = values ?? [];
   function update(i: number, val: string) {
-    onChange(values.map((v, idx) => (idx === i ? val : v)));
+    onChange(list.map((v, idx) => (idx === i ? val : v)));
   }
   function add() {
-    onChange([...values, ""]);
+    onChange([...list, ""]);
   }
   function remove(i: number) {
-    onChange(values.filter((_, idx) => idx !== i));
+    onChange(list.filter((_, idx) => idx !== i));
   }
   return (
     <div className="space-y-2">
-      {values.map((v, i) => (
+      {list.map((v, i) => (
         <div key={i} className="flex items-start gap-2">
           <Textarea
             value={v}
@@ -168,7 +175,7 @@ export default function LandingPageEditor({
   onChange,
 }: Props) {
   const [internal, setInternal] = useState<LandingFormValue>(EMPTY);
-  const value = controlled ?? internal;
+  const value = controlled ? normalize(controlled) : internal;
   const setValue = (next: LandingFormValue) => {
     if (!controlled) setInternal(next);
     onChange?.(next);
@@ -251,6 +258,16 @@ export default function LandingPageEditor({
 
         {/* Hero copy */}
         <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1 sm:col-span-3">
+            <Label>Hero title</Label>
+            <Textarea
+              value={value.heroTitle}
+              onChange={(e) => patch("heroTitle", e.target.value)}
+              placeholder="মাথা ব্যথা থেকে মুক্তি পান ১০ মিনিটে"
+              rows={2}
+              className="min-h-[60px]"
+            />
+          </div>
           <div className="space-y-1">
             <Label>Hero badge</Label>
             <Input
@@ -405,6 +422,69 @@ export default function LandingPageEditor({
             placeholder="আজই অর্ডার করুন — ক্যাশ অন ডেলিভারি প্রযোজ্য"
             rows={2}
           />
+        </div>
+
+        {/* Phone strip — used by the Health theme. */}
+        <div className="space-y-2">
+          <Label>
+            Phone strip headline{" "}
+            <span className="text-xs font-normal text-slate-500">
+              (used by Health theme)
+            </span>
+          </Label>
+          <Input
+            value={value.phoneStripNote}
+            onChange={(e) => patch("phoneStripNote", e.target.value)}
+            placeholder="ফোনে অর্ডার করুন অথবা প্রয়োজনে কল করুন"
+          />
+        </div>
+
+        {/* Comparison block — used by the Health theme. */}
+        <div className="space-y-4 rounded-lg border border-rose-200 bg-white p-4">
+          <div>
+            <Label className="text-base">
+              Comparison block — "আমরা VS অন্যরা"
+            </Label>
+            <p className="mt-1 text-xs text-slate-500">
+              Two columns shown side by side on the Health theme. Leave a
+              column empty to fall back to a sensible generic copy that
+              works for any product category.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-sm">"আমাদের" column title</Label>
+              <Input
+                value={value.comparisonOursTitle}
+                onChange={(e) =>
+                  patch("comparisonOursTitle", e.target.value)
+                }
+                placeholder="আমাদের পণ্য"
+              />
+              <Label className="text-sm">"আমাদের" claims</Label>
+              <ListEditor
+                values={value.comparisonOursItems}
+                onChange={(v) => patch("comparisonOursItems", v)}
+                placeholder="কাচা বিটরুট এর রস থেকে পাউডার করা হয়েছে"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">"অন্যরা" column title</Label>
+              <Input
+                value={value.comparisonOthersTitle}
+                onChange={(e) =>
+                  patch("comparisonOthersTitle", e.target.value)
+                }
+                placeholder="বাজারের অন্যান্য পণ্য"
+              />
+              <Label className="text-sm">"অন্যরা" claims</Label>
+              <ListEditor
+                values={value.comparisonOthersItems}
+                onChange={(v) => patch("comparisonOthersItems", v)}
+                placeholder="কৃত্রিম রঙ বা প্রিজারভেটিভ মেশানো হয়"
+              />
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

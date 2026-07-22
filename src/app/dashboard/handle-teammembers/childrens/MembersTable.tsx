@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,6 +121,9 @@ export default function MembersTable() {
 
   // Pagination logic
   const totalPages = Math.ceil(totalManagement / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredManagement.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleEdit = (id: string) => {
     router.push(`/dashboard/handle-teammembers/edit/${id}`);
@@ -213,20 +216,29 @@ export default function MembersTable() {
   };
 
   return (
-    <div className="w-full mt-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <Input
-          placeholder="Search management by name, email, or number..."
-          value={searchTerm}
-          onChange={handleSearch}
-          className="max-w-sm"
-        />
-        <Button variant="secondary">Total Data {totalManagement}</Button>
+    <Card className="overflow-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/30">
+        <div className="space-y-0.5">
+          <p className="text-sm font-semibold">All members</p>
+          <p className="text-xs text-muted-foreground">
+            Search, review and manage every staff member
+          </p>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Input
+            placeholder="Search by name, email, or number..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="max-w-xs"
+          />
+          <Badge variant="secondary" className="px-3 py-1.5 text-xs">
+            Total {totalManagement}
+          </Badge>
+        </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-x-auto">
         <Table>
-          <TableCaption>A list of all management members.</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
@@ -238,11 +250,13 @@ export default function MembersTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            (
-                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-6 w-6 text-gray-500" />
-                          </div>
-                        )
+            {currentItems.length > 0 ? (
+              currentItems.map((item) => (
+                <TableRow key={item._id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 flex items-center justify-center">
+                        <User className="h-6 w-6 text-gray-500" />
                       </div>
                       <div>
                         <p className="font-medium">{item.name}</p>
@@ -333,20 +347,24 @@ export default function MembersTable() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-          {Math.min(currentPage * itemsPerPage, totalManagement)} of{" "}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t bg-muted/30 text-sm">
+        <p className="text-muted-foreground">
+          Showing{" "}
+          {totalManagement === 0
+            ? 0
+            : (currentPage - 1) * itemsPerPage + 1}{" "}
+          to {Math.min(currentPage * itemsPerPage, totalManagement)} of{" "}
           {totalManagement} members
-        </div>
-        <div className="flex items-center space-x-2">
+        </p>
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
           </Button>
           <Button
             variant="outline"
@@ -356,7 +374,8 @@ export default function MembersTable() {
             }
             disabled={currentPage === totalPages || totalPages === 0}
           >
-            <ChevronRight className="h-4 w-4" />
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
       </div>
@@ -396,6 +415,6 @@ export default function MembersTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 }

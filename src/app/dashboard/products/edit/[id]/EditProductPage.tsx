@@ -104,12 +104,24 @@ export default function EditProductPage() {
     landingValue,
   }) => {
     try {
-      const payload = {
-        ...values,
+      // `category` is a required ObjectId on the server, but the form stores it
+      // as a plain string (defaulted to ""). Sending an empty string back makes
+      // Mongoose throw "Cast to ObjectId failed for value \"\"" — drop it when
+      // empty so we don't clobber the existing category on save.
+      const { category, subCategory, ...rest } = values as ProductFormData &
+        Record<string, unknown>;
+      const payload: Record<string, unknown> = {
+        ...rest,
         quentity: values.stock,
         offerEndDate: values.offerEndDate
           ? new Date(values.offerEndDate).toISOString()
           : null,
+        ...(typeof category === "string" && category.trim()
+          ? { category }
+          : {}),
+        ...(typeof subCategory === "string" && subCategory.trim()
+          ? { subCategory }
+          : {}),
         landingPage: {
           theme: landingValue.theme,
           heroTitle: landingValue.heroTitle,

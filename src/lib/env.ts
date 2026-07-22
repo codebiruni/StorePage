@@ -5,16 +5,30 @@
  * multi-tenant codebase. Throws early at boot if a *required* server-side
  * key is missing, so we never discover misconfiguration inside a request.
  *
+ * IMPORTANT: This module imports `requireString` calls at the top level, so
+ * it must NEVER be bundled to the browser. Only `'use server'` modules
+ * (Server Components, Route Handlers, `lib/*.ts` called from those) may
+ * import `env` from here.
+ *
+ * Client-side code that needs branding/URL defaults must import `publicEnv`
+ * from `@/lib/publicEnv` instead — that module is safe to ship to the
+ * browser because it doesn't reference any server-only key.
+ *
  * Convention:
  *   - `process.env.X`            -> server-only secrets (DB URIs, JWT secrets,
  *                                   API keys, email credentials, Gemini key).
  *   - `NEXT_PUBLIC_X`            -> values that must reach the browser bundle
  *                                   (site URL, brand name, public analytics IDs,
- *                                   public image hosts).
+ *                                   public image hosts). See `publicEnv.ts`.
  *
  * Reading from this module is preferred over touching `process.env` directly,
  * so we can refactor the naming convention centrally later.
  */
+
+// Re-export for server callers that already imported `publicEnv` from
+// `@/lib/env`. The actual definition lives in `./publicEnv` so client bundles
+// don't drag the server-only `requireString` calls below into the browser.
+export { publicEnv, requirePublic } from "./publicEnv";
 
 type EnvShape = {
   // --- Infra (server) ---
@@ -61,28 +75,6 @@ type EnvShape = {
   PWA_REGISTER: string;
   PWA_SKIP_WAITING: string;
   ALLOW_ALL_IMAGE_HOSTS: string;
-};
-
-type PublicEnvShape = {
-  NEXT_PUBLIC_SITE_URL: string;
-  NEXT_PUBLIC_BRAND_NAME: string;
-  NEXT_PUBLIC_BRAND_TAGLINE: string;
-  NEXT_PUBLIC_THEME_COLOR: string;
-  NEXT_PUBLIC_DEFAULT_LOGO: string;
-  NEXT_PUBLIC_CONTACT_EMAIL: string;
-  NEXT_PUBLIC_CONTACT_PHONE: string;
-  NEXT_PUBLIC_FACEBOOK_URL: string;
-  NEXT_PUBLIC_INSTAGRAM_URL: string;
-  NEXT_PUBLIC_YOUTUBE_URL: string;
-  NEXT_PUBLIC_WHATSAPP_NUMBER: string;
-  NEXT_PUBLIC_TWITTER_URL: string;
-  NEXT_PUBLIC_LINKEDIN_URL: string;
-  NEXT_PUBLIC_IMAGE_HOSTS: string;
-  NEXT_PUBLIC_META_PIXEL_ID?: string;
-  NEXT_PUBLIC_GA_MEASUREMENT_ID?: string;
-  NEXT_PUBLIC_CLOUDINARY_IMAGE_API: string;
-  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: string;
-  NEXT_PUBLIC_CLOUDINARY_PRESET: string;
 };
 
 function readString(key: string, fallback?: string): string {
@@ -161,56 +153,3 @@ export const env: EnvShape = {
   PWA_SKIP_WAITING: readString("PWA_SKIP_WAITING", "true"),
   ALLOW_ALL_IMAGE_HOSTS: readString("ALLOW_ALL_IMAGE_HOSTS", "false"),
 };
-
-/**
- * Client-safe env. Every key must keep the `NEXT_PUBLIC_` prefix because
- * Next.js inlines only those into the browser bundle. Values here are
- * considered safe to expose publicly; secrets stay on the server.
- */
-export const publicEnv: PublicEnvShape = {
-  NEXT_PUBLIC_SITE_URL: readString(
-    "NEXT_PUBLIC_SITE_URL",
-    "http://localhost:3000",
-  ),
-  NEXT_PUBLIC_BRAND_NAME: readString("NEXT_PUBLIC_BRAND_NAME", "My Store"),
-  NEXT_PUBLIC_BRAND_TAGLINE: readString(
-    "NEXT_PUBLIC_BRAND_TAGLINE",
-    "Quality products, fast delivery",
-  ),
-  NEXT_PUBLIC_THEME_COLOR: readString("NEXT_PUBLIC_THEME_COLOR", "#000000"),
-  NEXT_PUBLIC_DEFAULT_LOGO: readString("NEXT_PUBLIC_DEFAULT_LOGO", "/logo.png"),
-  NEXT_PUBLIC_CONTACT_EMAIL: readString("NEXT_PUBLIC_CONTACT_EMAIL", ""),
-  NEXT_PUBLIC_CONTACT_PHONE: readString("NEXT_PUBLIC_CONTACT_PHONE", ""),
-  NEXT_PUBLIC_FACEBOOK_URL: readString("NEXT_PUBLIC_FACEBOOK_URL", ""),
-  NEXT_PUBLIC_INSTAGRAM_URL: readString("NEXT_PUBLIC_INSTAGRAM_URL", ""),
-  NEXT_PUBLIC_YOUTUBE_URL: readString("NEXT_PUBLIC_YOUTUBE_URL", ""),
-  NEXT_PUBLIC_WHATSAPP_NUMBER: readString("NEXT_PUBLIC_WHATSAPP_NUMBER", ""),
-  NEXT_PUBLIC_TWITTER_URL: readString("NEXT_PUBLIC_TWITTER_URL", ""),
-  NEXT_PUBLIC_LINKEDIN_URL: readString("NEXT_PUBLIC_LINKEDIN_URL", ""),
-  NEXT_PUBLIC_IMAGE_HOSTS: readString("NEXT_PUBLIC_IMAGE_HOSTS", ""),
-  NEXT_PUBLIC_META_PIXEL_ID: readString("NEXT_PUBLIC_META_PIXEL_ID", ""),
-  NEXT_PUBLIC_GA_MEASUREMENT_ID: readString(
-    "NEXT_PUBLIC_GA_MEASUREMENT_ID",
-    "",
-  ),
-  NEXT_PUBLIC_CLOUDINARY_IMAGE_API: readString(
-    "NEXT_PUBLIC_CLOUDINARY_IMAGE_API",
-    readString("CLOUDINARY_IMAGE_API", ""),
-  ),
-  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: readString(
-    "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
-    readString("CLOUDINARY_CLOUD_NAME", ""),
-  ),
-  NEXT_PUBLIC_CLOUDINARY_PRESET: readString(
-    "NEXT_PUBLIC_CLOUDINARY_PRESET",
-    readString("CLOUDINARY_PRESET", ""),
-  ),
-};
-
-export function requirePublic<T extends keyof PublicEnvShape>(key: T): string {
-  const v = publicEnv[key];
-  if (!v || (v as string).length === 0) {
-    throw new Error(`❌ Missing required public env: ${String(key)}`);
-  }
-  return v as string;
-}

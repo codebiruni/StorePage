@@ -21,7 +21,7 @@ import {
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import Image from "next/image"
-import { publicEnv } from "@/lib/env"
+import { publicEnv } from "@/lib/publicEnv"
 import { useSiteConfig } from "@/defaults/context/SiteConfigProvider"
 
 interface Product {

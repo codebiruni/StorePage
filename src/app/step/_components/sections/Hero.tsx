@@ -1,8 +1,8 @@
 // Hero section: product photo + price + CTA.
-// Accepts both the legacy { product, landing } API (used by Classic/Bold/Trust/
-// Minimal/VideoHero) and the new theme API { product, variant } where `landing`
-// is derived from `product.landingPage`. The `variant` is forwarded as a data
-// attr and selects dark/light styling; themes don't yet rely on visual variant.
+// Accepts { product, landing?, variant? }. When `landing` is omitted it's
+// derived from `product.landingPage`. The `variant` is forwarded as a data
+// attr and selects dark/light styling for legacy themes; HealthPage no
+// longer routes through this component.
 import Link from "next/link";
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
 import type { ILandingPage } from "@/app/step/_lib/landing-shared";
@@ -17,7 +17,7 @@ export default function Hero({
   variant?: string;
 }) {
   const lp = landing ?? product.landingPage;
-  const safeLp: ILandingPage = lp ?? { theme: "atelier" };
+  const safeLp: ILandingPage = lp ?? { theme: "health" };
   const main = product.images?.[0];
   const { currentPrice, prevPrice, discountPercentage } = product.generalPrice;
   const dark = variant === "kinetic" || variant === "midnight";

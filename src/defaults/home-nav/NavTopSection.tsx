@@ -1,16 +1,16 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { LogIn, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LogIn, User, Phone, Truck } from "lucide-react";
 import { ModeToggle } from "@/components/theme-toggle";
 import WishList from "./WishList";
 import CartList from "./CartList";
 import SearchBar from "./SearchBar";
 import BrandLogo from "./BrandLogo";
-import useContextData from "../custom-component/useContextData";
-import CpmpaireList from "./CpmpaireList";
+import { useContextData } from "@/defaults/context/Context";
 import { useSiteConfig } from "@/defaults/context/SiteConfigProvider";
+import MobileDrawer from "./MobileDrawer";
 
 export default function NavTopSection() {
   const { UserData } = useContextData();
@@ -19,83 +19,84 @@ export default function NavTopSection() {
 
   return (
     <div className="w-full">
-      {/* Announcement / utility strip — hides on small screens to save vertical space */}
-      {config?.contact?.phone ? (
-        <div className="hidden md:block w-full bg-primary/95 text-primary-foreground">
-          <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-1.5 text-[12px]">
-            <div className="flex items-center gap-5">
-              <span className="inline-flex items-center gap-1.5">
-                <Truck className="h-3.5 w-3.5" />
-                Free shipping over ৳2000
-              </span>
-              <span className="hidden lg:inline-flex items-center gap-1.5 opacity-90">
-                <Phone className="h-3.5 w-3.5" />
-                {config.contact.phone}
-              </span>
+      {/* Main top bar — single row, mobile + desktop share it */}
+      <div className="w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+        <div className="container mx-auto flex h-14 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 md:h-16">
+          {/* Mobile: hamburger + brand  |  Desktop: brand only */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="md:hidden">
+              <MobileDrawer>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open menu"
+                  className="rounded-full text-foreground hover:bg-muted"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </MobileDrawer>
             </div>
-            <div className="flex items-center gap-4 opacity-90">
-              <span className="hidden lg:inline">Cash on delivery</span>
-              <span className="hidden xl:inline">7-day easy returns</span>
-            </div>
+
+            <BrandLogo
+              brandName={brandName}
+              logoUrl={config?.logo}
+              size={36}
+              className="md:!h-10 md:!w-10"
+            />
           </div>
-        </div>
-      ) : null}
 
-      {/* Main top bar */}
-      <div className="w-full py-3 md:py-3.5 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-        <div className="container mx-auto flex items-center justify-between gap-3 px-4">
-          {/* Logo + Brand */}
-          <BrandLogo brandName={brandName} logoUrl={config?.logo} size={40} />
-
-          {/* Search Bar (desktop) */}
+          {/* Search (desktop) */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-4">
-            <SearchBar />
-          </div>
-
-          {/* Right Actions */}
+              <SearchBar />
+            </div>
+          {/* Right actions */}
           <div className="flex items-center gap-0.5 sm:gap-1">
-            {/* Mobile search trigger */}
+            {/* Mobile search trigger comes from SearchBar (built-in icon) */}
             <div className="md:hidden">
               <SearchBar />
             </div>
 
-            {/* Compare */}
-            <CpmpaireList />
-
             {/* Wishlist */}
-          <WishList />
+            <WishList />
 
             {/* Cart */}
-          <CartList />
+            <CartList />
 
-            {/* Theme toggle */}
-          <ModeToggle />
+            {/* Theme toggle — desktop only to save mobile space */}
+            <div className="hidden md:inline-flex">
+              <ModeToggle />
+            </div>
 
             {/* Profile / Sign in */}
-          {UserData ? (
+            {UserData ? (
               <Link
                 href={UserData?.role == "user" ? "/profile" : "/dashboard"}
                 aria-label="Account"
+                className="md:ml-1"
               >
-                <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="w-5 h-5" />
-              </Button>
-            </Link>
-          ) : (
-              <Link href="/signin" aria-label="Sign in">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full text-foreground hover:bg-muted"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/signin" aria-label="Sign in" className="md:ml-1">
                 <Button
                   variant="default"
                   size="sm"
-                  className="rounded-full gap-1.5 px-3 sm:px-4 h-9 shadow-sm"
+                  className="h-9 rounded-full gap-1.5 px-3 sm:px-4 shadow-sm"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="h-4 w-4" />
                   <span className="hidden sm:inline">Sign in</span>
-              </Button>
-            </Link>
-          )}
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }

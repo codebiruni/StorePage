@@ -19,20 +19,8 @@ const LandingPageSchema = new Schema<ILandingPage>(
   {
     theme: {
       type: String,
-      enum: [
-        "atelier",
-        "midnight",
-        "kinetic",
-        "pillar",
-        "origin",
-        "health",
-        "classic",
-        "bold",
-        "trust",
-        "minimal",
-        "videoHero",
-      ],
-      default: "atelier",
+      enum: ["health"],
+      default: "health",
     },
     heroTitle: { type: String, default: "" },
     heroSubtitle: { type: String, default: "" },

@@ -1,13 +1,7 @@
 // Client-safe landing helpers. No "server-only" / Mongoose / Next cache
 // imports here — anything in this file can be pulled into a Client Component.
 
-export type LandingTheme =
-  | "atelier"
-  | "midnight"
-  | "kinetic"
-  | "pillar"
-  | "origin"
-  | "health";
+export type LandingTheme = "health";
 
 /**
  * A single column of the optional comparison section ("We vs Others"). Each
@@ -76,29 +70,12 @@ export type SerializedLandingProduct = {
 };
 
 /**
- * Maps a stored theme string to one of the five themes the renderer actually
- * ships. Falls back to "atelier" for unknown / legacy values so a stale DB
- * entry still renders something intentional.
+ * Maps a stored theme string to the single theme the renderer ships
+ * (Health). Any legacy value persisted in older products is normalized
+ * to "health" so a stale DB entry still renders something intentional.
  */
 export function resolveLandingTheme(raw: unknown): LandingTheme {
-  switch (raw) {
-    case "atelier":
-    case "midnight":
-    case "kinetic":
-    case "pillar":
-    case "origin":
-    case "health":
-      return raw;
-    // Legacy themes → closest modern equivalent.
-    case "classic":
-    case "minimal":
-      return "origin";
-    case "bold":
-    case "videoHero":
-      return "kinetic";
-    case "trust":
-      return "pillar";
-    default:
-      return "atelier";
-  }
+  if (raw === "health") return "health";
+  // All legacy / unknown values collapse to Health.
+  return "health";
 }

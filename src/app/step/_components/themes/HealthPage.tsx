@@ -60,7 +60,6 @@ export default function HealthPage({ product, slug }: Props) {
   return (
     <>
       <div data-theme="health" className="health-page">
-        <HeaderBar />
         <Hero
           product={product}
           ctaLabel={ctaLabel}
@@ -94,26 +93,6 @@ export default function HealthPage({ product, slug }: Props) {
 }
 
 /* ─── 1. Header ─────────────────────────────────────────────────────── */
-
-function HeaderBar() {
-  const { config } = useSiteConfig();
-  const phone = config?.contact?.phone ?? "+8801789525251";
-  return (
-    <header className="hp-header">
-      <div className="hp-wrap hp-header__inner">
-        <a href="#" className="hp-logo">
-          <span className="hp-logo__placeholder">
-            <span aria-hidden>🖼️</span>Logo image
-            <br />160×52
-          </span>
-        </a>
-        <a className="hp-btn hp-btn--outline" href={`tel:${phone}`}>
-          Contact us
-        </a>
-      </div>
-    </header>
-  );
-}
 
 /* ─── 2. Hero ───────────────────────────────────────────────────────── */
 

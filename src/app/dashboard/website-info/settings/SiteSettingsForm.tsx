@@ -90,7 +90,6 @@ export default function SiteSettingsForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-<TabsContent value="delivery">
           <Card className="shadow-none border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

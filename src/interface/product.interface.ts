@@ -12,18 +12,7 @@ import { ObjectId } from "mongoose";
  *   - src/app/step/_components/themes/*.tsx (theme renderers)
  */
 export interface ILandingPage {
-  theme:
-    | "atelier"
-    | "midnight"
-    | "kinetic"
-    | "pillar"
-    | "origin"
-    | "health"
-    | "classic"
-    | "bold"
-    | "trust"
-    | "minimal"
-    | "videoHero";
+  theme: "health";
 
   heroTitle: string;
   heroSubtitle: string;

@@ -6,7 +6,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import connectDB from "@/lib/connectdb";
 import Product from "@/models/product.model";
-import type { ILandingPage } from "./landing-shared";
+import type { ILandingPage, SerializedLandingProduct } from "./landing-shared";
 
 // Re-export the client-safe pieces so existing imports of `landing-data`
 // keep working without dragging the server-only module into a client bundle.
@@ -16,30 +16,6 @@ export type {
   SerializedLandingProduct,
 } from "./landing-shared";
 export { resolveLandingTheme } from "./landing-shared";
-
-/**
- * JSON-safe view of a product for the public landing page.
- * Mirrors the schema fields actually used by the themes (name, images,
- * generalPrice, etc.) so renderers can read product.X directly.
- */
-export type SerializedLandingProduct = {
-  _id: string;
-  /** Public slug used for in-page anchors (defaults to the product id). */
-  slug: string;
-  name: string;
-  images: string[];
-  details: string;
-  quickOverview: string[];
-  generalPrice: {
-    currentPrice: number;
-    prevPrice: number;
-    discountPercentage: number;
-  };
-  hasOffer: boolean;
-  offerPercentage?: number;
-  offerEndDate?: string;
-  landingPage?: ILandingPage;
-};
 
 function pickId(d: { _id?: { toString(): string } | string }): string {
   const id = d._id;
@@ -116,7 +92,7 @@ export async function listAllProductIds(): Promise<string[]> {
 
 export function buildDefaultLanding(): ILandingPage {
   return {
-    theme: "atelier",
+    theme: "health",
     heroSubtitle: "",
     heroBadge: "",
     heroCtaLabel: "অর্ডার করুন",

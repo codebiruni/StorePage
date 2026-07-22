@@ -48,6 +48,8 @@ export async function PATCH(req: NextRequest, context: ParamsType) {
     await auth(USER_ROLE.SUPER_ADMIN);
 
     const body = await req.json();
+    console.log('[DEBUG PATCH] received body keys:', Object.keys(body || {}));
+    console.log('[DEBUG PATCH] body.landingPage:', JSON.stringify(body?.landingPage));
 
     // Whitelist editable scalar fields so we never accidentally write a
     // server-only property (e.g. `_id`, `__v`) back to the document. The
@@ -96,7 +98,17 @@ export async function PATCH(req: NextRequest, context: ParamsType) {
       $set.totalReviewCount = totalReviewCount;
     if (averageRating !== undefined) $set.averageRating = averageRating;
     if (category !== undefined) $set.category = category;
+    // Defensive: the edit form used to send `category: ""` when the picker
+    // had no selection, which made Mongoose throw "Cast to ObjectId failed
+    // for value \"\"" on save. Treat empty strings as "no change" so we
+    // never wipe an existing category.
+    if (typeof $set.category === "string" && ($set.category as string).trim() === "") {
+      delete $set.category;
+    }
     if (subCategory !== undefined) $set.subCategory = subCategory;
+    if (typeof $set.subCategory === "string" && ($set.subCategory as string).trim() === "") {
+      delete $set.subCategory;
+    }
     if (coupon !== undefined) $set.coupon = coupon;
     if (tags !== undefined) $set.tags = tags;
     if (brand !== undefined) $set.brand = brand;
@@ -109,13 +121,16 @@ export async function PATCH(req: NextRequest, context: ParamsType) {
     // `landingPage` may be an object (save), `null` (clear), or omitted
     // (no change). We treat absence as "no change" so other field updates
     // don't wipe an existing landing.
+    console.log('[DEBUG PATCH] landingPage !== undefined?', landingPage !== undefined);
     if (landingPage !== undefined) $set.landingPage = landingPage;
+    console.log('[DEBUG PATCH] $set keys:', Object.keys($set), 'landingPage in $set:', 'landingPage' in $set);
 
     const updatedproduct = await Product.findByIdAndUpdate(
       id,
       { $set },
       { new: true, runValidators: true },
     );
+    console.log('[DEBUG PATCH] updated product _id:', updatedproduct?._id, 'theme:', updatedproduct?.landingPage?.theme);
 
     if (!updatedproduct) {
       return NextResponse.json(

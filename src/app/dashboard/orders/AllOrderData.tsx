@@ -33,16 +33,6 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog"
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -59,7 +49,6 @@ import {
   Search, 
   Eye, 
   Edit, 
-  Trash2, 
   Printer, 
   Package, 
   Filter,
@@ -67,12 +56,13 @@ import {
   Truck,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react'
 import { toast } from "sonner"
 import Image from 'next/image'
 import Link from 'next/link'
-import { publicEnv } from '@/lib/env'
+import { publicEnv } from '@/lib/publicEnv'
 import { useSiteConfig } from '@/defaults/context/SiteConfigProvider'
 
 interface Product {
@@ -168,12 +158,13 @@ export default function AllOrderData() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
   const [steadfastDialogOpen, setSteadfastDialogOpen] = useState(false)
   const [bulkSteadfastDialogOpen, setBulkSteadfastDialogOpen] = useState(false)
   const [creatingSteadfast, setCreatingSteadfast] = useState(false)
   const [creatingBulkSteadfast, setCreatingBulkSteadfast] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   
   const [editForm, setEditForm] = useState<EditOrderForm>({
     name: '',
@@ -254,27 +245,6 @@ export default function AllOrderData() {
     }
   }
 
-  const handleDeleteOrder = async () => {
-    if (!selectedOrder) return
-
-    try {
-      const response = await fetch(`/api/v1/order/${selectedOrder._id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        toast.success('Order deleted successfully')
-        setDeleteDialogOpen(false)
-        fetchOrders()
-      } else {
-        toast.error('Failed to delete order')
-      }
-    } catch (error) {
-      toast.error('Error deleting order')
-      console.error('Error deleting order:', error)
-    }
-  }
-
   const handlePrintOrder = (order: Order) => {
     setSelectedOrder(order)
     setPrintDialogOpen(true)
@@ -352,6 +322,34 @@ export default function AllOrderData() {
       console.error('Error creating bulk Steadfast orders:', error)
     } finally {
       setCreatingBulkSteadfast(false)
+    }
+  }
+
+  const handleDeleteOrder = async () => {
+    if (!selectedOrder) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/v1/order/${selectedOrder._id}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json().catch(() => ({ success: false }))
+
+      if (response.ok && result.success) {
+        toast.success(result.message || 'Order deleted successfully')
+        setDeleteDialogOpen(false)
+        // Remove the deleted order from any bulk selection
+        setSelectedOrders(prev => prev.filter(id => id !== selectedOrder._id))
+        fetchOrders()
+      } else {
+        toast.error(result.message || 'Failed to delete order')
+      }
+    } catch (error) {
+      toast.error('Error deleting order')
+      console.error('Error deleting order:', error)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -701,12 +699,12 @@ export default function AllOrderData() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600"
                             onClick={() => {
                               setSelectedOrder(order)
                               setDeleteDialogOpen(true)
                             }}
-                            className="text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete Order
@@ -1021,25 +1019,6 @@ export default function AllOrderData() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the order
-              {selectedOrder && ` ${selectedOrder.orderId}`} and remove it from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteOrder} className="bg-red-600 hover:bg-red-700">
-              Delete Order
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Print Receipt Dialog */}
 <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
   <DialogContent className="max-w-2xl">
@@ -1267,11 +1246,11 @@ export default function AllOrderData() {
               Create Steadfast courier orders for {selectedOrders.length} selected orders
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                This will create Steadfast courier orders for all selected orders. 
+                This will create Steadfast courier orders for all selected orders.
                 Orders that already have tracking IDs will be skipped.
               </p>
             </div>
@@ -1299,14 +1278,14 @@ export default function AllOrderData() {
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setBulkSteadfastDialogOpen(false)}
               disabled={creatingBulkSteadfast}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleBulkCreateSteadfastOrders}
               disabled={creatingBulkSteadfast}
               className="gap-2"
@@ -1316,6 +1295,60 @@ export default function AllOrderData() {
               )}
               <Truck className="h-4 w-4" />
               Create {selectedOrders.length} Orders
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Order Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => {
+        if (!deleting) setDeleteDialogOpen(open)
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Delete Order
+            </DialogTitle>
+            <DialogDescription>
+              This will remove order <strong>{selectedOrder?.orderId}</strong> from your active list. The order is soft-deleted, and its product quantities will be returned to inventory.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedOrder && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <p>
+                Customer: <strong>{selectedOrder.name}</strong> ({selectedOrder.number})
+              </p>
+              <p className="mt-1">
+                Total: <strong>{formatCurrency(selectedOrder.grandTotal)}</strong>
+              </p>
+              <p className="mt-2 text-xs">
+                You can restore this order later by calling the API again — the endpoint toggles the <code className="px-1 bg-red-100 rounded">isDeleted</code> flag.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteOrder}
+              disabled={deleting}
+              className="gap-2"
+            >
+              {deleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              Delete Order
             </Button>
           </DialogFooter>
         </DialogContent>

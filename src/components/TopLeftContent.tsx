@@ -214,7 +214,7 @@ export default function TopLeftContent({ isMobile,  onAction }: TopLeftContentPr
   return (
     <>
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) min-w-64 sm:min-w-96 max-w-md z-[1000] rounded-lg bg-background border shadow-lg"
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-64 sm:min-w-96 max-w-md z-[2000] rounded-lg bg-popover border shadow-lg"
         align="start"
         side={isMobile ? "bottom" : "right"}
         sideOffset={4}

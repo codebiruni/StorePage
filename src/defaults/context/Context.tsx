@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { createContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 // import LogedUser from "../functions/LogedUser";
 import { toast } from "sonner";
 
@@ -221,4 +221,12 @@ setUserData(userJson.user);
   };
 
   return <ContextData.Provider value={value}>{children}</ContextData.Provider>;
+}
+
+export function useContextData() {
+  const ctx = useContext(ContextData);
+  if (!ctx) {
+    throw new Error("useContextData must be used inside <Context />");
+  }
+  return ctx;
 }

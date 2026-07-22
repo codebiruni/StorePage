@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -203,20 +203,29 @@ export default function AllCustomersTable() {
   };
 
   return (
-    <div className="w-full mt-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <Input
-          placeholder="Search customers by name, email, or number..."
-          value={searchTerm}
-          onChange={handleSearch}
-          className="max-w-sm"
-        />
-        <Button variant="secondary">Total Data {totalCustomers}</Button>
+    <Card className="overflow-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/30">
+        <div className="space-y-0.5">
+          <p className="text-sm font-semibold">All customers</p>
+          <p className="text-xs text-muted-foreground">
+            Search, review and manage every customer profile
+          </p>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Input
+            placeholder="Search by name, email, or number..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="max-w-xs"
+          />
+          <Badge variant="secondary" className="px-3 py-1.5 text-xs">
+            Total {totalCustomers}
+          </Badge>
+        </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-x-auto">
         <Table>
-          <TableCaption>A list of all customers.</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>Customer</TableHead>
@@ -341,13 +350,23 @@ export default function AllCustomersTable() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-          {Math.min(currentPage * itemsPerPage, totalCustomers)} of{" "}
-          {totalCustomers} customers
-        </div>
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t bg-muted/30 text-sm">
+        <p className="text-muted-foreground">
+          Showing{" "}
+          <span className="font-medium text-foreground">
+            {totalCustomers === 0
+              ? 0
+              : (currentPage - 1) * itemsPerPage + 1}
+          </span>{" "}
+          to{" "}
+          <span className="font-medium text-foreground">
+            {Math.min(currentPage * itemsPerPage, totalCustomers)}
+          </span>{" "}
+          of{" "}
+          <span className="font-medium text-foreground">{totalCustomers}</span>{" "}
+          customers
+        </p>
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -355,6 +374,7 @@ export default function AllCustomersTable() {
             disabled={currentPage === 1}
           >
             <ChevronLeft className="h-4 w-4" />
+            Previous
           </Button>
           <Button
             variant="outline"
@@ -364,6 +384,7 @@ export default function AllCustomersTable() {
             }
             disabled={currentPage === totalPages || totalPages === 0}
           >
+            Next
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -404,6 +425,6 @@ export default function AllCustomersTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 }

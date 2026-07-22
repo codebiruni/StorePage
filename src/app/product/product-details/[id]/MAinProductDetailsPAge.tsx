@@ -2,6 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
 import ImageParts from "./ImageParts";
 import ProductIntroduce from "./ProductIntroduce";
 import BasicInfo from "./BasicInfo";
@@ -11,13 +12,32 @@ export default function ProductDetailsClient({ product }: { product: any }) {
   const { handlePurchasedData } = useContextData();
   const router = useRouter();
 
-  // Format the product data for the checkout/comparison workflow
+  // Default priceInfo = general price (no variant selected yet).
+  const initialPriceInfo: any = {
+    currentPrice: product.generalPrice.currentPrice,
+    prevPrice: product.generalPrice.prevPrice,
+    discountPercentage: product.generalPrice.discountPercentage,
+    variantSku: null,
+    variantId: null,
+    variantStock: product.quentity || 0,
+  };
+  const [priceInfo, setPriceInfo] = useState<any>(initialPriceInfo);
+
+  // ProductIntroduce pushes its currently-selected variant up here so that
+  // "Buy Now" uses the same variant-aware price the cart would see.
+  const handleVariantChange = useCallback((payload: { priceInfo: any }) => {
+    setPriceInfo(payload.priceInfo);
+  }, []);
+
+  // Base shape used by the cart and the buy-now flow. `price` reflects the
+  // currently-selected variant (falls back to general price when no variant).
   const compaireData = {
     id: product._id,
     name: product.name,
     image: product.images[0],
     image2: product.images[1] || product.images[0],
-    price: product.generalPrice.currentPrice,
+    price: priceInfo.currentPrice,
+    priceInfo,
   };
 
   const handleBuyData = () => {
@@ -32,6 +52,7 @@ export default function ProductDetailsClient({ product }: { product: any }) {
         <ProductIntroduce
           handleBuyData={handleBuyData}
           infoData={compaireData}
+          onVariantChange={handleVariantChange}
           data={{
             quentity: product.quentity,
             offerPercentage: product.offerPercentage,

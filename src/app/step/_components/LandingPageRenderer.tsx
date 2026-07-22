@@ -1,53 +1,16 @@
 "use client";
-// Theme dispatcher. Each theme is its own chunk so a landing page only
-// ships the JS for the theme it actually uses.
-//
-// Themes:
-//   • atelier   — editorial serif, newsprint warm whites
-//   • midnight  — dark editorial luxury, champagne accent
-//   • kinetic   — bold sans, mono eyebrows, motion-led
-//   • pillar    — trust-led serif, founder voice
-//   • origin    — minimal monochrome, single accent
-//
-// Legacy themes (classic / bold / trust / minimal / videoHero) are
-// resolved to the closest modern theme via `resolveLandingTheme`.
+// Theme dispatcher. Only the Health theme ships now; other legacy theme
+// values persisted in older products are normalized to "health" via
+// `resolveLandingTheme` so any saved page still renders.
 
-import dynamic from "next/dynamic";
-import {
-  resolveLandingTheme,
-  type SerializedLandingProduct,
-} from "../_lib/landing-shared";
-
-// Eager-load Atelier as the safe default — it ships with the bundle so a
-// bad/missing theme still renders something intentional.
-import Atelier from "./themes/Atelier";
-
-// The rest are split out so each page only downloads the chunk it needs.
-const Midnight = dynamic(() => import("./themes/Midnight"));
-const Kinetic = dynamic(() => import("./themes/Kinetic"));
-const Pillar = dynamic(() => import("./themes/Pillar"));
-const Origin = dynamic(() => import("./themes/Origin"));
+import { type SerializedLandingProduct } from "../_lib/landing-shared";
+import Health from "./themes/Health";
 
 export default function LandingPageRenderer({
   product,
 }: {
   product: SerializedLandingProduct;
 }) {
-  const rawTheme = product.landingPage?.theme ?? "atelier";
-  const theme = resolveLandingTheme(rawTheme);
   const slug = product.slug || product._id;
-
-  switch (theme) {
-    case "midnight":
-      return <Midnight product={product} slug={slug} />;
-    case "kinetic":
-      return <Kinetic product={product} slug={slug} />;
-    case "pillar":
-      return <Pillar product={product} slug={slug} />;
-    case "origin":
-      return <Origin product={product} slug={slug} />;
-    case "atelier":
-    default:
-      return <Atelier product={product} slug={slug} />;
-  }
+  return <Health product={product} slug={slug} />;
 }
