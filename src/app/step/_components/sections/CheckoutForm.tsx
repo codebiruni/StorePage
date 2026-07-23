@@ -11,10 +11,20 @@ import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
 export default function CheckoutForm({
   product,
   checkoutNote,
+  headingText,
+  note: noteProp,
   variant,
 }: {
   product: SerializedLandingProduct;
+  /**
+   * @deprecated Forwarded only for backwards compatibility — newer callers
+   * pass `headingText` directly (driven by the Form Title section).
+   */
   checkoutNote?: string;
+  /** Editable headline above the form. Empty falls back to a default. */
+  headingText?: string;
+  /** Editable subtitle line under the headline. Empty suppresses the line. */
+  note?: string;
   variant?: string;
 }) {
   const router = useRouter();
@@ -31,7 +41,13 @@ export default function CheckoutForm({
   const deliveryCharge = siteConfig?.deliveryCharge?.outsideDhaka ?? 0;
   const grandTotal = totalAmount + deliveryCharge;
   const dark = variant === "bold";
-  const note = checkoutNote ?? product.landingPage?.checkoutNote ?? "";
+  // Precedence: explicit `note` prop (from Form Title section) → legacy
+  // `checkoutNote` prop → persisted checkoutNote on the product.
+  const note = noteProp ?? checkoutNote ?? product.landingPage?.checkoutNote ?? "";
+  const resolvedHeading =
+    headingText && headingText.length > 0
+      ? headingText
+      : "অর্ডার করতে নিচের ফর্মটি পূরণ করুন";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,7 +102,7 @@ export default function CheckoutForm({
             color: dark ? "#f8fafc" : undefined,
           }}
         >
-          অর্ডার করতে নিচের ফর্মটি পূরণ করুন
+          {headingText}
         </h2>
 
         {note ? (

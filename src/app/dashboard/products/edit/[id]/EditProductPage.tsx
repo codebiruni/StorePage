@@ -8,6 +8,7 @@ import ProductWizard, {
   type ProductWizardProps,
 } from "@/app/dashboard/_shared/product-form/ProductWizard";
 import type { ProductFormData } from "@/app/dashboard/_shared/product-form/types";
+import { buildLandingPagePayload } from "@/app/dashboard/_shared/persistLanding";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -122,28 +123,7 @@ export default function EditProductPage() {
         ...(typeof subCategory === "string" && subCategory.trim()
           ? { subCategory }
           : {}),
-        landingPage: {
-          theme: landingValue.theme,
-          heroTitle: landingValue.heroTitle,
-          heroSubtitle: landingValue.heroSubtitle,
-          heroBadge: landingValue.heroBadge,
-          heroCtaLabel: landingValue.heroCtaLabel,
-          painPoints: (landingValue.painPoints ?? []).filter(Boolean),
-          benefits: (landingValue.benefits ?? []).filter(Boolean),
-          howToUse: (landingValue.howToUse ?? []).filter(Boolean),
-          guarantee: landingValue.guarantee,
-          trustBadges: (landingValue.trustBadges ?? []).filter(Boolean),
-          vslUrl: landingValue.vslUrl,
-          youtubeUrl: landingValue.youtubeUrl,
-          checkoutNote: landingValue.checkoutNote,
-          comparison: {
-            oursTitle: landingValue.comparisonOursTitle,
-            oursItems: (landingValue.comparisonOursItems ?? []).filter(Boolean),
-            othersTitle: landingValue.comparisonOthersTitle,
-            othersItems: (landingValue.comparisonOthersItems ?? []).filter(Boolean),
-          },
-          phoneStripNote: landingValue.phoneStripNote,
-        },
+        landingPage: buildLandingPagePayload(landingValue),
       };
 
       const res = await fetch(`/api/v1/product/status/${id}`, {

@@ -7,6 +7,10 @@ import { unstable_cache } from "next/cache";
 import connectDB from "@/lib/connectdb";
 import Product from "@/models/product.model";
 import type { ILandingPage, SerializedLandingProduct } from "./landing-shared";
+import {
+  configFromLegacy,
+  type LandingConfig,
+} from "./landing-config";
 
 // Re-export the client-safe pieces so existing imports of `landing-data`
 // keep working without dragging the server-only module into a client bundle.
@@ -16,6 +20,7 @@ export type {
   SerializedLandingProduct,
 } from "./landing-shared";
 export { resolveLandingTheme } from "./landing-shared";
+export type { LandingConfig } from "./landing-config";
 
 function pickId(d: { _id?: { toString(): string } | string }): string {
   const id = d._id;
@@ -88,6 +93,56 @@ export async function listAllProductIds(): Promise<string[]> {
   return docs
     .map((d) => pickId(d as { _id?: { toString(): string } | string }))
     .filter(Boolean);
+}
+
+/**
+ * Build a `LandingConfig` for the renderer from a serialized product.
+ *
+ * Strategy:
+ *  - If the stored `landingPage` already has a `sections` array, hydrate
+ *    a typed config directly.
+ *  - Otherwise, project the legacy flat shape into a single
+ *    `healthLegacy` section so the page keeps rendering as it always did
+ *    until the admin opens the editor and saves in the new format.
+ */
+export function buildLandingConfig(
+  product: SerializedLandingProduct
+): LandingConfig {
+  const stored = product.landingPage;
+  const storedSections = (stored as unknown as { sections?: unknown })?.sections;
+  if (
+    stored &&
+    Array.isArray(storedSections) &&
+    storedSections.length > 0
+  ) {
+    // Already in the new shape — pass through. The schema also stores the
+    // theme override directly on landingPage.
+    const lpAny = stored as unknown as {
+      theme: string;
+      primaryColor?: string;
+      accentColor?: string;
+      sections: LandingConfig["sections"];
+      updatedAt?: string;
+    };
+    return {
+      productId: product._id,
+      slug: product.slug || product._id,
+      enabled: true,
+      theme: {
+        presetId:
+          (["health", "organic", "fashion", "food", "default"].includes(
+            lpAny.theme
+          )
+            ? lpAny.theme
+            : "health") as LandingConfig["theme"]["presetId"],
+        primaryColor: lpAny.primaryColor,
+        accentColor: lpAny.accentColor,
+      },
+      sections: lpAny.sections,
+      updatedAt: lpAny.updatedAt,
+    };
+  }
+  return configFromLegacy(product._id, product.slug || product._id, stored);
 }
 
 export function buildDefaultLanding(): ILandingPage {

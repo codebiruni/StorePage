@@ -19,7 +19,7 @@ const LandingPageSchema = new Schema<ILandingPage>(
   {
     theme: {
       type: String,
-      enum: ["health"],
+      enum: ["health", "organic", "fashion", "food", "default"],
       default: "health",
     },
     heroTitle: { type: String, default: "" },
@@ -44,6 +44,17 @@ const LandingPageSchema = new Schema<ILandingPage>(
       othersTitle: { type: String, default: "" },
       othersItems: { type: [String], default: [] },
     },
+
+    /**
+     * New typed-section model. Stored as `Mixed` because each section's
+     * `data` is a discriminated union — defining per-type sub-schemas
+     * here would duplicate every `Section` type from `landing-config.ts`.
+     * Validation happens at the editor level (`renderSectionForm`) instead.
+     */
+    sections: { type: [Schema.Types.Mixed], default: undefined },
+    primaryColor: { type: String, default: undefined },
+    accentColor: { type: String, default: undefined },
+    updatedAt: { type: String, default: undefined },
   },
   { _id: false, strict: true },
 );

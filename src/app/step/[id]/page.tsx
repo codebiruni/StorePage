@@ -1,10 +1,17 @@
 // /step/[id] – public single-product landing page. Server component. Reads the
 // product via getLandingProduct (cached, tagged with `product:${id}`) and
-// hands it to LandingPageRenderer which picks the right theme.
+// hands it to StepPreviewBridge which dispatches by section type.
+//
+// StepPreviewBridge is a client wrapper around LandingPageRenderer that
+// additionally listens for `landing-draft` postMessage events from the
+// dashboard landing-page editor so the iframe mirror can reflect unsaved
+// edits. Real visitors never post messages, so they see exactly the saved
+// state with zero behavioural change.
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import LandingPageRenderer from "@/app/step/_components/LandingPageRenderer";
+import StepPreviewBridge from "@/app/step/_components/StepPreviewBridge";
 import {
+  buildLandingConfig,
   getLandingProduct,
   listAllProductIds,
 } from "@/app/step/_lib/landing-data";
@@ -49,5 +56,13 @@ export default async function StepPage({
   const { id } = await params;
   const product = await getLandingProduct(id);
   if (!product) notFound();
-  return <LandingPageRenderer product={product} />;
+  const config = buildLandingConfig(product);
+  if (!config.enabled) notFound();
+  return (
+    <StepPreviewBridge
+      productId={id}
+      initialConfig={config}
+      product={product}
+    />
+  );
 }

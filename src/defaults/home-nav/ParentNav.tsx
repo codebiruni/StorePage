@@ -3,6 +3,7 @@ import React from "react";
 import NavTopSection from "./NavTopSection";
 import BigScreenNav from "./BigScreenNav";
 import { useContextData } from "@/defaults/context/Context";
+import { usePathname } from "next/navigation";
 
 interface NavItem {
   name: string;
@@ -12,6 +13,14 @@ interface NavItem {
 
 export default function ParentNav() {
   const { navItems, loading, error } = useContextData();
+
+  // Mirror ParentFooter's suppression: the public /step/[id] landing pages
+  // are full-bleed funnels and must not show site chrome (top nav, promo
+  // strip, search bar, etc.). Render nothing when we're inside that route
+  // tree so the funnel owns the entire viewport.
+  // Hooks must be called unconditionally before any early return.
+  const pathname = usePathname();
+  if (pathname?.startsWith("/step")) return null;
 
   if (loading) {
     return (

@@ -11,8 +11,22 @@ import { ObjectId } from "mongoose";
  *   - src/app/dashboard/products/edit/[id]/EditProductPage.tsx (handleSave payload)
  *   - src/app/step/_components/themes/*.tsx (theme renderers)
  */
+export type LandingThemeId =
+  | "health"
+  | "organic"
+  | "fashion"
+  | "food"
+  | "default";
+
+export interface ILandingSection {
+  id: string;
+  order: number;
+  type: string;
+  data: Record<string, unknown>;
+}
+
 export interface ILandingPage {
-  theme: "health";
+  theme: LandingThemeId;
 
   heroTitle: string;
   heroSubtitle: string;
@@ -36,6 +50,14 @@ export interface ILandingPage {
     othersTitle: string;
     othersItems: string[];
   };
+
+  /** New typed-section model. Optional so legacy products keep loading. */
+  sections?: ILandingSection[];
+  /** Per-product color overrides for the new theme system. */
+  primaryColor?: string;
+  accentColor?: string;
+  /** Last save timestamp; written by the editor. */
+  updatedAt?: string;
 }
 
 export interface IProduct {

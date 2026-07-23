@@ -57,6 +57,9 @@ export default function LandingStep({ form, productId, value, onChange }: Props)
                     checked={!!field.value}
                     onCheckedChange={(v) => {
                       field.onChange(v);
+                      // When the admin turns the landing page on for the
+                      // first time we seed the form with a known-default
+                      // shape so the editor has something to render.
                       if (v && !value.theme) {
                         onChange(EMPTY_LANDING_VALUE);
                       }
@@ -69,7 +72,7 @@ export default function LandingStep({ form, productId, value, onChange }: Props)
         </CardHeader>
       </Card>
 
-      {value.theme || form.watch("_useLanding") ? (
+      {form.watch("_useLanding") ? (
         <LandingPageEditor
           productId={productId}
           value={value}
@@ -79,8 +82,9 @@ export default function LandingStep({ form, productId, value, onChange }: Props)
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
             <p className="text-sm text-muted-foreground">
-              Landing page is optional. Skip to publish the bare product
-              without one.
+              Landing page is optional. Toggle the switch above to start
+              building one — pick a theme, drag sections, see the live
+              preview update as you type.
             </p>
           </CardContent>
         </Card>

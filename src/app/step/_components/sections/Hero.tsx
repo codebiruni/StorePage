@@ -1,8 +1,7 @@
-// Hero section: product photo + price + CTA.
-// Accepts { product, landing?, variant? }. When `landing` is omitted it's
-// derived from `product.landingPage`. The `variant` is forwarded as a data
-// attr and selects dark/light styling for legacy themes; HealthPage no
-// longer routes through this component.
+// Hero section: product photo + price + CTA. Accepts { product, landing?,
+// variant? }. When `landing` is omitted it's derived from `product.landingPage`.
+// The `variant` is forwarded as a data attr so different themes can apply
+// their own visual variant without touching this file.
 import Link from "next/link";
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
 import type { ILandingPage } from "@/app/step/_lib/landing-shared";

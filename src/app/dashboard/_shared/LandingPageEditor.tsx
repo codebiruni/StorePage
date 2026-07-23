@@ -1,6 +1,26 @@
 "use client";
 
-import { useState } from "react";
+/**
+ * Dashboard-side landing page editor.
+ *
+ * Public API (kept stable so `LandingStep` / `ProductWizard` don't need to
+ * change yet): accepts a flat `LandingFormValue` and emits one on every
+ * edit. Internally, this component now:
+ *   1. Projects the flat value to a typed `LandingConfig`.
+ *   2. Renders the new section-list editor (`SectionEditorPanel`) on the
+ *      left and the actual landing page renderer (`LandingPageRenderer`)
+ *      on the right for a side-by-side live preview.
+ *   3. Projects the typed `LandingConfig` back to the flat shape on every
+ *      change so persistence stays untouched. The typed section list and
+ *      theme colors are forwarded alongside the legacy fields so the
+ *      public renderer can use whichever view it prefers.
+ */
+
+import { useEffect, useRef, useState } from "react";
+import { Copy, ExternalLink, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,31 +28,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+
+import SectionEditorPanel from "@/app/step/_editor/SectionEditorPanel";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Copy, ExternalLink, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import YouTubePreview from "@/shired-component/YouTubePreview";
+  configToFlat,
+  flatToConfig,
+  type FlatLandingPage,
+} from "@/app/step/_lib/landing-adapter";
+import type { LandingConfig, Section } from "@/app/step/_lib/landing-config";
 
-type ThemeKey = "health";
+/* ─────────────────────────────────────────────────────────────────────────
+ * Public types — kept identical to the previous file shape so existing
+ * imports (`LandingStep`, `ProductWizard`, `interface/product.interface.ts`)
+ * continue to compile.
+ * ───────────────────────────────────────────────────────────────────────── */
 
-const THEMES: { value: ThemeKey; label: string; hint: string }[] = [
-  {
-    value: "health",
-    label: "Health",
-    hint: "High-contrast funnel — red CTA, single product, repeated offer. Built for health / wellness / consumables.",
-  },
-];
+type ThemeKey = "health" | "organic" | "fashion" | "food" | "default";
 
 export interface LandingFormValue {
   theme: ThemeKey;
@@ -53,9 +64,16 @@ export interface LandingFormValue {
   comparisonOthersTitle: string;
   comparisonOthersItems: string[];
   phoneStripNote: string;
+  // ── Typed-section view (forwarded to `persistLanding` when present) ──
+  // The `SectionEditorPanel` produces these via the typed `LandingConfig`.
+  // They are optional so legacy callers that only set flat fields keep
+  // compiling unchanged.
+  sections?: Section[];
+  primaryColor?: string;
+  accentColor?: string;
 }
 
-const EMPTY: LandingFormValue = {
+export const EMPTY_LANDING_VALUE: LandingFormValue = {
   theme: "health",
   heroTitle: "",
   heroSubtitle: "",
@@ -76,27 +94,34 @@ const EMPTY: LandingFormValue = {
   phoneStripNote: "ফোনে অর্ডার করুন অথবা প্রয়োজনে কল করুন",
 };
 
-interface Props {
-  productId?: string;
-  value?: LandingFormValue;
-  onChange?: (value: LandingFormValue) => void;
-}
-
-/**
- * Coerce an incoming (possibly partial) value into a fully-populated
- * `LandingFormValue`. Products saved before new fields were added to the
- * editor will be missing those array fields, and calling `.map` on
- * `undefined` blows up the form. Defaulting missing arrays to `[]` keeps
- * the editor safe across all stored products.
- */
 function normalize(input: Partial<LandingFormValue> | undefined): LandingFormValue {
   const base = input ?? {};
+
+  const theme: ThemeKey =
+    base.theme === "organic" ||
+    base.theme === "fashion" ||
+    base.theme === "food" ||
+    base.theme === "default"
+      ? base.theme
+      : "health";
+  // Forward the typed-section view verbatim when present. `configToFlat`
+  // is the source of truth for these fields — we never recompute them
+  // here, only round-trip what the adapter already produced.
+  const sections = Array.isArray(base.sections) ? base.sections : undefined;
+  const primaryColor =
+    typeof base.primaryColor === "string" && base.primaryColor.length > 0
+      ? base.primaryColor
+      : undefined;
+  const accentColor =
+    typeof base.accentColor === "string" && base.accentColor.length > 0
+      ? base.accentColor
+      : undefined;
   return {
-    theme: (base.theme as ThemeKey) ?? EMPTY.theme,
+    theme,
     heroTitle: base.heroTitle ?? "",
     heroSubtitle: base.heroSubtitle ?? "",
-    heroBadge: base.heroBadge ?? EMPTY.heroBadge,
-    heroCtaLabel: base.heroCtaLabel ?? EMPTY.heroCtaLabel,
+    heroBadge: base.heroBadge ?? EMPTY_LANDING_VALUE.heroBadge,
+    heroCtaLabel: base.heroCtaLabel ?? EMPTY_LANDING_VALUE.heroCtaLabel,
     painPoints: base.painPoints ?? [],
     benefits: base.benefits ?? [],
     howToUse: base.howToUse ?? [],
@@ -105,68 +130,50 @@ function normalize(input: Partial<LandingFormValue> | undefined): LandingFormVal
     vslUrl: base.vslUrl ?? "",
     youtubeUrl: base.youtubeUrl ?? "",
     checkoutNote: base.checkoutNote ?? "",
-    comparisonOursTitle: base.comparisonOursTitle ?? "",
+    comparisonOursTitle:
+      base.comparisonOursTitle ?? EMPTY_LANDING_VALUE.comparisonOursTitle,
     comparisonOursItems: base.comparisonOursItems ?? [],
-    comparisonOthersTitle: base.comparisonOthersTitle ?? "",
+    comparisonOthersTitle:
+      base.comparisonOthersTitle ?? EMPTY_LANDING_VALUE.comparisonOthersTitle,
     comparisonOthersItems: base.comparisonOthersItems ?? [],
-    phoneStripNote: base.phoneStripNote ?? "",
+    phoneStripNote: base.phoneStripNote ?? EMPTY_LANDING_VALUE.phoneStripNote,
+    ...(sections ? { sections } : null),
+    ...(primaryColor ? { primaryColor } : null),
+    ...(accentColor ? { accentColor } : null),
   };
 }
 
-function ListEditor({
-  values,
-  onChange,
-  placeholder,
-  rows = 2,
-}: {
-  values: string[] | undefined;
-  onChange: (next: string[]) => void;
-  placeholder: string;
-  rows?: number;
-}) {
-  const list = values ?? [];
-  function update(i: number, val: string) {
-    onChange(list.map((v, idx) => (idx === i ? val : v)));
-  }
-  function add() {
-    onChange([...list, ""]);
-  }
-  function remove(i: number) {
-    onChange(list.filter((_, idx) => idx !== i));
-  }
-  return (
-    <div className="space-y-2">
-      {list.map((v, i) => (
-        <div key={i} className="flex items-start gap-2">
-          <Textarea
-            value={v}
-            rows={rows}
-            onChange={(e) => update(i, e.target.value)}
-            placeholder={placeholder}
-            className="min-h-[60px]"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => remove(i)}
-            aria-label="Remove"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ))}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={add}
-        className="w-full"
-      >
-        <Plus className="mr-1 h-4 w-4" /> Add
-      </Button>
-    </div>
-  );
+/* ─────────────────────────────────────────────────────────────────────────
+ * Adapter: flat LandingFormValue <-> typed LandingConfig
+ * ───────────────────────────────────────────────────────────────────────── */
+
+function fromFlat(
+  productId: string | undefined,
+  flat: LandingFormValue
+): LandingConfig {
+  const id = productId ?? "preview";
+  return flatToConfig(id, id, flat as unknown as FlatLandingPage);
+}
+
+function toFlat(
+  config: LandingConfig,
+  previous: LandingFormValue
+): LandingFormValue {
+  const flat = configToFlat(config, previous as unknown as FlatLandingPage);
+  // configToFlat returns a broader FlatLandingPage (it can carry fields
+  // outside the editor's shape, e.g. `videoUrl`); `normalize` only reads
+  // the named fields the editor cares about.
+  return normalize(flat as unknown as LandingFormValue);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Component
+ * ───────────────────────────────────────────────────────────────────────── */
+
+interface Props {
+  productId?: string;
+  value?: LandingFormValue;
+  onChange?: (value: LandingFormValue) => void;
 }
 
 export default function LandingPageEditor({
@@ -174,23 +181,90 @@ export default function LandingPageEditor({
   value: controlled,
   onChange,
 }: Props) {
-  const [internal, setInternal] = useState<LandingFormValue>(EMPTY);
+  const [internal, setInternal] = useState<LandingFormValue>(
+    EMPTY_LANDING_VALUE
+  );
   const value = controlled ? normalize(controlled) : internal;
-  const setValue = (next: LandingFormValue) => {
-    if (!controlled) setInternal(next);
-    onChange?.(next);
-  };
 
-  function patch<K extends keyof LandingFormValue>(
-    key: K,
-    v: LandingFormValue[K],
-  ) {
-    setValue({ ...value, [key]: v });
+  // Config is the source of truth for the renderer / editor. We mirror it
+  // back to `flat` on every change so the wizard's onChange keeps
+  // receiving the legacy shape.
+  const [config, setConfig] = useState<LandingConfig>(() =>
+    fromFlat(productId, value)
+  );
+
+  // Re-sync when the external value or productId changes. We compare
+  // against a ref so we only re-bootstrap once per productId swap, not
+  // on every local keystroke round-trip.
+  const lastSyncedProductId = useRef<string | undefined>(productId);
+  useEffect(() => {
+    if (productId !== lastSyncedProductId.current) {
+      lastSyncedProductId.current = productId;
+      setConfig(fromFlat(productId, value));
+    }
+  }, [productId, value]);
+
+  // Live preview iframe — mirrors the actual public page at /step/[id].
+  // We hold a ref to its contentWindow so we can postMessage the current
+  // draft on every edit. The iframe's StepPreviewBridge listens and
+  // re-renders using the supplied flat value instead of the saved one.
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  // Latest flat value, read by the message-sender effect below so we
+  // don't have to re-bind the postMessage handler on every keystroke.
+  const latestFlatRef = useRef<FlatLandingPage>(
+    value as unknown as FlatLandingPage,
+  );
+  useEffect(() => {
+    latestFlatRef.current = value as unknown as FlatLandingPage;
+  }, [value]);
+
+  // Whenever the iframe signals it's ready (initial load + any reload
+  // from a productId swap), flush the current draft so the mirrored
+  // page catches up to whatever edits exist on the parent's local state.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function onMessage(event: MessageEvent<unknown>) {
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
+      const data = event.data as { type?: unknown } | null;
+      if (data?.type === "landing-preview-ready") {
+        flushDraft();
+      }
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [productId]);
+
+  function flushDraft() {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    try {
+      win.postMessage(
+        { type: "landing-draft", flat: latestFlatRef.current },
+        "*",
+      );
+    } catch {
+      /* iframe gone or cross-origin — nothing we can do. */
+    }
+  }
+
+  // Push every config edit (i.e. every keystroke that mutates the typed
+  // `config`) through to the iframe so the mirror updates in real time.
+  useEffect(() => {
+    if (!productId) return;
+    flushDraft();
+  }, [config, productId]);
+
+  function handleConfigChange(next: LandingConfig) {
+    setConfig(next);
+    const flat = toFlat(next, value);
+    if (!controlled) setInternal(flat);
+    onChange?.(flat);
   }
 
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
   const landingUrl = productId ? `${origin}/step/${productId}` : "";
+  const iframeSrc = productId ? `/step/${productId}` : "";
 
   async function copyUrl() {
     if (!landingUrl) return;
@@ -214,275 +288,84 @@ export default function LandingPageEditor({
           <div>
             <CardTitle>🧪 Landing Page Builder</CardTitle>
             <CardDescription>
-              Ultra-fast standalone sales funnel at{" "}
+              Edit sections on the left, the public page previews live on
+              the right. Saved at{" "}
               <code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
-                /step/{productId}
+                /step/{productId ?? "{productId}"}
               </code>
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={copyUrl} disabled={!productId}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={copyUrl}
+              disabled={!productId}
+            >
               <Copy className="mr-1 h-4 w-4" /> Copy URL
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={openPreview} disabled={!productId}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openPreview}
+              disabled={!productId}
+            >
               <ExternalLink className="mr-1 h-4 w-4" /> Preview
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Theme picker */}
-        <div className="grid gap-2">
-          <Label>Theme</Label>
-          <Select
-            value={value.theme}
-            onValueChange={(v) => patch("theme", v as ThemeKey)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {THEMES.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{t.label}</span>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {t.hint}
-                    </Badge>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
-        {/* Hero copy */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-1 sm:col-span-3">
-            <Label>Hero title</Label>
-            <Textarea
-              value={value.heroTitle}
-              onChange={(e) => patch("heroTitle", e.target.value)}
-              placeholder="মাথা ব্যথা থেকে মুক্তি পান ১০ মিনিটে"
-              rows={2}
-              className="min-h-[60px]"
-            />
+      <CardContent>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          {/* Editor pane */}
+          <div className="rounded-lg bg-white p-3">
+            <SectionEditorPanel value={config} onChange={handleConfigChange} />
           </div>
-          <div className="space-y-1">
-            <Label>Hero badge</Label>
-            <Input
-              value={value.heroBadge}
-              onChange={(e) => patch("heroBadge", e.target.value)}
-              placeholder="Limited Time Offer"
-            />
-          </div>
-          <div className="space-y-1 sm:col-span-2">
-            <Label>Hero subtitle</Label>
-            <Input
-              value={value.heroSubtitle}
-              onChange={(e) => patch("heroSubtitle", e.target.value)}
-              placeholder="প্রাকৃতিক উপাদান, ১০০% অরিজিনাল, ক্যাশ অন ডেলিভারি"
-            />
-          </div>
-          <div className="space-y-1 sm:col-span-1">
-            <Label>CTA label</Label>
-            <Input
-              value={value.heroCtaLabel}
-              onChange={(e) => patch("heroCtaLabel", e.target.value)}
-              placeholder="অর্ডার করুন"
-            />
-          </div>
-        </div>
 
-        {/* Pain points */}
-        <div className="space-y-2">
-          <Label>Pain Points (কষ্ট / সমস্যা)</Label>
-          <ListEditor
-            values={value.painPoints}
-            onChange={(v) => patch("painPoints", v)}
-            placeholder="প্রতিদিন ক্লান্তি অনুভব করছেন?"
-          />
-        </div>
-
-        {/* Benefits */}
-        <div className="space-y-2">
-          <Label>Benefits (সুবিধা)</Label>
-          <ListEditor
-            values={value.benefits}
-            onChange={(v) => patch("benefits", v)}
-            placeholder="১০০% প্রাকৃতিক উপাদান — কোন ক্ষতিকর রাসায়নিক নেই"
-          />
-        </div>
-
-        {/* How-to */}
-        <div className="space-y-2">
-          <Label>How to use (ব্যবহারের নিয়ম)</Label>
-          <ListEditor
-            values={value.howToUse}
-            onChange={(v) => patch("howToUse", v)}
-            placeholder="প্রতিদিন সকালে খালি পেটে ১ চামচ পানিসহ গ্রহণ করুন"
-          />
-        </div>
-
-        {/* Trust badges */}
-        <div className="space-y-2">
-          <Label>Trust badges (max 6)</Label>
-          <ListEditor
-            values={value.trustBadges}
-            onChange={(v) => patch("trustBadges", v.slice(0, 6))}
-            placeholder="সারাদেশে ডেলিভারি"
-            rows={1}
-          />
-        </div>
-
-        {/* Guarantee */}
-        <div className="space-y-2">
-          <Label>Guarantee copy</Label>
-          <Textarea
-            value={value.guarantee}
-            onChange={(e) => patch("guarantee", e.target.value)}
-            placeholder="পণ্য হাতে পেয়ে সন্তুষ্ট না হলে ৩ দিনের মধ্যে ফেরত দিন..."
-            rows={3}
-          />
-        </div>
-
-        {/* VSL */}
-        <div className="space-y-2">
-          <Label>Video URL (only used by Video Hero theme)</Label>
-          <Input
-            value={value.vslUrl}
-            onChange={(e) => patch("vslUrl", e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
-          />
-        </div>
-
-        {/* YouTube showcase (used by ALL themes) */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="youtubeUrl">
-              YouTube Showcase Video{" "}
-              <span className="text-xs font-normal text-slate-500">
-                (optional — shown above the order form on every theme)
-              </span>
-            </Label>
-            {value.youtubeUrl ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => patch("youtubeUrl", "")}
-                className="text-rose-600 hover:text-rose-700"
-              >
-                Clear
-              </Button>
-            ) : null}
-          </div>
-          <Input
-            id="youtubeUrl"
-            value={value.youtubeUrl}
-            onChange={(e) => patch("youtubeUrl", e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-          />
-          {/* Live click-to-play preview. Only mounts when the user clicks Play
-              so typing the URL never causes YouTube's heavy iframe to load. */}
-          {value.youtubeUrl ? (
-            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/50 p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-                Live Preview
-              </p>
-              <YouTubePreview
-                url={value.youtubeUrl}
-                interactive
-                title="Preview"
-                className="mx-auto max-w-md"
-              />
+          {/* Live preview pane — iframed mirror of the actual public
+              landing page. Updates on every edit via postMessage. Until
+              the product has been saved at least once there's no URL to
+              load, so we show a hint instead. */}
+          <div className="rounded-lg border border-black/10 bg-white">
+            <div className="flex items-center justify-between border-b border-black/5 px-3 py-2 text-xs font-medium text-black/60">
+              <span>Live preview — mirrors /step/{productId ?? "{productId}"}</span>
+              {iframeSrc && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={openPreview}
+                >
+                  Open in new tab
+                </Button>
+              )}
             </div>
-          ) : (
-            <p className="text-xs text-slate-500">
-              Paste any{" "}
-              <code className="rounded bg-slate-100 px-1">
-                youtube.com/watch?v=…
-              </code>{" "}
-              or{" "}
-              <code className="rounded bg-slate-100 px-1">
-                youtu.be/…
-              </code>{" "}
-              link. The video will render on the public landing page above
-              the order form.
-            </p>
-          )}
-        </div>
-
-        {/* Checkout note */}
-        <div className="space-y-2">
-          <Label>Checkout note</Label>
-          <Textarea
-            value={value.checkoutNote}
-            onChange={(e) => patch("checkoutNote", e.target.value)}
-            placeholder="আজই অর্ডার করুন — ক্যাশ অন ডেলিভারি প্রযোজ্য"
-            rows={2}
-          />
-        </div>
-
-        {/* Phone strip — used by the Health theme. */}
-        <div className="space-y-2">
-          <Label>
-            Phone strip headline{" "}
-            <span className="text-xs font-normal text-slate-500">
-              (used by Health theme)
-            </span>
-          </Label>
-          <Input
-            value={value.phoneStripNote}
-            onChange={(e) => patch("phoneStripNote", e.target.value)}
-            placeholder="ফোনে অর্ডার করুন অথবা প্রয়োজনে কল করুন"
-          />
-        </div>
-
-        {/* Comparison block — used by the Health theme. */}
-        <div className="space-y-4 rounded-lg border border-rose-200 bg-white p-4">
-          <div>
-            <Label className="text-base">
-              Comparison block — "আমরা VS অন্যরা"
-            </Label>
-            <p className="mt-1 text-xs text-slate-500">
-              Two columns shown side by side on the Health theme. Leave a
-              column empty to fall back to a sensible generic copy that
-              works for any product category.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-sm">"আমাদের" column title</Label>
-              <Input
-                value={value.comparisonOursTitle}
-                onChange={(e) =>
-                  patch("comparisonOursTitle", e.target.value)
-                }
-                placeholder="আমাদের পণ্য"
-              />
-              <Label className="text-sm">"আমাদের" claims</Label>
-              <ListEditor
-                values={value.comparisonOursItems}
-                onChange={(v) => patch("comparisonOursItems", v)}
-                placeholder="কাচা বিটরুট এর রস থেকে পাউডার করা হয়েছে"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">"অন্যরা" column title</Label>
-              <Input
-                value={value.comparisonOthersTitle}
-                onChange={(e) =>
-                  patch("comparisonOthersTitle", e.target.value)
-                }
-                placeholder="বাজারের অন্যান্য পণ্য"
-              />
-              <Label className="text-sm">"অন্যরা" claims</Label>
-              <ListEditor
-                values={value.comparisonOthersItems}
-                onChange={(v) => patch("comparisonOthersItems", v)}
-                placeholder="কৃত্রিম রঙ বা প্রিজারভেটিভ মেশানো হয়"
-              />
+            <div className="relative h-[640px] overflow-hidden bg-white">
+              {iframeSrc ? (
+                <iframe
+                  ref={iframeRef}
+                  src={iframeSrc}
+                  title={`Landing page preview for ${productId}`}
+                  className="h-full w-full border-0"
+                  // Allow the iframe to be scripted into the same-origin
+                  // /step/[id] route we control. `sandbox` would help
+                  // harden against injected foreign HTML, but the URL is
+                  // hardcoded to our own /step route so it's a no-op
+                  // defence-in-depth knob here — left off intentionally.
+                />
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin text-rose-400" />
+                  <p>
+                    Save the product once to generate a URL, then the live
+                    landing page will mirror here.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -490,6 +373,3 @@ export default function LandingPageEditor({
     </Card>
   );
 }
-
-/** Plain React-hook-form-friendly value shape (matches ILandingPage + theme). */
-export const EMPTY_LANDING_VALUE = EMPTY;

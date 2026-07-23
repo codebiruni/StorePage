@@ -48,6 +48,12 @@ import type { LandingFormValue } from "@/app/dashboard/_shared/LandingPageEditor
  * `value.comparison.oursTitle`. Saving an empty form then overwrites the
  * real values in Mongo, which is how the comparison block stopped
  * persisting in the first place.
+ *
+ * The typed-section view (`sections[]`, `primaryColor`, `accentColor`) is
+ * carried through verbatim when present, so opening the editor on a
+ * product that was saved with the unified section builder does NOT fall
+ * back to the legacy projection — every section the admin added survives
+ * a round-trip through the wizard.
  */
 function toLandingFormValue(
   src: Partial<LandingFormValue> | null | undefined,
@@ -59,11 +65,27 @@ function toLandingFormValue(
       othersTitle?: string;
       othersItems?: string[];
     };
+    sections?: LandingFormValue["sections"];
+    primaryColor?: string;
+    accentColor?: string;
+    updatedAt?: string;
   };
   // Treat a nested `comparison.*` as authoritative — only fall back to the
   // flat keys when the nested object isn't present (e.g. partial editor
   // values handed back from onChange before the user reaches that field).
   const cmp = flat.comparison;
+  // Forward the typed-section view when present. These are owned by the
+  // unified `SectionEditorPanel`; discarding them here would silently
+  // downgrade a saved product back to the legacy projection on next edit.
+  const sections = Array.isArray(flat.sections) ? flat.sections : undefined;
+  const primaryColor =
+    typeof flat.primaryColor === "string" && flat.primaryColor.length > 0
+      ? flat.primaryColor
+      : undefined;
+  const accentColor =
+    typeof flat.accentColor === "string" && flat.accentColor.length > 0
+      ? flat.accentColor
+      : undefined;
   return {
     theme: (flat.theme as LandingFormValue["theme"]) ?? "health",
     heroTitle: flat.heroTitle ?? "",
@@ -87,6 +109,9 @@ function toLandingFormValue(
     comparisonOthersItems:
       cmp?.othersItems ?? flat.comparisonOthersItems ?? [],
     phoneStripNote: flat.phoneStripNote ?? "",
+    ...(sections ? { sections } : null),
+    ...(primaryColor ? { primaryColor } : null),
+    ...(accentColor ? { accentColor } : null),
   };
 }
 
@@ -401,7 +426,14 @@ export default function ProductWizard(props: ProductWizardProps) {
           })}
         </ol>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div
+          className={cn(
+            "grid gap-6",
+            currentStep === "landing"
+              ? "lg:grid-cols-1"
+              : "lg:grid-cols-[1fr_320px]",
+          )}
+        >
           {/* ── Main column ──────────────────────────────────────────── */}
           <div className="min-w-0 space-y-6">
             {isDirty && (
@@ -474,7 +506,12 @@ export default function ProductWizard(props: ProductWizardProps) {
           </div>
 
           {/* ── Live preview card ────────────────────────────────────── */}
-          <aside className="hidden lg:block">
+          <aside
+            className={cn(
+              "hidden lg:block",
+              currentStep === "landing" && "hidden",
+            )}
+          >
             <div className="sticky top-6 space-y-3">
               <Card className="overflow-hidden">
                 <CardHeader className="pb-2">
