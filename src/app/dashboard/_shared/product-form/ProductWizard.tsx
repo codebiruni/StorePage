@@ -505,13 +505,10 @@ export default function ProductWizard(props: ProductWizardProps) {
             </div>
           </div>
 
-          {/* ── Live preview card ────────────────────────────────────── */}
-          <aside
-            className={cn(
-              "hidden lg:block",
-              currentStep === "landing" && "hidden",
-            )}
-          >
+          {/* ── Live preview card (hidden on the landing step — the
+              LandingPageEditor has its own side-by-side iframe preview). */}
+          {currentStep !== "landing" && (
+            <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-3">
               <Card className="overflow-hidden">
                 <CardHeader className="pb-2">
@@ -572,6 +569,7 @@ export default function ProductWizard(props: ProductWizardProps) {
               </Card>
             </div>
           </aside>
+          )}
         </div>
       </div>
     </FormProvider>

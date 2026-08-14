@@ -282,15 +282,15 @@ export default function LandingPageEditor({
   }
 
   return (
-    <Card className="border-rose-200 bg-rose-50/30">
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>🧪 Landing Page Builder</CardTitle>
+            <CardTitle>Landing Page Builder</CardTitle>
             <CardDescription>
               Edit sections on the left, the public page previews live on
               the right. Saved at{" "}
-              <code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                 /step/{productId ?? "{productId}"}
               </code>
             </CardDescription>
@@ -329,7 +329,7 @@ export default function LandingPageEditor({
               landing page. Updates on every edit via postMessage. Until
               the product has been saved at least once there's no URL to
               load, so we show a hint instead. */}
-          <div className="rounded-lg border border-black/10 bg-white">
+          <div className="flex flex-col rounded-lg border border-black/10 bg-white overflow-hidden">
             <div className="flex items-center justify-between border-b border-black/5 px-3 py-2 text-xs font-medium text-black/60">
               <span>Live preview — mirrors /step/{productId ?? "{productId}"}</span>
               {iframeSrc && (
@@ -344,13 +344,13 @@ export default function LandingPageEditor({
                 </Button>
               )}
             </div>
-            <div className="relative h-[640px] overflow-hidden bg-white">
+            <div className="relative flex-1 min-h-[640px] overflow-hidden bg-white">
               {iframeSrc ? (
                 <iframe
                   ref={iframeRef}
                   src={iframeSrc}
                   title={`Landing page preview for ${productId}`}
-                  className="h-full w-full border-0"
+                  className="h-full w-full flex-1 border-0"
                   // Allow the iframe to be scripted into the same-origin
                   // /step/[id] route we control. `sandbox` would help
                   // harden against injected foreign HTML, but the URL is
@@ -359,7 +359,7 @@ export default function LandingPageEditor({
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin text-rose-400" />
+                  <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
                   <p>
                     Save the product once to generate a URL, then the live
                     landing page will mirror here.

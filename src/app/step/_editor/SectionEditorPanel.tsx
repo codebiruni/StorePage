@@ -14,10 +14,11 @@
  * live preview work without debouncing or iframes.
  */
 
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -64,6 +65,12 @@ const PRESET_LABELS: Record<ThemePresetId, string> = {
 
 export default function SectionEditorPanel({ value, onChange }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
+  /**
+   * Section currently being dragged. When null, no drag is in progress.
+   * We use plain HTML5 DnD (no extra dep) — set during `dragstart`,
+   * read on `drop`, and cleared on `dragend`.
+   */
+  const [dragId, setDragId] = useState<string | null>(null);
 
   function patchTheme(patch: Partial<LandingTheme>) {
     onChange({ ...value, theme: { ...value.theme, ...patch } });
@@ -76,24 +83,26 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
     });
   }
 
-  function moveSection(id: string, dir: -1 | 1) {
-    const idx = value.sections.findIndex((s) => s.id === id);
-    const j = idx + dir;
-    if (idx < 0 || j < 0 || j >= value.sections.length) return;
-    const next = [...value.sections];
-    [next[idx], next[j]] = [next[j], next[idx]];
-    onChange({
-      ...value,
-      sections: next.map((s, i) => ({ ...s, order: i })),
-    });
-  }
-
   function removeSection(id: string) {
     onChange({
       ...value,
       sections: value.sections
         .filter((s) => s.id !== id)
         .map((s, i) => ({ ...s, order: i })),
+    });
+  }
+
+  function reorderSection(sourceId: string, targetId: string) {
+    if (sourceId === targetId) return;
+    const sections = [...value.sections];
+    const fromIdx = sections.findIndex((s) => s.id === sourceId);
+    const toIdx = sections.findIndex((s) => s.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const [moved] = sections.splice(fromIdx, 1);
+    sections.splice(toIdx, 0, moved);
+    onChange({
+      ...value,
+      sections: sections.map((s, i) => ({ ...s, order: i })),
     });
   }
 
@@ -175,7 +184,7 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
           <div>
             <h3 className="text-sm font-semibold">Sections</h3>
             <p className="text-xs text-black/50">
-              Reorder to control what visitors see first.
+              Drag the grip to reorder. Click a section to edit its content.
             </p>
           </div>
 
@@ -191,16 +200,48 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
             {value.sections.map((section, idx) => (
               <li
                 key={section.id}
-                className="rounded-lg border border-black/10 bg-white"
+                draggable={openId !== section.id}
+                onDragStart={(e) => {
+                  // The drag image is the whole row by default — fine.
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", section.id);
+                  setDragId(section.id);
+                }}
+                onDragOver={(e) => {
+                  if (!dragId) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const sourceId = e.dataTransfer.getData("text/plain") || dragId;
+                  if (sourceId) reorderSection(sourceId, section.id);
+                  setDragId(null);
+                }}
+                onDragEnd={() => setDragId(null)}
+                className={cn(
+                  "rounded-lg border border-black/10 bg-white transition-opacity",
+                  dragId === section.id && "opacity-50",
+                )}
               >
-                <div className="flex items-center justify-between gap-2 px-3 py-2">
-                  <button
-                    type="button"
-                    className="flex flex-1 items-center gap-2 text-left"
-                    onClick={() =>
-                      setOpenId((cur) => (cur === section.id ? null : section.id))
-                    }
-                  >
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-black/[0.02]"
+                  onClick={() =>
+                    setOpenId((cur) => (cur === section.id ? null : section.id))
+                  }
+                >
+                  <span className="flex flex-1 items-center gap-2">
+                    <span
+                      // Drag handle — separate from the row click target so
+                      // clicking the body still toggles open. Browsers only
+                      // start a drag when this element is the source.
+                      className="flex h-5 w-5 cursor-grab items-center justify-center rounded text-black/40 hover:bg-black/5 active:cursor-grabbing"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      aria-hidden="true"
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </span>
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/5 text-[10px] font-medium">
                       {idx + 1}
                     </span>
@@ -215,29 +256,14 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                         always last
                       </span>
                     ) : null}
-                  </button>
+                  </span>
 
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      disabled={idx === 0}
-                      onClick={() => moveSection(section.id, -1)}
-                      aria-label="Move up"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      disabled={idx === value.sections.length - 1}
-                      onClick={() => moveSection(section.id, 1)}
-                      aria-label="Move down"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
+                  <span
+                    className="flex items-center gap-1"
+                    // Stop the row-toggle from firing when the admin uses
+                    // the delete button — it's nested inside the row button.
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Button
                       type="button"
                       size="icon"
@@ -247,8 +273,8 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
-                </div>
+                  </span>
+                </button>
 
                 {openId === section.id && (
                   <div className="border-t border-black/5 px-3 py-3">

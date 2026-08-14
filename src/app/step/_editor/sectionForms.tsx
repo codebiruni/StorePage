@@ -59,6 +59,28 @@ export function patchSectionData<S extends Section>(
 // Per-section forms
 // ─────────────────────────────────────────────────────────────────────────
 
+/**
+ * Convert a stored countdown timestamp into the "YYYY-MM-DDTHH:mm" string
+ * that <input type="datetime-local"> expects. Accepts either a full ISO
+ * string (saved by older versions of this form) or already-local strings
+ * (saved by the current version). Returns "" when nothing usable is stored.
+ */
+function toLocalInputValue(value: string | undefined): string {
+  if (!value) return "";
+  // Already in the shape we want — don't re-parse it through Date, which
+  // would shift it back into UTC and display the wrong moment.
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value)) {
+    return value.slice(0, 16);
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  );
+}
+
 export function HeaderForm({
   section,
   onChange,
@@ -451,14 +473,14 @@ export function CountdownForm({
       />
       <TextField
         label="Ends at"
-        hint="ISO date-time. Timer counts down to this moment."
-        value={section.data.endsAt ?? ""}
+        hint="Local date-time. Timer counts down to this moment."
+        value={toLocalInputValue(section.data.endsAt)}
         inputProps={{ type: "datetime-local" }}
         onChange={(endsAt) => {
-          // <input type="datetime-local"> returns a value like
-          // "2026-07-22T15:30" with no timezone — convert to ISO.
-          const iso = endsAt ? new Date(endsAt).toISOString() : "";
-          onChange(patchSectionData(section, { endsAt: iso }));
+          // <input type="datetime-local"> returns "YYYY-MM-DDTHH:mm" with
+          // no timezone. Store that string verbatim so the field round-trips
+          // and the countdown uses the exact moment the user picked.
+          onChange(patchSectionData(section, { endsAt }));
         }}
       />
     </div>
