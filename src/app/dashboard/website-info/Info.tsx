@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -25,7 +24,6 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import {
   Pencil,
@@ -154,6 +152,25 @@ function safeHref(value: string, prefix?: (v: string) => string) {
   if (!value) return "#";
   if (/^https?:\/\//i.test(value)) return value;
   return prefix ? prefix(value) : `https://${value}`;
+}
+
+/**
+ * Google Maps share/short links (maps.app.goo.gl, goo.gl/maps, …) redirect to
+ * the main app and refuse to render inside an <iframe>. Only URLs that point
+ * at the public embed endpoint can be previewed inline.
+ */
+function isEmbeddableMapUrl(value: string): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value.startsWith("http") ? value : `https://${value}`);
+    const host = url.hostname.toLowerCase();
+    return (
+      (host === "www.google.com" || host === "google.com") &&
+      url.pathname.startsWith("/maps/embed")
+    );
+  } catch {
+    return false;
+  }
 }
 
 export default function Info() {
@@ -302,7 +319,7 @@ export default function Info() {
 
   // -------------------------- Render --------------------------
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 w-full max-w-full">
       <WorkspaceHeader
         title="Website Information"
         subtitle="Single source of truth for storefront identity, banners, contacts and policies"
@@ -378,8 +395,8 @@ export default function Info() {
         </div>
       )}
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="w-full justify-start overflow-x-auto h-auto p-1">
+      <Tabs defaultValue="overview" className="space-y-6 w-full min-w-0 max-w-full overflow-hidden">
+        <TabsList className="grid h-auto p-1 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 w-full max-w-full gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="banners">Banners</TabsTrigger>
@@ -389,7 +406,7 @@ export default function Info() {
         </TabsList>
 
         {/* ---------------- Overview ---------------- */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-6 min-w-0">
           <div className="grid lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
               <CardHeader>
@@ -465,7 +482,7 @@ export default function Info() {
         </TabsContent>
 
         {/* ---------------- Branding ---------------- */}
-        <TabsContent value="branding" className="space-y-6">
+        <TabsContent value="branding" className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -486,7 +503,7 @@ export default function Info() {
                 />
               </div>
               <div className="flex-1 space-y-3">
-                <FieldRow label="File URL" value={data.logo} mono onCopy={() => copy(data.logo, "Logo URL")} />
+                <FieldRow label="File URL" value={data.logo} onCopy={() => copy(data.logo, "Logo URL")} />
                 <p className="text-xs text-muted-foreground">
                   Open the edit screen to replace the logo.
                 </p>
@@ -500,7 +517,7 @@ export default function Info() {
         </TabsContent>
 
         {/* ---------------- Banners ---------------- */}
-        <TabsContent value="banners" className="space-y-6">
+        <TabsContent value="banners" className="space-y-6 min-w-0">
           <div className="grid md:grid-cols-2 gap-6">
             <BannerCard
               label="First Banner"
@@ -574,7 +591,7 @@ export default function Info() {
         </TabsContent>
 
         {/* ---------------- Social ---------------- */}
-        <TabsContent value="social" className="space-y-6">
+        <TabsContent value="social" className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -638,7 +655,7 @@ export default function Info() {
         </TabsContent>
 
         {/* ---------------- Locations ---------------- */}
-        <TabsContent value="locations" className="space-y-6">
+        <TabsContent value="locations" className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -682,36 +699,75 @@ export default function Info() {
                 Map
               </CardTitle>
               <CardDescription>
-                Embedded location shown on the contact page.
+                Location shown on the contact page.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 min-w-0">
               {data.mapLink ? (
-                <div className="rounded-xl overflow-hidden border bg-muted/20">
-                  <iframe
-                    src={data.mapLink}
-                    width="100%"
-                    height="320"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Store location"
-                    className="w-full"
-                  />
-                </div>
+                isEmbeddableMapUrl(data.mapLink) ? (
+                  <div className="rounded-xl overflow-hidden border bg-muted/20 max-w-3xl">
+                    <div className="aspect-video w-full">
+                      <iframe
+                        src={data.mapLink}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title="Store location"
+                        className="w-full h-full"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/30 px-4 py-10 text-center max-w-3xl">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <MapPin className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Map preview unavailable</p>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        Google Maps share links can&apos;t be embedded directly.
+                        Open the location in Google Maps to view it.
+                      </p>
+                    </div>
+                  </div>
+                )
               ) : (
                 <p className="text-sm text-muted-foreground">No map link configured.</p>
               )}
               {data.mapLink && (
-                <FieldRow label="Map URL" value={data.mapLink} mono onCopy={() => copy(data.mapLink, "Map URL")} />
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <Button asChild variant="default" size="sm" className="shrink-0">
+                    <a
+                      href={data.mapLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MapPin className="h-4 w-4 mr-2" />
+                      Open location in Google Maps
+                      <ExternalLink className="h-3.5 w-3.5 ml-1.5 opacity-70" />
+                    </a>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => copy(data.mapLink, "Map URL")}
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1" />
+                    Copy URL
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* ---------------- Footer & Misc ---------------- */}
-        <TabsContent value="footer" className="space-y-6">
+        <TabsContent value="footer" className="space-y-6 min-w-0">
+          {/* Footer links */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -725,57 +781,111 @@ export default function Info() {
                 Quick links rendered at the bottom of the storefront.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="min-w-0">
               {data.footerLinks?.length ? (
-                <div className="flex flex-wrap gap-2">
+                <ul className="grid gap-2 sm:grid-cols-2">
                   {data.footerLinks.map((link) => (
-                    <a
+                    <li
                       key={link._id}
-                      href={safeHref(link.url || "#")}
-                      target={link.url ? "_blank" : undefined}
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-secondary text-secondary-foreground px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
+                      className="group flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 min-w-0 hover:bg-muted/50 transition-colors"
                     >
-                      {link.name}
-                      {link.url && <ExternalLink className="h-3 w-3 opacity-70" />}
-                    </a>
+                      <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <a
+                        href={safeHref(link.url || "#")}
+                        target={link.url ? "_blank" : undefined}
+                        rel="noopener noreferrer"
+                        className="flex-1 min-w-0 truncate text-sm font-medium hover:underline"
+                        title={link.name}
+                      >
+                        {link.name}
+                      </a>
+                      {link.url ? (
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                      ) : (
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          No URL
+                        </span>
+                      )}
+                    </li>
                   ))}
-                </div>
+                </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No footer links configured.</p>
+                <p className="text-sm text-muted-foreground">
+                  No footer links configured.
+                </p>
               )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Newspaper className="h-5 w-5 text-primary" />
-                Marquee text
-              </CardTitle>
-              <CardDescription>Scrolling announcement rendered site-wide.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm italic">
-                “{data.marqueeText}”
-              </div>
-              <FieldRow label="Plain text" value={data.marqueeText} onCopy={() => copy(data.marqueeText, "Marquee text")} />
-            </CardContent>
-          </Card>
+          {/* Marquee + Metadata side by side on md+ */}
+          <div className="grid gap-6 md:grid-cols-2 min-w-0">
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Newspaper className="h-5 w-5 text-primary" />
+                  Marquee text
+                </CardTitle>
+                <CardDescription>
+                  Scrolling announcement rendered site-wide.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 min-w-0">
+                <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm italic break-words overflow-wrap-anywhere whitespace-pre-wrap min-w-0">
+                  “{data.marqueeText}”
+                </div>
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground truncate min-w-0">
+                    {data.marqueeText.length} characters
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => copy(data.marqueeText, "Marquee text")}
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarClock className="h-5 w-5 text-primary" />
-                Metadata
-              </CardTitle>
-              <CardDescription>Audit timestamps for the current configuration.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
-              <FieldTile icon={CalendarClock} label="Created" value={formatDate(data.createdAt)} />
-              <FieldTile icon={CalendarClock} label="Last updated" value={formatDate(data.updatedAt)} />
-            </CardContent>
-          </Card>
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-primary" />
+                  Metadata
+                </CardTitle>
+                <CardDescription>
+                  Audit timestamps for the current configuration.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 min-w-0">
+                <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2 min-w-0">
+                  <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Created
+                    </p>
+                    <p className="text-sm font-medium truncate">
+                      {formatDate(data.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2 min-w-0">
+                  <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Last updated
+                    </p>
+                    <p className="text-sm font-medium truncate">
+                      {formatDate(data.updatedAt)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
@@ -839,23 +949,24 @@ function FieldTile({
 function FieldRow({
   label,
   value,
-  mono,
   onCopy,
 }: {
   label: string;
   value: string;
-  mono?: boolean;
   onCopy?: () => void;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 min-w-0">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 truncate rounded-md bg-muted px-2 py-1.5 text-xs font-mono">
+      <div className="flex items-stretch gap-2 min-w-0 max-w-full">
+        <code
+          title={value}
+          className="block min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded-md bg-muted px-2 py-1.5 text-xs font-mono [scrollbar-width:thin]"
+        >
           {value}
         </code>
         {onCopy && (
-          <Button variant="outline" size="sm" onClick={onCopy}>
+          <Button variant="outline" size="sm" onClick={onCopy} className="shrink-0">
             <Copy className="h-3.5 w-3.5 mr-1" />
             Copy
           </Button>

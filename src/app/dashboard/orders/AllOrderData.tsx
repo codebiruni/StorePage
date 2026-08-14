@@ -44,15 +44,15 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select"
-import { 
-  MoreHorizontal, 
-  Search, 
-  Eye, 
-  Edit, 
-  Printer, 
-  Package, 
+import {
+  MoreHorizontal,
+  Search,
+  Eye,
+  Edit,
+  Printer,
+  Package,
   Filter,
-  Download,
+  RefreshCw,
   Truck,
   CheckCircle,
   XCircle,
@@ -64,6 +64,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { publicEnv } from '@/lib/publicEnv'
 import { useSiteConfig } from '@/defaults/context/SiteConfigProvider'
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Product {
   _id: string
@@ -427,22 +428,29 @@ export default function AllOrderData() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Order Management</h1>
           <p className="text-muted-foreground">
             Manage and track all customer orders
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={fetchOrders} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
+        <div className="flex flex-wrap items-center gap-2 sm:mr-6">
+          <Button
+            onClick={fetchOrders}
+            variant="outline"
+            className="gap-2 transition-all duration-200 hover:bg-accent active:scale-[0.97]"
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 transition-transform duration-500 ${loading ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
           {selectedOrders.length > 0 && (
-            <Button 
+            <Button
               onClick={() => setBulkSteadfastDialogOpen(true)}
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 transition-all duration-200 active:scale-[0.97]"
             >
               <Truck className="h-4 w-4" />
               Create Steadfast ({selectedOrders.length})
@@ -540,17 +548,11 @@ export default function AllOrderData() {
               </CardDescription>
             </div>
             {orders.length > 0 && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedOrders.length === orders.length && orders.length > 0}
-                  onChange={selectAllOrders}
-                  className="rounded border-gray-300"
-                />
-                <Label className="text-sm">
-                  Select all ({selectedOrders.length} selected)
-                </Label>
-              </div>
+              <SelectAllHeader
+                selectedCount={selectedOrders.length}
+                totalCount={orders.length}
+                onToggle={selectAllOrders}
+              />
             )}
           </div>
         </CardHeader>
@@ -578,13 +580,13 @@ export default function AllOrderData() {
                 const isSelected = selectedOrders.includes(order._id)
                 
                 return (
-                  <TableRow key={order._id} className={isSelected ? 'bg-blue-50' : ''}>
+                  <TableRow key={order._id} className={isSelected ? 'bg-blue-50 transition-colors duration-150' : 'transition-colors duration-150'}>
                     <TableCell>
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={isSelected}
-                        onChange={() => toggleOrderSelection(order._id)}
-                        className="rounded border-gray-300"
+                        onCheckedChange={() => toggleOrderSelection(order._id)}
+                        aria-label={`Select order ${order.orderId}`}
+                        className="cursor-pointer"
                       />
                     </TableCell>
                     <TableCell className="font-medium">
@@ -1353,6 +1355,53 @@ export default function AllOrderData() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+/**
+ * Header "Select all" control.
+ *
+ * Renders a tri-state checkbox so the visual matches the actual selection:
+ *   - empty         -> nothing selected
+ *   - checked       -> every row selected
+ *   - indeterminate -> a subset selected (radix sets the `data-state` attr,
+ *                      we just toggle the ref's indeterminate property because
+ *                      Radix does not manage it automatically)
+ *
+ * The wrapper animates the label change so going from
+ * "Select all (0 selected)" -> "Select all (5 selected)" feels smooth.
+ */
+interface SelectAllHeaderProps {
+  selectedCount: number
+  totalCount: number
+  onToggle: () => void
+}
+
+function SelectAllHeader({ selectedCount, totalCount, onToggle }: SelectAllHeaderProps) {
+  const allSelected = selectedCount === totalCount && totalCount > 0
+  const partiallySelected = selectedCount > 0 && selectedCount < totalCount
+
+  return (
+    <div className="flex items-center gap-2">
+      <Checkbox
+        checked={allSelected ? true : partiallySelected ? 'indeterminate' : false}
+        onCheckedChange={onToggle}
+        aria-label="Select all orders"
+        className="cursor-pointer transition-transform duration-150 hover:scale-110 active:scale-95"
+      />
+      <Label
+        className="text-sm cursor-pointer select-none transition-colors duration-150 hover:text-foreground"
+        onClick={onToggle}
+      >
+        Select all{' '}
+        <span
+          key={selectedCount}
+          className="inline-block animate-in fade-in slide-in-from-bottom-1 duration-200 text-muted-foreground"
+        >
+          ({selectedCount} selected)
+        </span>
+      </Label>
     </div>
   )
 }

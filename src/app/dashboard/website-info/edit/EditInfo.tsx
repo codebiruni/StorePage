@@ -345,7 +345,6 @@ export default function EditInfo() {
         throw new Error(data.message || "Failed to update website info");
       }
       toast.success("Website information updated successfully");
-      router.push("/dashboard/website-info");
     } catch (error) {
       console.error("Submission error:", error);
       toast.error("Failed to update website info", {
@@ -417,8 +416,8 @@ export default function EditInfo() {
           onSubmit={form.handleSubmit(handleSubmit)}
           className="space-y-6"
         >
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="w-full justify-start overflow-x-auto h-auto p-1">
+          <Tabs defaultValue="overview" className="space-y-6 w-full min-w-0">
+            <TabsList className="inline-flex h-auto p-1 flex-wrap">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="branding">Branding</TabsTrigger>
               <TabsTrigger value="banners">Banners</TabsTrigger>
@@ -429,7 +428,7 @@ export default function EditInfo() {
             </TabsList>
 
             {/* OVERVIEW */}
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="overview" className="space-y-6 min-w-0">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -517,7 +516,7 @@ export default function EditInfo() {
             </TabsContent>
 
             {/* BRANDING */}
-            <TabsContent value="branding" className="space-y-6">
+            <TabsContent value="branding" className="space-y-6 min-w-0">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -564,7 +563,7 @@ export default function EditInfo() {
             </TabsContent>
 
             {/* BANNERS */}
-            <TabsContent value="banners" className="space-y-6">
+            <TabsContent value="banners" className="space-y-6 min-w-0">
               <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
@@ -740,7 +739,7 @@ export default function EditInfo() {
             </TabsContent>
 
             {/* SOCIAL */}
-            <TabsContent value="social" className="space-y-6">
+            <TabsContent value="social" className="space-y-6 min-w-0">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -813,7 +812,7 @@ export default function EditInfo() {
             </TabsContent>
 
             {/* LOCATIONS */}
-            <TabsContent value="locations" className="space-y-6">
+            <TabsContent value="locations" className="space-y-6 min-w-0">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -930,7 +929,7 @@ export default function EditInfo() {
             </TabsContent>
 
             {/* FOOTER & MISC */}
-            <TabsContent value="footer" className="space-y-6">
+            <TabsContent value="footer" className="space-y-6 min-w-0">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -962,27 +961,42 @@ export default function EditInfo() {
                   {footerFields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="rounded-lg border p-4 grid gap-3 sm:grid-cols-2"
+                      className="rounded-lg border p-4 space-y-3"
                     >
-                      <FormField
-                        control={form.control}
-                        name={`footerLinks.${index}.name`}
-                        render={({ field: f }) => (
-                          <FormItem>
-                            <FormLabel>Label</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Return Policy" {...f} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="flex items-end gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">
+                          Footer link {index + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFooter(index)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name={`footerLinks.${index}.name`}
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel>Label</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Return Policy" {...f} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         <FormField
                           control={form.control}
                           name={`footerLinks.${index}.url`}
                           render={({ field: f }) => (
-                            <FormItem className="flex-1">
+                            <FormItem>
                               <FormLabel>URL</FormLabel>
                               <FormControl>
                                 <Input placeholder="/return-policy" {...f} />
@@ -991,15 +1005,6 @@ export default function EditInfo() {
                             </FormItem>
                           )}
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFooter(index)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1008,7 +1013,7 @@ export default function EditInfo() {
             </TabsContent>
 
             {/* ANALYTICS */}
-            <TabsContent value="analytics" className="space-y-6">
+            <TabsContent value="analytics" className="space-y-6 min-w-0">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

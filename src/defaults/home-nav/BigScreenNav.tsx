@@ -36,7 +36,7 @@ export default function BigScreenNav({ navItems }: { navItems: NavItem[] }) {
         </Link>
 
         {/* Category Links */}
-        <div className="flex flex-wrap justify-center items-center gap-1 relative">
+        <div className="flex flex-nowrap justify-start items-center gap-1 relative overflow-x-auto scrollbar-hide min-w-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {navItems.map((item, index) => (
             <div
               key={item.id}
