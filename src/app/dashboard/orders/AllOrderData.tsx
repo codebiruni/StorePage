@@ -160,10 +160,19 @@ export default function AllOrderData() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
-  const [steadfastDialogOpen, setSteadfastDialogOpen] = useState(false)
-  const [bulkSteadfastDialogOpen, setBulkSteadfastDialogOpen] = useState(false)
+  const [courierSuccessDialogOpen, setCourierSuccessDialogOpen] = useState(false)
+  const [courierSuccessMeta, setCourierSuccessMeta] = useState<{
+    courier: "pathao" | "steadfast" | "redx"
+    bulkSize: number
+  } | null>(null)
+  const [bulkPushDialogOpen, setBulkPushDialogOpen] = useState(false)
+  const [bulkPushProvider, setBulkPushProvider] = useState<"pathao" | "steadfast" | "redx" | null>(null)
   const [creatingSteadfast, setCreatingSteadfast] = useState(false)
+  const [creatingPathao, setCreatingPathao] = useState(false)
+  const [creatingRedx, setCreatingRedx] = useState(false)
   const [creatingBulkSteadfast, setCreatingBulkSteadfast] = useState(false)
+  const [creatingBulkPathao, setCreatingBulkPathao] = useState(false)
+  const [creatingBulkRedx, setCreatingBulkRedx] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   
@@ -180,9 +189,9 @@ export default function AllOrderData() {
   // Brand identity for printed receipts. siteConfig (DB-backed) wins when
   // populated, otherwise fall back to the env-loader default so an empty
   // siteInfo document never renders an empty shop name on a printed invoice.
-  const siteConfig = useSiteConfig()
-  const shopName = siteConfig.brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || 'Our Shop'
-  const shopLogo = siteConfig.brandLogo || publicEnv.NEXT_PUBLIC_DEFAULT_LOGO
+  const { config: siteConfig } = useSiteConfig()
+  const shopName = siteConfig.name || publicEnv.NEXT_PUBLIC_BRAND_NAME || 'Our Shop'
+  const shopLogo = siteConfig.logo || publicEnv.NEXT_PUBLIC_DEFAULT_LOGO
 
   const fetchOrders = async () => {
     try {
@@ -270,7 +279,8 @@ export default function AllOrderData() {
 
       if (result.success) {
         toast.success('Order created successfully in Steadfast')
-        setSteadfastDialogOpen(true)
+        setCourierSuccessMeta({ courier: 'steadfast', bulkSize: 1 })
+        setCourierSuccessDialogOpen(true)
         fetchOrders() // Refresh to get updated tracking info
       } else {
         toast.error(result.message || 'Failed to create Steadfast order')
@@ -290,7 +300,7 @@ export default function AllOrderData() {
     }
 
     setCreatingBulkSteadfast(true)
-    
+
     try {
       const response = await fetch('/api/v1/steadfast-order/bulk', {
         method: 'POST',
@@ -306,11 +316,10 @@ export default function AllOrderData() {
 
       if (result.success) {
         toast.success(`Bulk order processed. ${result.data.successful} successful, ${result.data.failed} failed.`)
-        setBulkSteadfastDialogOpen(false)
+        setBulkPushDialogOpen(false)
         setSelectedOrders([])
         fetchOrders() // Refresh to get updated tracking info
-        
-        // Show detailed results
+
         if (result.data.failed > 0) {
           toast.error(`${result.data.failed} orders failed to process. Check console for details.`)
           console.log('Bulk order details:', result.data.details)
@@ -323,6 +332,124 @@ export default function AllOrderData() {
       console.error('Error creating bulk Steadfast orders:', error)
     } finally {
       setCreatingBulkSteadfast(false)
+    }
+  }
+
+  const handleCreatePathaoOrder = async (order: Order) => {
+    setSelectedOrder(order)
+    setCreatingPathao(true)
+
+    try {
+      const response = await fetch('/api/v1/pathao-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order._id }),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Order created successfully in Pathao')
+        setCourierSuccessMeta({ courier: 'pathao', bulkSize: 1 })
+        setCourierSuccessDialogOpen(true)
+        fetchOrders()
+      } else {
+        toast.error(result.message || 'Failed to create Pathao order')
+      }
+    } catch (error) {
+      toast.error('Error creating Pathao order')
+      console.error('Error creating Pathao order:', error)
+    } finally {
+      setCreatingPathao(false)
+    }
+  }
+
+  const handleCreateRedxOrder = async (order: Order) => {
+    setSelectedOrder(order)
+    setCreatingRedx(true)
+
+    try {
+      const response = await fetch('/api/v1/redx-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order._id }),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Order created successfully in RedX')
+        setCourierSuccessMeta({ courier: 'redx', bulkSize: 1 })
+        setCourierSuccessDialogOpen(true)
+        fetchOrders()
+      } else {
+        toast.error(result.message || 'Failed to create RedX order')
+      }
+    } catch (error) {
+      toast.error('Error creating RedX order')
+      console.error('Error creating RedX order:', error)
+    } finally {
+      setCreatingRedx(false)
+    }
+  }
+
+  const handleBulkCreatePathaoOrders = async () => {
+    if (selectedOrders.length === 0) {
+      toast.error('Please select orders to push to Pathao')
+      return
+    }
+    setCreatingBulkPathao(true)
+    try {
+      const response = await fetch('/api/v1/pathao-order/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: selectedOrders }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        const ok = result.data?.successful ?? 0
+        const fail = result.data?.failed ?? 0
+        toast.success(`Pathao bulk processed. ${ok} successful, ${fail} failed.`)
+        setBulkPushDialogOpen(false)
+        setSelectedOrders([])
+        fetchOrders()
+      } else {
+        toast.error(result.message || 'Failed to create bulk Pathao orders')
+      }
+    } catch (error) {
+      toast.error('Error creating bulk Pathao orders')
+      console.error('Error creating bulk Pathao orders:', error)
+    } finally {
+      setCreatingBulkPathao(false)
+    }
+  }
+
+  const handleBulkCreateRedxOrders = async () => {
+    if (selectedOrders.length === 0) {
+      toast.error('Please select orders to push to RedX')
+      return
+    }
+    setCreatingBulkRedx(true)
+    try {
+      const response = await fetch('/api/v1/redx-order/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: selectedOrders }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        const ok = result.data?.successful ?? 0
+        const fail = result.data?.failed ?? 0
+        toast.success(`RedX bulk processed. ${ok} successful, ${fail} failed.`)
+        setBulkPushDialogOpen(false)
+        setSelectedOrders([])
+        fetchOrders()
+      } else {
+        toast.error(result.message || 'Failed to create bulk RedX orders')
+      }
+    } catch (error) {
+      toast.error('Error creating bulk RedX orders')
+      console.error('Error creating bulk RedX orders:', error)
+    } finally {
+      setCreatingBulkRedx(false)
     }
   }
 
@@ -448,13 +575,44 @@ export default function AllOrderData() {
             Refresh
           </Button>
           {selectedOrders.length > 0 && (
-            <Button
-              onClick={() => setBulkSteadfastDialogOpen(true)}
-              className="gap-2 bg-blue-600 hover:bg-blue-700 transition-all duration-200 active:scale-[0.97]"
-            >
-              <Truck className="h-4 w-4" />
-              Create Steadfast ({selectedOrders.length})
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="gap-2 bg-blue-600 hover:bg-blue-700 transition-all duration-200 active:scale-[0.97]">
+                  <Truck className="h-4 w-4" />
+                  Push to Courier ({selectedOrders.length})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Push {selectedOrders.length} orders to</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setBulkPushProvider('steadfast')
+                    setBulkPushDialogOpen(true)
+                  }}
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  Steadfast
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setBulkPushProvider('pathao')
+                    setBulkPushDialogOpen(true)
+                  }}
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  Pathao
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setBulkPushProvider('redx')
+                    setBulkPushDialogOpen(true)
+                  }}
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  RedX
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
@@ -682,22 +840,46 @@ export default function AllOrderData() {
                             Print Receipt
                           </DropdownMenuItem>
                           {!order.trackingId && (
-                            <DropdownMenuItem 
-                              onClick={() => handleCreateSteadfastOrder(order)}
-                              disabled={creatingSteadfast}
-                            >
-                              {creatingSteadfast ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Truck className="h-4 w-4 mr-2" />
-                              )}
-                              Create Steadfast
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleCreateSteadfastOrder(order)}
+                                disabled={creatingSteadfast}
+                              >
+                                {creatingSteadfast ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Truck className="h-4 w-4 mr-2" />
+                                )}
+                                Create Steadfast
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleCreatePathaoOrder(order)}
+                                disabled={creatingPathao}
+                              >
+                                {creatingPathao ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Truck className="h-4 w-4 mr-2" />
+                                )}
+                                Create Pathao
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleCreateRedxOrder(order)}
+                                disabled={creatingRedx}
+                              >
+                                {creatingRedx ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Truck className="h-4 w-4 mr-2" />
+                                )}
+                                Create RedX
+                              </DropdownMenuItem>
+                            </>
                           )}
                           {order.trackingId && (
                             <DropdownMenuItem className="text-green-600">
                               <CheckCircle className="h-4 w-4 mr-2" />
-                              Steadfast Created
+                              Courier Created
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -1202,20 +1384,25 @@ export default function AllOrderData() {
   </DialogContent>
 </Dialog>
 
-      {/* Steadfast Success Dialog */}
-      <Dialog open={steadfastDialogOpen} onOpenChange={setSteadfastDialogOpen}>
+      {/* Courier Success Dialog (generic — works for all three providers) */}
+      <Dialog open={courierSuccessDialogOpen} onOpenChange={setCourierSuccessDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-green-600">
               <CheckCircle className="h-5 w-5" />
-              Steadfast Order Created
+              {courierSuccessMeta?.courier === 'pathao'
+                ? 'Pathao Order Created'
+                : courierSuccessMeta?.courier === 'redx'
+                ? 'RedX Order Created'
+                : 'Steadfast Order Created'}
             </DialogTitle>
           </DialogHeader>
-          {selectedOrder && (
+          {selectedOrder && courierSuccessMeta && (
             <div className="space-y-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm text-green-800">
-                  Order <strong>{selectedOrder.orderId}</strong> has been successfully created in Steadfast Courier.
+                  Order <strong>{selectedOrder.orderId}</strong> has been successfully created
+                  in <strong>{courierSuccessMeta.courier === 'pathao' ? 'Pathao' : courierSuccessMeta.courier === 'redx' ? 'RedX' : 'Steadfast'}</strong>.
                 </p>
                 {selectedOrder.trackingId && (
                   <p className="text-sm text-green-800 mt-2">
@@ -1224,36 +1411,45 @@ export default function AllOrderData() {
                 )}
               </div>
               <div className="text-sm text-muted-foreground">
-                The order status has been updated to ``Confirmed`` and tracking information has been added.
+                Order status updated to <code>confirmed</code> and tracking information has been added.
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setSteadfastDialogOpen(false)}>
+            <Button onClick={() => setCourierSuccessDialogOpen(false)}>
               Continue
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Steadfast Dialog */}
-      <Dialog open={bulkSteadfastDialogOpen} onOpenChange={setBulkSteadfastDialogOpen}>
+      {/* Bulk Courier Push Dialog */}
+      <Dialog open={bulkPushDialogOpen} onOpenChange={(open) => {
+        if (
+          !creatingBulkSteadfast &&
+          !creatingBulkPathao &&
+          !creatingBulkRedx
+        ) {
+          setBulkPushDialogOpen(open)
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5" />
-              Create Bulk Steadfast Orders
+              Push to {bulkPushProvider === 'pathao' ? 'Pathao' : bulkPushProvider === 'redx' ? 'RedX' : 'Steadfast'}
             </DialogTitle>
             <DialogDescription>
-              Create Steadfast courier orders for {selectedOrders.length} selected orders
+              Push {selectedOrders.length} selected orders to {bulkPushProvider ?? 'the courier'}.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                This will create Steadfast courier orders for all selected orders.
-                Orders that already have tracking IDs will be skipped.
+                This will create courier orders for all selected orders via{' '}
+                <strong>{bulkPushProvider ?? 'the courier'}</strong>. Orders that already have tracking IDs
+                will be skipped.
               </p>
             </div>
 
@@ -1282,21 +1478,25 @@ export default function AllOrderData() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setBulkSteadfastDialogOpen(false)}
-              disabled={creatingBulkSteadfast}
+              onClick={() => setBulkPushDialogOpen(false)}
+              disabled={creatingBulkSteadfast || creatingBulkPathao || creatingBulkRedx}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleBulkCreateSteadfastOrders}
-              disabled={creatingBulkSteadfast}
+              onClick={() => {
+                if (bulkPushProvider === 'pathao') return handleBulkCreatePathaoOrders()
+                if (bulkPushProvider === 'redx') return handleBulkCreateRedxOrders()
+                return handleBulkCreateSteadfastOrders()
+              }}
+              disabled={creatingBulkSteadfast || creatingBulkPathao || creatingBulkRedx}
               className="gap-2"
             >
-              {creatingBulkSteadfast && (
+              {(creatingBulkSteadfast || creatingBulkPathao || creatingBulkRedx) && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
               <Truck className="h-4 w-4" />
-              Create {selectedOrders.length} Orders
+              Push {selectedOrders.length} Orders
             </Button>
           </DialogFooter>
         </DialogContent>

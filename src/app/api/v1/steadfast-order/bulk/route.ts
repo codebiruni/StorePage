@@ -1,13 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
 import connectDb from "@/lib/connectdb";
 import OrderModel from "@/models/order.model";
-import Product from "@/models/product.model";
-
-const STEADFAST_BASE_URL = "https://portal.packzy.com/api/v1";
-const STEADFAST_API_KEY = "f4bwzpolj2inirf3wcxjmfxv46heg3sa";
-const STEADFAST_SECRET_KEY = "ew5p0oh9eaq3buedaftzqwx6";
+import { auth } from "@/lib/auth";
+import {
+  loadCourierCreds,
+  isSteadfastConfigured,
+  normalizePhone,
+  stripSlash,
+  DEFAULTS,
+} from "@/lib/courier";
+import {
+  fetchActiveOrders,
+  buildCourierResponse,
+  codAmount,
+  itemCount,
+  itemDescription,
+  type CourierPushResult,
+} from "@/lib/courier/orderPayload";
 
 interface BulkOrderItem {
   invoice: string;
@@ -35,153 +44,175 @@ interface SteadfastBulkOrderResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    await auth();
     await connectDb();
-    const body = await request.json();
-    const { orderIds } = body;
 
-    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+    const body = await request.json();
+    const orderIds: unknown = body?.orderIds;
+
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
       return NextResponse.json(
-        { success: false, message: "Order IDs array is required" },
+        { success: false, message: "Order IDs array is required." },
         { status: 400 }
       );
     }
-
     if (orderIds.length > 500) {
       return NextResponse.json(
-        { success: false, message: "Maximum 500 orders allowed per bulk request" },
+        { success: false, message: "Maximum 500 orders allowed per bulk request." },
         { status: 400 }
       );
     }
 
-    // Fetch orders from database
-    const orders = await OrderModel.find({
-      _id: { $in: orderIds },
-      isDeleted: false,
-    }).populate("products");
+    const creds = await loadCourierCreds();
+    if (!isSteadfastConfigured(creds)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Steadfast is not configured. Add API Key + Secret Key in Courier API settings.",
+        },
+        { status: 412 }
+      );
+    }
+    if (!creds.steadfastEnabled) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Steadfast integration is disabled. Toggle Enable inside Courier API settings.",
+        },
+        { status: 412 }
+      );
+    }
 
+    const orders = await fetchActiveOrders(orderIds);
     if (orders.length === 0) {
       return NextResponse.json(
-        { success: false, message: "No valid orders found" },
+        { success: false, message: "No valid orders found." },
         { status: 404 }
       );
     }
 
-    // Prepare bulk order data for Steadfast
-    const bulkOrders: BulkOrderItem[] = orders.map(order => ({
+    const bulkOrders: BulkOrderItem[] = orders.map((order) => ({
       invoice: order.orderId,
-      recipient_name: order.name,
-      recipient_phone: order.number,
-      recipient_address: order.address,
-      cod_amount: order.paymentMethod === "cash-on-delivery" ? order.grandTotal : 0,
+      // Steadfast requires recipient_name ≤ 100 chars and recipient_address
+      // ≤ 250 chars; clamp defensively so a long form input doesn't 502.
+      recipient_name: clamp(order.name, 100),
+      recipient_phone: normalizePhone(order.number),
+      recipient_address: clamp(order.address, 250),
+      cod_amount: codAmount(order),
       note: order.note || `Order ${order.orderId}`,
-      item_description: order.products.map((product: any) => product.name).join(", "),
-      total_lot: order.products.length,
-      delivery_type: 0, // 0 = home delivery, 1 = point delivery
+      item_description: itemDescription(order),
+      total_lot: itemCount(order),
+      delivery_type: 0,
     }));
 
-    // Send bulk order to Steadfast
-    const response = await fetch(`${STEADFAST_BASE_URL}/create_order/bulk-order`, {
+    const baseUrl = stripSlash(creds.steadfastBaseUrl || DEFAULTS.steadfast);
+    const response = await fetch(`${baseUrl}/create_order/bulk-order`, {
       method: "POST",
       headers: {
-        "Api-Key": STEADFAST_API_KEY,
-        "Secret-Key": STEADFAST_SECRET_KEY,
+        "Api-Key": creds.steadfastApiKey!,
+        "Secret-Key": creds.steadfastSecretKey!,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        data: JSON.stringify(bulkOrders),
-      }),
+      body: JSON.stringify({ data: JSON.stringify(bulkOrders) }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Steadfast bulk API error:", errorText);
-      throw new Error(`Steadfast bulk API returned ${response.status}: ${errorText}`);
+    const raw = await response.text();
+    // Steadfast returns non-2xx responses as JSON like
+    // `{"status":401,"message":"Account is not active!"}` — handle that
+    // explicitly so the client gets a useful message instead of a generic
+    // "non-JSON" 502.
+    const parsed = raw ? safeJson(raw) : null;
+    if (parsed && !Array.isArray(parsed) && typeof parsed === "object") {
+      const envelope = parsed as { status?: number; message?: string };
+      const upstreamMessage = envelope.message || `Steadfast returned HTTP ${response.status}.`;
+      console.error("steadfast bulk upstream error:", response.status, envelope);
+      return NextResponse.json(
+        {
+          success: false,
+          message: upstreamMessage,
+          data: envelope,
+        },
+        { status: response.status || 502 }
+      );
     }
 
-    const steadfastResponse: SteadfastBulkOrderResponse[] = await response.json();
+    let steadfastResponses: SteadfastBulkOrderResponse[] = [];
+    if (Array.isArray(parsed)) {
+      steadfastResponses = parsed;
+    } else {
+      console.error("steadfast bulk non-JSON response:", response.status, raw);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Steadfast bulk returned non-JSON response (HTTP ${response.status}).`,
+          data: raw,
+        },
+        { status: 502 }
+      );
+    }
 
-    // Process responses and update orders
-    const results = await processBulkResponses(orders, steadfastResponse);
+    const results: CourierPushResult[] = [];
+    for (let i = 0; i < orders.length; i++) {
+      const order = orders[i];
+      const sf = steadfastResponses[i];
+      if (sf && sf.status === "success" && sf.tracking_code && sf.consignment_id) {
+        await OrderModel.findByIdAndUpdate(order._id, {
+          trackingId: sf.tracking_code,
+          orderStatus: "confirmed",
+        });
+        results.push({
+          orderId: String(order._id),
+          orderNumber: order.orderId,
+          status: "success",
+          courierName: "steadfast",
+          consignmentId: sf.consignment_id,
+          trackingCode: sf.tracking_code,
+          message: "Order created in Steadfast.",
+          raw: sf,
+          httpStatus: 200,
+        });
+      } else {
+        results.push({
+          orderId: String(order._id),
+          orderNumber: order.orderId,
+          status: "error",
+          courierName: "steadfast",
+          message: sf ? "Steadfast rejected this order." : "Missing response from Steadfast.",
+          raw: sf,
+          httpStatus: 502,
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Bulk order processed. ${results.successful} successful, ${results.failed} failed.`,
-      data: {
-        total: orders.length,
-        successful: results.successful,
-        failed: results.failed,
-        details: results.details,
-      },
+      message: `Bulk order processed. ${results.filter((r) => r.status === "success").length} successful, ${results.filter((r) => r.status !== "success").length} failed.`,
+      data: buildCourierResponse(results),
     });
-
   } catch (err) {
-    console.error("Steadfast bulk order creation error:", err);
+    console.error("steadfast bulk order error:", err);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: err instanceof Error ? err.message : "Failed to create bulk steadfast orders" 
+      {
+        success: false,
+        message: err instanceof Error ? err.message : "Failed to create bulk Steadfast orders.",
       },
       { status: 500 }
     );
   }
 }
 
-async function processBulkResponses(
-  orders: any[], 
-  steadfastResponses: SteadfastBulkOrderResponse[]
-) {
-  const results = {
-    successful: 0,
-    failed: 0,
-    details: [] as any[],
-  };
+function clamp(value: string, max: number): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
+}
 
-  for (let i = 0; i < orders.length; i++) {
-    const order = orders[i];
-    const steadfastResponse = steadfastResponses[i];
-
-    if (steadfastResponse.status === "success" && steadfastResponse.consignment_id && steadfastResponse.tracking_code) {
-      // Update order with tracking information
-      try {
-        await OrderModel.findByIdAndUpdate(
-          order._id,
-          {
-            trackingId: steadfastResponse.tracking_code,
-            orderStatus: "confirmed",
-          },
-          { new: true }
-        );
-
-        results.successful++;
-        results.details.push({
-          orderId: order._id,
-          orderNumber: order.orderId,
-          status: "success",
-          trackingCode: steadfastResponse.tracking_code,
-          consignmentId: steadfastResponse.consignment_id,
-          message: "Order created successfully in Steadfast",
-        });
-      } catch (updateError) {
-        results.failed++;
-        results.details.push({
-          orderId: order._id,
-          orderNumber: order.orderId,
-          status: "error",
-          message: "Failed to update order with tracking information",
-          error: updateError instanceof Error ? updateError.message : "Unknown error",
-        });
-      }
-    } else {
-      results.failed++;
-      results.details.push({
-        orderId: order._id,
-        orderNumber: order.orderId,
-        status: "error",
-        message: steadfastResponse.status === "error" ? "Steadfast API error" : "Invalid response from Steadfast",
-        steadfastResponse: steadfastResponse,
-      });
-    }
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
-
-  return results;
 }

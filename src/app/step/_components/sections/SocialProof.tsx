@@ -13,7 +13,9 @@ export default function SocialProof({
 }) {
   const list = (
     stats ?? product?.landingPage?.socialProofStats ?? []
-  ).filter((s) => s && s.label && s.value);
+  )
+    .filter((s) => typeof s === "object" && s !== null && s.label && s.value)
+    .map((s) => s as { label: string; value: string });
   if (list.length === 0) return null;
   const dark = variant === "bold";
   return (

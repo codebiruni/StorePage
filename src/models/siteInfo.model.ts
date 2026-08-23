@@ -65,6 +65,41 @@ const SiteInfoSchema: Schema = new Schema<ISiteInfo>(
     ],
 
     marqueeText: { type: String, required: true },
+
+    // Courier credentials for Pathao / Steadfast / RedX integrations.
+    // Stored per-store inside the (single-tenant) siteInfo doc so admins can
+    // configure their own keys from /dashboard/account/courier-api.
+    courier: {
+      // --- Pathao ---
+      pathaoBaseUrl: { type: String, default: "https://api-hermes.pathao.com" },
+      pathaoStoreId: { type: String, default: "" },
+      pathaoClientId: { type: String, default: "" },
+      pathaoClientSecret: { type: String, default: "" },
+      pathaoClientEmail: { type: String, default: "" },
+      pathaoClientPassword: { type: String, default: "" },
+      pathaoAccessToken: { type: String, default: "" },
+      pathaoRefreshToken: { type: String, default: "" },
+      pathaoTokenExpiresAt: { type: String, default: "" },
+      pathaoEnabled: { type: Boolean, default: false },
+
+      // --- Steadfast ---
+      steadfastBaseUrl: {
+        type: String,
+        default: "https://portal.packzy.com/api/v1",
+      },
+      steadfastApiKey: { type: String, default: "" },
+      steadfastSecretKey: { type: String, default: "" },
+      steadfastEnabled: { type: Boolean, default: false },
+
+      // --- RedX ---
+      redxBaseUrl: {
+        type: String,
+        default: "https://openapi.redx.com.bd/v1.0.0-beta",
+      },
+      redxStoreId: { type: String, default: "" },
+      redxApiToken: { type: String, default: "" },
+      redxEnabled: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,

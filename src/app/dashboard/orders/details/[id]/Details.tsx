@@ -86,8 +86,8 @@ export default function OrderDetails() {
   // Brand identity for printed vouchers. siteConfig (DB-backed) wins when
   // populated, otherwise fall back to the env-loader default so an empty
   // siteInfo document never renders an empty shop name on a printed voucher.
-  const siteConfig = useSiteConfig()
-  const shopName = siteConfig.brandName || publicEnv.NEXT_PUBLIC_BRAND_NAME || 'Our Shop'
+  const { config: siteConfig } = useSiteConfig()
+  const shopName = siteConfig.name || publicEnv.NEXT_PUBLIC_BRAND_NAME || 'Our Shop'
 
   useEffect(() => {
     const fetchOrder = async () => {

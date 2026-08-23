@@ -1,13 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
 import connectDb from "@/lib/connectdb";
 import OrderModel from "@/models/order.model";
-import Product from "@/models/product.model";
+import { auth } from "@/lib/auth";
+import {
+  loadCourierCreds,
+  isSteadfastConfigured,
+  stripSlash,
+  DEFAULTS,
+} from "@/lib/courier";
+import {
+  codAmount,
+  itemCount,
+  itemDescription,
+  type CourierPushResult,
+} from "@/lib/courier/orderPayload";
 
-const STEADFAST_BASE_URL = "https://portal.packzy.com/api/v1";
-const STEADFAST_API_KEY = "f4bwzpolj2inirf3wcxjmfxv46heg3sa";
-const STEADFAST_SECRET_KEY = "ew5p0oh9eaq3buedaftzqwx6";
+// Steadfast push — now backed by credentials stored in siteInfo. The hard-
+// coded keys that lived here previously were a security hole (committable,
+// shared by every tenant) and have been removed in favour of the
+// /dashboard/account/courier-api settings page.
 
 interface SteadfastCreateOrderRequest {
   invoice: string;
@@ -23,10 +34,10 @@ interface SteadfastCreateOrderRequest {
   delivery_type?: 0 | 1;
 }
 
-interface SteadfastCreateOrderResponse {
+interface SteadfastCreateOrderEnvelope {
   status: number;
   message: string;
-  consignment: {
+  consignment?: {
     consignment_id: number;
     invoice: string;
     tracking_code: string;
@@ -36,265 +47,214 @@ interface SteadfastCreateOrderResponse {
     cod_amount: number;
     status: string;
     note?: string;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
   };
-}
-
-interface SteadfastBulkOrderResponse {
-  invoice: string;
-  recipient_name: string;
-  recipient_address: string;
-  recipient_phone: string;
-  cod_amount: string;
-  note: string | null;
-  consignment_id: number | null;
-  tracking_code: string | null;
-  status: "success" | "error";
 }
 
 export async function POST(request: NextRequest) {
   try {
+    await auth();
     await connectDb();
-    const body = await request.json();
-    const { orderId } = body;
 
-    if (!orderId) {
+    const parsed = await request.json().catch(() => ({} as { orderId?: string }));
+    const body = parsed as { orderId?: string };
+    if (!body.orderId) {
       return NextResponse.json(
-        { success: false, message: "Order ID is required" },
+        { success: false, message: "Order ID is required." },
         { status: 400 }
       );
     }
 
-    // Fetch order from database
-    const order = await OrderModel.findById(orderId).populate("products");
-    
-    if (!order) {
+    const creds = await loadCourierCreds();
+    if (!isSteadfastConfigured(creds)) {
       return NextResponse.json(
-        { success: false, message: "Order not found" },
+        {
+          success: false,
+          message:
+            "Steadfast is not configured. Add API Key + Secret Key in Courier API settings.",
+        },
+        { status: 412 }
+      );
+    }
+    if (!creds.steadfastEnabled) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Steadfast integration is disabled. Toggle Enable inside Courier API settings.",
+        },
+        { status: 412 }
+      );
+    }
+
+    const order = await OrderModel.findById(body.orderId).populate("products");
+    if (!order || order.isDeleted) {
+      return NextResponse.json(
+        { success: false, message: "Order not found." },
         { status: 404 }
       );
     }
 
-    if (order.isDeleted) {
-      return NextResponse.json(
-        { success: false, message: "Order is deleted" },
-        { status: 400 }
-      );
-    }
-
-    // Prepare steadfast order data
-    const steadfastOrder: SteadfastCreateOrderRequest = {
+    const baseUrl = stripSlash(creds.steadfastBaseUrl || DEFAULTS.steadfast);
+    const payload: SteadfastCreateOrderRequest = {
       invoice: order.orderId,
       recipient_name: order.name,
       recipient_phone: order.number,
       recipient_address: order.address,
-      cod_amount: order.paymentMethod === "cash-on-delivery" ? order.grandTotal : 0,
+      cod_amount: codAmount(order),
       note: order.note || `Order ${order.orderId}`,
-      item_description: order.products.map((product: any) => product.name).join(", "),
-      total_lot: order.products.length,
-      delivery_type: 0, // 0 = home delivery, 1 = point delivery
+      item_description: itemDescription(order),
+      total_lot: itemCount(order),
+      delivery_type: 0,
     };
 
-    // Create order in Steadfast
-    const response = await fetch(`${STEADFAST_BASE_URL}/create_order`, {
+    const res = await fetch(`${baseUrl}/create_order`, {
       method: "POST",
       headers: {
-        "Api-Key": STEADFAST_API_KEY,
-        "Secret-Key": STEADFAST_SECRET_KEY,
+        "Api-Key": creds.steadfastApiKey!,
+        "Secret-Key": creds.steadfastSecretKey!,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(steadfastOrder),
+      body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Steadfast API error:", errorText);
-      throw new Error(`Steadfast API returned ${response.status}: ${errorText}`);
+    const text = await res.text();
+    let json: SteadfastCreateOrderEnvelope;
+    try {
+      json = text ? JSON.parse(text) : ({} as SteadfastCreateOrderEnvelope);
+    } catch {
+      json = { status: res.status, message: text || "Unknown response" };
     }
 
-    const steadfastResponse: SteadfastCreateOrderResponse = await response.json();
-console.log(steadfastResponse)
-    if (steadfastResponse.status !== 200) {
+    if (!res.ok || json.status !== 200 || !json.consignment) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: steadfastResponse.message || "Failed to create order in Steadfast" 
+        {
+          success: false,
+          message: json.message || `Steadfast returned HTTP ${res.status}.`,
+          data: json,
         },
-        { status: 400 }
+        { status: 502 }
       );
     }
 
-    // Update order with tracking information
-    const updatedOrder = await OrderModel.findByIdAndUpdate(
-      orderId,
+    const updated = await OrderModel.findByIdAndUpdate(
+      order._id,
       {
-        trackingId: steadfastResponse.consignment.tracking_code,
-        orderStatus: "confirmed", // Update order status to confirmed
+        trackingId: json.consignment.tracking_code,
+        orderStatus: "confirmed",
       },
       { new: true }
     );
 
+    const result: CourierPushResult = {
+      orderId: String(order._id),
+      orderNumber: order.orderId,
+      status: "success",
+      courierName: "steadfast",
+      consignmentId: json.consignment.consignment_id,
+      trackingCode: json.consignment.tracking_code,
+      message: "Order created in Steadfast.",
+      raw: json,
+      httpStatus: 200,
+    };
+
     return NextResponse.json({
       success: true,
-      message: "Order created successfully in Steadfast",
-      data: {
-        order: updatedOrder,
-        steadfast: steadfastResponse.consignment,
-      },
+      message: "Order created in Steadfast.",
+      data: { order: updated, result, steadfast: json.consignment },
     });
-
   } catch (err) {
-    console.error("Steadfast order creation error:", err);
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: err instanceof Error ? err.message : "Failed to create steadfast order" 
-      },
-      { status: 500 }
-    );
+    return errorResponse(err);
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await auth();
+    await connectDb();
+
     const url = new URL(request.url);
     const action = url.searchParams.get("action");
 
+    const creds = await loadCourierCreds();
+    if (!isSteadfastConfigured(creds)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Steadfast is not configured. Add API Key + Secret Key in Courier API settings.",
+        },
+        { status: 412 }
+      );
+    }
+
+    const baseUrl = stripSlash(creds.steadfastBaseUrl || DEFAULTS.steadfast);
+    const headers = {
+      "Api-Key": creds.steadfastApiKey!,
+      "Secret-Key": creds.steadfastSecretKey!,
+      "Content-Type": "application/json",
+    } as const;
+
     switch (action) {
       case "balance":
-        return await getBalance();
-      case "status":
+        return await fetchAndForward(`${baseUrl}/get_balance`, { method: "GET", headers });
+      case "status": {
         const trackingCode = url.searchParams.get("trackingCode");
         const invoice = url.searchParams.get("invoice");
         const consignmentId = url.searchParams.get("consignmentId");
-        
         if (trackingCode) {
-          return await getStatusByTrackingCode(trackingCode);
-        } else if (invoice) {
-          return await getStatusByInvoice(invoice);
-        } else if (consignmentId) {
-          return await getStatusByConsignmentId(consignmentId);
-        } else {
-          return NextResponse.json(
-            { success: false, message: "Tracking code, invoice, or consignment ID is required" },
-            { status: 400 }
+          return await fetchAndForward(
+            `${baseUrl}/status_by_trackingcode/${encodeURIComponent(trackingCode)}`,
+            { method: "GET", headers }
           );
         }
+        if (invoice) {
+          return await fetchAndForward(
+            `${baseUrl}/status_by_invoice/${encodeURIComponent(invoice)}`,
+            { method: "GET", headers }
+          );
+        }
+        if (consignmentId) {
+          return await fetchAndForward(
+            `${baseUrl}/status_by_cid/${encodeURIComponent(consignmentId)}`,
+            { method: "GET", headers }
+          );
+        }
+        return NextResponse.json(
+          { success: false, message: "Provide trackingCode, invoice, or consignmentId." },
+          { status: 400 }
+        );
+      }
       default:
         return NextResponse.json(
-          { success: false, message: "Valid action parameter is required" },
+          { success: false, message: "Valid action parameter is required." },
           { status: 400 }
         );
     }
   } catch (err) {
-    console.error("Steadfast GET error:", err);
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: err instanceof Error ? err.message : "Failed to fetch steadfast data" 
-      },
-      { status: 500 }
-    );
+    return errorResponse(err);
   }
 }
 
-async function getBalance() {
+async function fetchAndForward(
+  url: string,
+  init: { method: string; headers: Record<string, string> }
+) {
+  const res = await fetch(url, init);
+  const text = await res.text();
+  let data: unknown;
   try {
-    const response = await fetch(`${STEADFAST_BASE_URL}/get_balance`, {
-      method: "GET",
-      headers: {
-        "Api-Key": STEADFAST_API_KEY,
-        "Secret-Key": STEADFAST_SECRET_KEY,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Steadfast API returned ${response.status}`);
-    }
-
-    const balanceData = await response.json();
-    return NextResponse.json({
-      success: true,
-      data: balanceData,
-    });
-  } catch (err) {
-    throw err;
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text };
   }
+  return NextResponse.json({ success: res.ok, data }, { status: res.status });
 }
 
-async function getStatusByTrackingCode(trackingCode: string) {
-  try {
-    const response = await fetch(`${STEADFAST_BASE_URL}/status_by_trackingcode/${trackingCode}`, {
-      method: "GET",
-      headers: {
-        "Api-Key": STEADFAST_API_KEY,
-        "Secret-Key": STEADFAST_SECRET_KEY,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Steadfast API returned ${response.status}`);
-    }
-
-    const statusData = await response.json();
-    return NextResponse.json({
-      success: true,
-      data: statusData,
-    });
-  } catch (err) {
-    throw err;
-  }
-}
-
-async function getStatusByInvoice(invoice: string) {
-  try {
-    const response = await fetch(`${STEADFAST_BASE_URL}/status_by_invoice/${invoice}`, {
-      method: "GET",
-      headers: {
-        "Api-Key": STEADFAST_API_KEY,
-        "Secret-Key": STEADFAST_SECRET_KEY,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Steadfast API returned ${response.status}`);
-    }
-
-    const statusData = await response.json();
-    return NextResponse.json({
-      success: true,
-      data: statusData,
-    });
-  } catch (err) {
-    throw err;
-  }
-}
-
-async function getStatusByConsignmentId(consignmentId: string) {
-  try {
-    const response = await fetch(`${STEADFAST_BASE_URL}/status_by_cid/${consignmentId}`, {
-      method: "GET",
-      headers: {
-        "Api-Key": STEADFAST_API_KEY,
-        "Secret-Key": STEADFAST_SECRET_KEY,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Steadfast API returned ${response.status}`);
-    }
-
-    const statusData = await response.json();
-    return NextResponse.json({
-      success: true,
-      data: statusData,
-    });
-  } catch (err) {
-    throw err;
-  }
+function errorResponse(err: unknown) {
+  const msg = err instanceof Error ? err.message : "Internal server error";
+  const status = msg.toLowerCase().includes("not authorized") ? 401 : 500;
+  console.error("steadfast-order error:", err);
+  return NextResponse.json({ success: false, message: msg }, { status });
 }

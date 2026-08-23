@@ -57,19 +57,16 @@ export default function PricingStep({ form }: Props) {
   const useVariants = useWatch({
     control: form.control,
     name: "_useVariants" as keyof ProductFormData,
-    // @ts-expect-error — using _-prefixed internal flag for UI-only state
     defaultValue: false,
   }) as boolean;
   const useOffers = useWatch({
     control: form.control,
     name: "_useOffers" as keyof ProductFormData,
-    // @ts-expect-error — internal flag for UI-only state
     defaultValue: false,
   }) as boolean;
   const useCoupons = useWatch({
     control: form.control,
     name: "_useCoupons" as keyof ProductFormData,
-    // @ts-expect-error — internal flag for UI-only state
     defaultValue: false,
   }) as boolean;
 
@@ -110,7 +107,7 @@ export default function PricingStep({ form }: Props) {
               rules={{
                 required: "Price is required",
                 min: { value: 0, message: "Must be 0 or more" },
-                valueAsNumber: true,
+                
               }}
               render={({ field }) => (
                 <FormItem>
@@ -140,7 +137,7 @@ export default function PricingStep({ form }: Props) {
               rules={{
                 required: "Compare-at price is required",
                 min: { value: 0, message: "Must be 0 or more" },
-                valueAsNumber: true,
+                
               }}
               render={({ field }) => (
                 <FormItem>
@@ -196,7 +193,7 @@ export default function PricingStep({ form }: Props) {
               rules={{
                 required: "Stock is required",
                 min: { value: 0, message: "Must be 0 or more" },
-                valueAsNumber: true,
+                
               }}
               render={({ field }) => (
                 <FormItem>
@@ -335,7 +332,7 @@ export default function PricingStep({ form }: Props) {
                     rules={{
                       required: "Price is required",
                       min: 0,
-                      valueAsNumber: true,
+                      
                     }}
                     render={({ field }) => (
                       <FormItem>
@@ -358,7 +355,7 @@ export default function PricingStep({ form }: Props) {
                   <FormField
                     control={form.control}
                     name={`priceVariants.${i}.salePrice`}
-                    rules={{ min: 0, valueAsNumber: true }}
+                    rules={{ min: 0,  }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sale price</FormLabel>
@@ -383,7 +380,7 @@ export default function PricingStep({ form }: Props) {
                     rules={{
                       required: "Stock is required",
                       min: 0,
-                      valueAsNumber: true,
+                      
                     }}
                     render={({ field }) => (
                       <FormItem>
@@ -517,7 +514,7 @@ export default function PricingStep({ form }: Props) {
                   rules={{
                     required: "Value is required",
                     min: 0,
-                    valueAsNumber: true,
+                    
                   }}
                   render={({ field }) => (
                     <FormItem>
@@ -607,7 +604,7 @@ export default function PricingStep({ form }: Props) {
               rules={{
                 min: { value: 0, message: "Must be positive" },
                 max: { value: 100, message: "Max 100%" },
-                valueAsNumber: true,
+                
               }}
               render={({ field }) => (
                 <FormItem>

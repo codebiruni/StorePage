@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import mongoose from "mongoose";
 import connectDb from "@/lib/connectdb";
 import OrderModel from "@/models/order.model";
 import Product from "@/models/product.model";
@@ -130,8 +131,41 @@ export async function POST(request: NextRequest) {
       discount: orderData.discount || 0,
       isDelivered: orderData.isDelivered || false,
       isPaid: orderData.isPaid || false,
+      isCompleted: true,
+      source: orderData.source || 'manual',
       isDeleted: false
     };
+
+    // If the client supplied a draftId, try to promote that draft in-place
+    // so we don't end up with duplicate rows.
+    if (
+      typeof orderData.draftId === 'string' &&
+      mongoose.isValidObjectId(orderData.draftId)
+    ) {
+      const promoted = await OrderModel.findOneAndUpdate(
+        {
+          _id: orderData.draftId,
+          isCompleted: false,
+          isDeleted: false,
+          orderStatus: { $in: ['draft', 'abandoned'] },
+        },
+        { $set: { ...orderToCreate, lastActivityAt: new Date(), abandonedAt: null } },
+        { new: true }
+      ).populate('products', 'name images generalPrice brand quentity');
+
+      if (promoted) {
+        return NextResponse.json(
+          {
+            success: true,
+            data: promoted,
+            promotedFromDraft: true,
+            message: 'Order promoted from draft and product quantities updated',
+          },
+          { status: 200 }
+        );
+      }
+      // If the draft is gone (rare race) we fall through and create fresh.
+    }
 
     // Create the order
     const createdOrder = await OrderModel.create(orderToCreate);

@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { revalidateTag } from "next/cache";
 import { USER_ROLE } from "@/interface/auth.constent";
 import { auth } from "@/lib/auth";
+import { SITE_CONFIG_TAG } from "@/lib/siteConfig";
 import connectDb from "@/lib/connectdb";
 import SiteInfo from "@/models/siteInfo.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -15,6 +17,9 @@ export async function POST(request: NextRequest) {
     // Remove any existing SiteInfo before creating a new one
     await SiteInfo.deleteMany({});
     const createdSiteInfo = await SiteInfo.create(siteInfoData);
+
+    // Bust the cached SiteConfig so the next render picks up the new branding.
+    revalidateTag(SITE_CONFIG_TAG, "max");
 
     return NextResponse.json(
       {
@@ -82,6 +87,9 @@ export async function PATCH(request: NextRequest) {
     Object.assign(siteInfo, updateData);
     await siteInfo.save();
 
+    // Bust the cached SiteConfig so the next render picks up the new branding.
+    revalidateTag(SITE_CONFIG_TAG, "max");
+
     return NextResponse.json(
       {
         success: true,
@@ -112,6 +120,9 @@ export async function DELETE() {
         { status: 404 }
       );
     }
+
+    // Bust the cached SiteConfig so the next render falls back to env defaults.
+    revalidateTag(SITE_CONFIG_TAG, "max");
 
     return NextResponse.json(
       {

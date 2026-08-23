@@ -112,7 +112,6 @@ export async function POST(request: NextRequest) {
           email,
           otp,
           siteConfig.name,
-          siteConfig.name,
           email || email.split("@")[0]
         );
       } else if (number) {

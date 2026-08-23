@@ -77,6 +77,7 @@ export const data = {
       icon: ShoppingBag,
       items: [
         { title: "All Orders", url: "/dashboard/orders" },
+        { title: "Drafts & Abandoned", url: "/dashboard/orders/drafts" },
         { title: "Order Analysis", url: "/dashboard/order-analysis" },
         { title: "Steadfast Courier", url: "/dashboard/steadfast" },
       ],
@@ -113,6 +114,7 @@ export const data = {
       icon: Settings,
       items: [
         { title: "Change Password", url: "/dashboard/settings" },
+        { title: "Courier API", url: "/dashboard/account/courier-api" },
       ],
     },
   ],

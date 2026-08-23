@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { revalidateTag } from "next/cache";
 import { USER_ROLE } from "@/interface/auth.constent";
 import { auth } from "@/lib/auth";
 import connectDb from "@/lib/connectdb";
 import Product from "@/models/product.model";
 import { NextRequest, NextResponse } from "next/server";
+import { HOME_PRODUCTS_TAG } from "@/app/api/v1/home/product/route";
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +75,14 @@ export async function POST(request: NextRequest) {
     if (landingPage !== undefined) doc.landingPage = landingPage;
 
     const createdProduct = await Product.create(doc);
+
+    // Bust the cached home-page product list so the new product appears
+    // without waiting for the 10-min `unstable_cache` window to expire.
+    try {
+      revalidateTag(HOME_PRODUCTS_TAG, "max");
+    } catch (e) {
+      console.warn("revalidateTag(HOME_PRODUCTS_TAG) failed (non-fatal):", e);
+    }
 
     return NextResponse.json(
       {

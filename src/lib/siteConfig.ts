@@ -13,9 +13,17 @@
  * missing a field (or no doc at all) still yields a complete object.
  */
 
+import { unstable_cache } from "next/cache";
 import connectDb from "@/lib/connectdb";
 import SiteInfo from "@/models/siteInfo.model";
 import { publicEnv } from "@/lib/env";
+
+/**
+ * Cache tag invalidated by /api/v1/web-info PATCH/POST/DELETE.
+ * When admin changes brand name, logo, banner, etc., this tag is revalidated
+ * and the next request rebuilds the SiteConfig from MongoDB.
+ */
+export const SITE_CONFIG_TAG = "siteinfo:current";
 
 export interface SiteConfig {
   // Basics
@@ -131,21 +139,45 @@ export function getEnvSiteConfig(): SiteConfig {
  * The function never throws at request time: if the DB is unreachable it logs
  * a warning and returns the env defaults so the site can still render a
  * branded (if minimal) page.
+ *
+ * Wrapped with `unstable_cache` and tagged with `SITE_CONFIG_TAG` so the
+ * result is cached for 1 hour across all server invocations. Mutation routes
+ * in /api/v1/web-info call `revalidateTag(SITE_CONFIG_TAG)` to invalidate
+ * the cache the moment an admin updates the brand.
  */
 export async function getSiteConfig(): Promise<SiteConfig> {
-  const base = getEnvSiteConfig();
+  const fetcher = unstable_cache(
+    async (): Promise<SiteConfig> => {
+      const base = getEnvSiteConfig();
 
-  let doc: any = null;
-  try {
-    await connectDb();
-    doc = await SiteInfo.findOne().lean();
-  } catch (err: any) {
-    console.warn(
-      "⚠️ getSiteConfig: could not load siteInfo — using env defaults.",
-      err?.message || err,
-    );
-    return base;
-  }
+      let doc: any = null;
+      try {
+        await connectDb();
+        doc = await SiteInfo.findOne().lean();
+      } catch (err: any) {
+        console.warn(
+          "⚠️ getSiteConfig: could not load siteInfo — using env defaults.",
+          err?.message || err,
+        );
+        return base;
+      }
+
+      if (!doc) return base;
+
+      return buildSiteConfig(doc, base);
+    },
+    ["site-config-v1"],
+    { revalidate: 3600, tags: [SITE_CONFIG_TAG] }
+  );
+  return fetcher();
+}
+
+/**
+ * Pure merge of a MongoDB siteInfo document on top of env defaults. Exported
+ * separately so it can be unit-tested without hitting the database, and so
+ * the cached fetcher can be replaced by a one-shot read in tests.
+ */
+function buildSiteConfig(doc: any, base: SiteConfig): SiteConfig {
 
   if (!doc) return base;
 

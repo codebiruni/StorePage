@@ -1,0 +1,69 @@
+# docker-compose.yml
+# ──────────────────────────────────────────────────────────────────────
+# Single-service compose for the StorePage Next.js app. Sized for a
+# 1-vCPU / 1-GB BDIX origin. Behind Cloudflare/Nginx, this is plenty
+# for the FB-ad landing traffic profile (sub-2s first paint target).
+#
+# Usage:
+#   cp .env.production.example .env.production && $EDITOR .env.production
+#   docker compose build
+#   docker compose up -d
+#   docker compose logs -f app
+# ──────────────────────────────────────────────────────────────────────
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time secrets — must match the values deployed on the
+        # origin. NEXT_PUBLIC_* are inlined into the JS bundle, so a
+        # rebuild is required to change them.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+        NEXT_PUBLIC_IMAGE_HOSTS: ${NEXT_PUBLIC_IMAGE_HOSTS:-}
+        NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME:-}
+        NEXT_PUBLIC_META_PIXEL_ID: ${NEXT_PUBLIC_META_PIXEL_ID:-}
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+    image: storepage:latest
+    container_name: storepage-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      # Runtime-only secrets (NOT inlined into the bundle)
+      MONGODB_URI: ${MONGODB_URI}
+      # Allow orchestrator healthcheck to reach the in-container probe
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    # Optional: mount a host-side cache dir for the standalone server's
+    # .next/cache (ISR + unstable_cache). Survives container restarts.
+    volumes:
+      - storepage-cache:/app/.next/cache
+
+volumes:
+  storepage-cache:
+    driver: local

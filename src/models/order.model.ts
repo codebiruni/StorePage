@@ -16,38 +16,58 @@ const orderSchema = new Schema<IOrder>(
     orderId: {
       type: String,
       unique: true,
-      required: true,
-      default: generateOrderId,
+      sparse: true, // multiple `null` orderIds allowed (drafts pre-generation)
+      default: undefined as unknown as string,
+      required: function (this: any) {
+        // Only enforced when the order has actually been submitted.
+        return this?.isCompleted === true;
+      },
     },
     name: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+      // Only enforce when the order is actually submitted — drafts (where
+      // the user is still typing) are allowed to be empty.
+      required: function (this: any) {
+        return this?.isCompleted === true;
+      },
     },
     number: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+      required: function (this: any) {
+        return this?.isCompleted === true;
+      },
     },
     address: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+      required: function (this: any) {
+        return this?.isCompleted === true;
+      },
     },
     products: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Product",
-        required: true,
       },
     ],
     totalAmount: {
       type: Number,
-      required: true,
+      default: 0,
+      required: function (this: any) {
+        return this?.isCompleted === true;
+      },
     },
     deliveryCharge: {
       type: Number,
-      required: true,
+      default: 0,
+      required: function (this: any) {
+        return this?.isCompleted === true;
+      },
     },
     discount: {
       type: Number,
@@ -55,7 +75,10 @@ const orderSchema = new Schema<IOrder>(
     },
     grandTotal: {
       type: Number,
-      required: true,
+      default: 0,
+      required: function (this: any) {
+        return this?.isCompleted === true;
+      },
     },
     paymentMethod: {
       type: String,
@@ -70,14 +93,17 @@ const orderSchema = new Schema<IOrder>(
     orderStatus: {
       type: String,
       enum: [
+        "draft",
         "pending",
         "confirmed",
         "processing",
         "shipped",
         "delivered",
         "cancelled",
+        "abandoned",
       ],
       default: "pending",
+      index: true,
     },
     trackingId: {
       type: String,
@@ -99,15 +125,42 @@ const orderSchema = new Schema<IOrder>(
       type: Boolean,
       default: false,
     },
+    // Drafts: a user started filling out the form but never submitted.
+    isCompleted: {
+      type: Boolean,
+      default: true, // Existing rows are treated as completed; new drafts explicitly set this to false.
+      index: true,
+    },
+    source: {
+      type: String,
+      enum: ["landing", "buy-product", "manual"],
+      default: "manual",
+      index: true,
+    },
+    landingProductId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    lastActivityAt: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+    abandonedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Automatically calculate grandTotal before saving
+// Automatically calculate grandTotal and stamp lastActivityAt before saving
 orderSchema.pre("save", function (next) {
   this.grandTotal = this.totalAmount + this.deliveryCharge - (this.discount || 0);
+  this.lastActivityAt = new Date();
   next();
 });
 

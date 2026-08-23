@@ -3,10 +3,11 @@
 // /api/v1/order and redirects to /step/thanks on success. Accepts both the
 // legacy { product, checkoutNote, variant? } API and { product, variant? }
 // where checkoutNote is derived from product.landingPage.checkoutNote.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSiteConfig } from "@/defaults/context/SiteConfigProvider";
 import type { SerializedLandingProduct } from "@/app/step/_lib/landing-data";
+import { useOrderDraft } from "@/hooks/useOrderDraft";
 
 export default function CheckoutForm({
   product,
@@ -49,6 +50,21 @@ export default function CheckoutForm({
       ? headingText
       : "অর্ডার করতে নিচের ফর্মটি পূরণ করুন";
 
+  // Auto-save partial input so we never lose the lead.
+  const { draftId, saveDraft } = useOrderDraft({ source: "landing" });
+  useEffect(() => {
+    if (!name && !number && !address) return; // skip initial empty render
+    saveDraft({
+      productId: product._id,
+      name,
+      number,
+      address,
+      note,
+      deliveryCharge,
+      totalAmount,
+    });
+  }, [name, number, address, note, deliveryCharge, totalAmount, product._id, saveDraft]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -65,6 +81,7 @@ export default function CheckoutForm({
           totalAmount,
           deliveryCharge,
           grandTotal,
+          draftId, // promote draft → pending if server recognises it
         }),
       });
       const json = await res.json();

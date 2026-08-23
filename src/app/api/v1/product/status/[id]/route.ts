@@ -147,6 +147,7 @@ export async function PATCH(req: NextRequest, context: ParamsType) {
     revalidatePath(`/product/product-details/${id}`);
     revalidatePath(`/step/${id}`);
     revalidateTag(`product:${id}`, "max");
+    revalidateTag("home-products", "max");
 
     return NextResponse.json({
       success: true,

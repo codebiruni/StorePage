@@ -8,11 +8,13 @@ import { auth } from "@/lib/auth";
 import connectDb from "@/lib/connectdb";
 import Product from "@/models/product.model";
 import { productTag } from "@/app/step/_lib/landing-data";
+import { HOME_PRODUCTS_TAG } from "@/app/api/v1/home/product/route";
 
 function bustLandingCache(id: string) {
   try {
     revalidateTag(productTag(id), "default");
     revalidatePath(`/step/${id}`);
+    revalidateTag(HOME_PRODUCTS_TAG, "max");
   } catch (e) {
     console.warn("revalidate failed (non-fatal):", e);
   }

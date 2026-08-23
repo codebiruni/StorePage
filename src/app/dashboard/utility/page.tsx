@@ -20,19 +20,20 @@ export default async function UtilityPage() {
   try {
     await connectDb();
     const doc = (await SiteInfo.findOne().lean()) as Partial<ISiteInfo> | null;
-    if (doc?.deliveryCharge) {
-      if (typeof doc.deliveryCharge.insideDhaka === "number") {
-        deliveryInsideDhaka = doc.deliveryCharge.insideDhaka;
+    const charge = (doc as any)?.deliveryCharge;
+    if (charge) {
+      if (typeof charge.insideDhaka === "number") {
+        deliveryInsideDhaka = charge.insideDhaka;
       }
-      if (typeof doc.deliveryCharge.outsideDhaka === "number") {
-        deliveryOutsideDhaka = doc.deliveryCharge.outsideDhaka;
+      if (typeof charge.outsideDhaka === "number") {
+        deliveryOutsideDhaka = charge.outsideDhaka;
       }
     }
-    if (typeof doc?.metaPixelId === "string") {
-      metaPixelId = doc.metaPixelId;
+    if (typeof (doc as any)?.metaPixelId === "string") {
+      metaPixelId = (doc as any).metaPixelId;
     }
-    if (typeof doc?.gaMeasurementId === "string") {
-      gaMeasurementId = doc.gaMeasurementId;
+    if (typeof (doc as any)?.gaMeasurementId === "string") {
+      gaMeasurementId = (doc as any).gaMeasurementId;
     }
   } catch {
     // Swallow — env defaults already cover us.

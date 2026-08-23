@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import EmptyCart from './EmptyCart'
 import OrderSummary from './OrderSummery'
 import ShippingForm from './ShippingForm'
+import { useOrderDraft } from '@/hooks/useOrderDraft'
 
 interface OrderFormData {
   name: string
@@ -101,6 +102,40 @@ export default function PurchaseProducts() {
   const handleInputChange = (field: keyof OrderFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
+
+  // Persist partial input so we don't lose the lead if the user navigates
+  // away mid-checkout. Reads `formData` and the current cart on every save.
+  const { draftId, saveDraft } = useOrderDraft({ source: "buy-product" })
+  useEffect(() => {
+    // Skip the very first render with an empty form
+    if (!formData.name && !formData.number && !formData.union) return
+    if (itemsWithQuantity.length === 0) return
+    saveDraft({
+      productIds: itemsWithQuantity.flatMap((it) =>
+        Array.from({ length: it.quantity }, () => it.id),
+      ),
+      name: formData.name,
+      number: formData.number,
+      address: [formData.union, formData.upazilla, formData.district]
+        .filter(Boolean)
+        .join(", "),
+      note: formData.note,
+      totalAmount: subtotal,
+      deliveryCharge,
+      discount,
+    })
+    // We intentionally key off the form fields only; subtotal/deliveryCharge
+    // are derived from them. eslint can't see the derived deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    formData.name,
+    formData.number,
+    formData.union,
+    formData.upazilla,
+    formData.district,
+    formData.note,
+    itemsWithQuantity,
+  ])
 
   const handleQuantityChange = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -238,7 +273,9 @@ export default function PurchaseProducts() {
         discount,
         grandTotal,
         paymentMethod: formData.paymentMethod,
-        note: formData.note
+        note: formData.note,
+        source: 'buy-product',
+        draftId, // promote draft → pending if the server recognises it
       }
 
       const response = await fetch('/api/v1/order', {

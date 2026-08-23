@@ -11,12 +11,20 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select"
 import { 
   AreaChart, 
@@ -35,7 +43,7 @@ import {
   YAxis,
   CartesianGrid
 } from 'recharts'
-import { 
+import {
   Package,
   TrendingUp,
   AlertTriangle,
@@ -47,7 +55,11 @@ import {
   Target,
   Download,
   RefreshCw,
-  Zap
+  Zap,
+  FileText,
+  Building2,
+  Loader2,
+  ChevronDown
 } from 'lucide-react'
 import { toast } from "sonner"
 
@@ -262,6 +274,7 @@ export default function DashboardInventory() {
   const [data, setData] = useState<InventoryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
+  const [reportType, setReportType] = useState<'monthly' | 'corporate' | null>(null)
 
   const fetchInventoryData = async () => {
     try {
@@ -279,6 +292,65 @@ export default function DashboardInventory() {
       console.error('Error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  /**
+   * POST to /api/v1/reports and stream the resulting PDF into a browser
+   * download. Falls back to a JSON error toast if the route returns
+   * anything other than application/pdf.
+   */
+  const handleExportReport = async (type: 'monthly' | 'corporate') => {
+    try {
+      setReportType(type)
+      const res = await fetch('/api/v1/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          // For monthly reports anchor to the first day of the current month.
+          month:
+            type === 'monthly'
+              ? new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+              : undefined,
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `Request failed (${res.status})`)
+      }
+
+      const contentType = res.headers.get('Content-Type') || ''
+      if (!contentType.includes('application/pdf')) {
+        throw new Error('Server did not return a PDF.')
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition') || ''
+      const filenameMatch = disposition.match(/filename="([^"]+)"/i)
+      a.download = filenameMatch?.[1] ||
+        (type === 'corporate'
+          ? `corporate-overview-${new Date().toISOString().slice(0, 10)}.pdf`
+          : `monthly-sales-${new Date().toISOString().slice(0, 7)}.pdf`)
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+
+      toast.success(
+        type === 'corporate'
+          ? 'Corporate Overview PDF downloaded.'
+          : 'Monthly Sales PDF downloaded.',
+      )
+    } catch (err) {
+      console.error('Report export failed:', err)
+      toast.error(err instanceof Error ? err.message : 'Report export failed')
+    } finally {
+      setReportType(null)
     }
   }
 
@@ -467,10 +539,51 @@ export default function DashboardInventory() {
             <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
-          <Button className="gap-2">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className="gap-2"
+                disabled={reportType !== null}
+                aria-label="Export PDF report"
+              >
+                {reportType ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Export
+                <ChevronDown className="h-3 w-3 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>PDF Reports</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => handleExportReport('monthly')}
+                className="flex items-start gap-3 py-3"
+              >
+                <FileText className="h-4 w-4 mt-0.5 text-indigo-600" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Monthly Sales Report</span>
+                  <span className="text-xs text-muted-foreground">
+                    KPIs, MoM trend, top sellers &amp; payment mix for this month
+                  </span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => handleExportReport('corporate')}
+                className="flex items-start gap-3 py-3"
+              >
+                <Building2 className="h-4 w-4 mt-0.5 text-indigo-600" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Corporate Overview</span>
+                  <span className="text-xs text-muted-foreground">
+                    Lifetime catalogue, fulfilment, inventory &amp; top categories
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

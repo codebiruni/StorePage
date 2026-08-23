@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import type { RemotePattern } from "next/dist/shared/lib/image-config";
 import nextPWA from "next-pwa";
 
 /**
@@ -13,7 +14,6 @@ import nextPWA from "next-pwa";
  * because it bypasses Next.js' built-in image-domain guard. A per-deployment
  * allowlist is required by the multi-tenant plan (see .puku/plans/...).
  */
-type RemotePattern = { protocol: string; hostname: string };
 
 function buildRemotePatterns(): RemotePattern[] {
   const allowAll = process.env.ALLOW_ALL_IMAGE_HOSTS === "true";
@@ -70,6 +70,17 @@ const withPWA = nextPWA({
 });
 
 const nextConfig: NextConfig = {
+  // Standalone build produces a self-contained server (no node_modules) that
+  // boots in ~200ms. Works on Vercel (build output) and on BDIX/Nginx/Coolify
+  // for self-hosted deployments.
+  output: "standalone",
+
+  // Enable gzip compression for all responses.
+  compress: true,
+
+  // Don't advertise the framework version.
+  poweredByHeader: false,
+
   turbopack: {
     root: __dirname,
   },
@@ -86,6 +97,37 @@ const nextConfig: NextConfig = {
 
   images: {
     remotePatterns: buildRemotePatterns(),
+    // Serve modern formats first; fall back to original if browser is old.
+    formats: ["image/avif", "image/webp"],
+    // Cache optimized images at the CDN edge for 1 year.
+    minimumCacheTTL: 31536000,
+  },
+
+  experimental: {
+    // Tree-shake icons / dates / motion libs so unused exports don't ship.
+    optimizePackageImports: ["lucide-react", "date-fns", "framer-motion"],
+  },
+
+  // Long-lived Cache-Control headers for immutable assets. Public CDNs (Vercel
+  // Edge, Cloudflare, Nginx) will respect these and serve them from cache
+  // for the full year, removing the round-trip to origin for repeat visits.
+  //
+  // Next.js 16 tightened path-to-regexp parsing — bare `:path*` segments
+  // now require a prefix segment. Add a leading `/:file*` so the matcher
+  // has a stable prefix, which is the minimum shape Next 16 accepts.
+  async headers() {
+    const longCache = [
+      {
+        key: "Cache-Control",
+        value: "public, max-age=31536000, immutable",
+      },
+    ];
+    return [
+      { source: "/_next/static/:file*", headers: longCache },
+      { source: "/_next/image/:file*", headers: longCache },
+      { source: "/images/:file*", headers: longCache },
+      { source: "/fonts/:file*", headers: longCache },
+    ];
   },
 };
 

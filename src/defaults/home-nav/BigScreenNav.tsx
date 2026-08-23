@@ -1,9 +1,14 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { ChevronDown, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface NavItem {
   name: string;
@@ -15,8 +20,6 @@ interface NavItem {
 }
 
 export default function BigScreenNav({ navItems }: { navItems: NavItem[] }) {
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-
   // Calculate columns based on children count
   const getColumns = (childrenCount: number) => {
     if (childrenCount <= 6) return 1;
@@ -37,44 +40,54 @@ export default function BigScreenNav({ navItems }: { navItems: NavItem[] }) {
 
         {/* Category Links */}
         <div className="flex flex-nowrap justify-start items-center gap-1 relative overflow-x-auto scrollbar-hide min-w-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {navItems.map((item, index) => (
-            <div
-              key={item.id}
-              className="relative group"
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
-            >
+          {navItems.map((item, index) => {
+            const hasChildren = item.children.length > 0;
+            const trigger = (
               <Button
                 variant="ghost"
-                asChild
+                asChild={!hasChildren}
                 className="flex items-center gap-1 pl-[0px] px-1 py-1"
               >
-                <Link href={`/products/${item.id}`}>
-                  {item.name}
-                  {item.children.length > 0 && (
-                    <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
-                  )}
-                </Link>
+                {hasChildren ? (
+                  <span className="flex items-center gap-1">
+                    {item.name}
+                    <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </span>
+                ) : (
+                  <Link href={`/products/${item.id}`}>{item.name}</Link>
+                )}
               </Button>
+            );
 
-              {/* Subcategory Dropdown */}
-              {item.children.length > 0 && (
-                <div
+            if (!hasChildren) {
+              return (
+                <div key={item.id} className="relative group">
+                  {trigger}
+                </div>
+              );
+            }
+
+            return (
+              <HoverCard
+                key={item.id}
+                openDelay={0}
+                closeDelay={120}
+              >
+                <HoverCardTrigger asChild>
+                  <div className="relative group">{trigger}</div>
+                </HoverCardTrigger>
+                <HoverCardContent
+                  side="bottom"
+                  align={index > navItems.length / 2 ? "end" : "start"}
+                  sideOffset={8}
+                  // `z-[600]` keeps the dropdown above the fixed navbar
+                  // (`z-[498]`) and the hero slider below it.
                   className={cn(
-                    "absolute top-[30px] z-50 mt-1 max-h-[350px] overflow-y-auto rounded-md border bg-popover p-1 shadow-lg transition-opacity",
-                    hoveredItem === item.id
-                      ? "opacity-100"
-                      : "opacity-0 pointer-events-none",
-                    // Position dropdown to left when near right screen edge
-                    index > navItems.length / 2 ? "right-0" : "left-0"
+                    "z-[600] max-h-[350px] w-max max-w-[min(90vw,600px)] overflow-y-auto rounded-md border bg-popover p-1 shadow-lg"
                   )}
-                  style={{
-                    width: "max-content",
-                    maxWidth: "min(90vw, 600px)",
-                  }}
                 >
                   <div
-                    className={`grid gap-1`}
+                    className="grid gap-1"
                     style={{
                       gridTemplateColumns: `repeat(${getColumns(
                         item.children.length
@@ -86,7 +99,7 @@ export default function BigScreenNav({ navItems }: { navItems: NavItem[] }) {
                         key={child.id}
                         variant="ghost"
                         asChild
-                        className="w-full justify-start  text-left whitespace-nowrap"
+                        className="w-full justify-start text-left whitespace-nowrap"
                       >
                         <Link
                           href={`/products/${item.id}/${child.id}`}
@@ -97,10 +110,10 @@ export default function BigScreenNav({ navItems }: { navItems: NavItem[] }) {
                       </Button>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                </HoverCardContent>
+              </HoverCard>
+            );
+          })}
         </div>
       </div>
     </nav>

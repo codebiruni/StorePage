@@ -16,6 +16,8 @@ interface LandingOrderBody {
   customerPhone?: unknown;
   customerAddress?: unknown;
   note?: unknown;
+  /** When set, upserts an existing draft instead of creating a new order. */
+  draftId?: unknown;
 }
 
 const PHONE_RE = /^[\d+\-\s()]{8,15}$/;
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
   const customerAddress = clean(body.customerAddress, 500);
   const note = clean(body.note, 500);
   const variantSku = clean(body.variantSku, 80);
+  const draftId = clean(body.draftId, 40);
 
   if (!mongoose.Types.ObjectId.isValid(productId)) {
     return NextResponse.json(
@@ -81,6 +84,55 @@ export async function POST(req: Request) {
     // outside-Dhaka charge. Admins can change both prices from
     // /dashboard/website-info.
     const deliveryCharge = siteConfig.deliveryCharge?.outsideDhaka ?? 0;
+
+    // If we have a draft id, promote it instead of creating a duplicate row.
+    if (draftId && mongoose.Types.ObjectId.isValid(draftId)) {
+      const promoted = await OrderModel.findOneAndUpdate(
+        {
+          _id: draftId,
+          isCompleted: false,
+          isDeleted: false,
+          orderStatus: { $in: ["draft", "abandoned"] },
+        },
+        {
+          $set: {
+            name: customerName,
+            number: customerPhone,
+            address: customerAddress,
+            products: [productId],
+            totalAmount,
+            deliveryCharge,
+            grandTotal: totalAmount + deliveryCharge,
+            paymentMethod: "cash-on-delivery",
+            paymentStatus: "pending",
+            orderStatus: "pending",
+            note: variantSku ? `[${variantSku}] ${note}` : note,
+            isDelivered: false,
+            isPaid: false,
+            isDeleted: false,
+            source: "landing",
+            landingProductId: productId,
+            isCompleted: true,
+            lastActivityAt: new Date(),
+            abandonedAt: null,
+          },
+        },
+        { new: true },
+      ).lean();
+
+      if (promoted) {
+        return NextResponse.json(
+          {
+            ok: true,
+            orderId: (promoted as any)._id.toString(),
+            ref: (promoted as any).orderId,
+            promotedFromDraft: true,
+          },
+          { status: 200 },
+        );
+      }
+      // Fall through and create a fresh order if the draft vanished.
+    }
 
     const order = await OrderModel.create({
       orderId: undefined,
