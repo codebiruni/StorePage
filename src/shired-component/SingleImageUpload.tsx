@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState } from "react";
-import axios from "axios";
 import { UploadCloud, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { uploadImageToR2 } from "@/lib/uploadImage";
 
 export default function SingleImageUpload({ onUpload }: any) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<"success" | "error" | null>(
-    null
+    null,
   );
   const [errorMessage, setErrorMessage] = useState("");
   const handleImageUpload = async (event: any) => {
@@ -19,35 +19,15 @@ export default function SingleImageUpload({ onUpload }: any) {
     setErrorMessage("");
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append(
-        "upload_preset",
-        process.env.NEXT_PUBLIC_CLOUDINARY_PRESET as string
-      );
-      formData.append(
-        "cloud_name",
-        process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME as string
-      );
-
-      const response = await axios.post(
-        process.env.NEXT_PUBLIC_CLOUDINARY_IMAGE_API as string,
-        formData
-      );
-
-      if (response.status === 200) {
-        const imageUrl = response.data.url;
-        onUpload(imageUrl);
-        setUploadStatus("success");
-      }
+      const { publicUrl } = await uploadImageToR2(file);
+      onUpload(publicUrl);
+      setUploadStatus("success");
     } catch (error) {
       console.error("Error uploading image:", error);
       setUploadStatus("error");
-      const message =
-        axios.isAxiosError(error) && error.response
-          ? `Upload failed (${error.response.status})`
-          : "Failed to upload image";
-      setErrorMessage(message);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to upload image",
+      );
     } finally {
       setIsUploading(false);
     }
@@ -60,10 +40,9 @@ export default function SingleImageUpload({ onUpload }: any) {
           htmlFor="file-upload"
           className={`
             flex flex-col  items-center justify-center w-full p-3 border-2 h-[100px] border-dashed rounded-lg cursor-pointer
-            ${
-              isUploading
-                ? "border-gray-300 bg-gray-50"
-                : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+            ${isUploading
+              ? "border-gray-300 bg-gray-50"
+              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
             }
             transition-colors duration-200
           `}
@@ -76,11 +55,11 @@ export default function SingleImageUpload({ onUpload }: any) {
             )}
             <div className="text-sm text-gray-600">
               {isUploading ? (
-                <p>Uploading...</p>
+                <p>Compressing & uploading to R2…</p>
               ) : (
                 <>
                   <p className="font-medium text-gray-900">upload or drag</p>
-                  <p>(MAX. 10MB)</p>
+                  <p>Auto-converted to WebP (max 1000×1000)</p>
                 </>
               )}
             </div>
@@ -88,7 +67,7 @@ export default function SingleImageUpload({ onUpload }: any) {
           <input
             id="file-upload"
             type="file"
-            accept=".jpg, .jpeg, .png, .webp, .svg"
+            accept=".jpg, .jpeg, .png, .webp, .heic, .heif, .avif, .svg"
             onChange={handleImageUpload}
             disabled={isUploading}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -99,7 +78,7 @@ export default function SingleImageUpload({ onUpload }: any) {
       {uploadStatus === "success" && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <CheckCircle2 className="w-4 h-4" />
-          <span>Image uploaded successfully!</span>
+          <span>Image uploaded to R2 successfully!</span>
         </div>
       )}
 

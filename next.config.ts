@@ -34,9 +34,26 @@ function buildRemotePatterns(): RemotePattern[] {
       .filter(Boolean)
       .join(",");
 
+  // Always allow the Cloudflare R2 public CDN domain (new image pipeline) so
+  // next/image can optimize/render R2-hosted product images without extra
+  // env wiring. We parse the host out of R2_PUBLIC_DOMAIN / NEXT_PUBLIC_*
+  // so both server and build-time-only configs are covered.
+  const r2Domain =
+    process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || process.env.R2_PUBLIC_DOMAIN;
+  const rawWithR2 = (() => {
+    if (!r2Domain) return raw;
+    try {
+      const host = new URL(r2Domain).hostname;
+      if (host) return `${raw},${host}`;
+    } catch {
+      /* not a valid URL — ignore */
+    }
+    return raw;
+  })();
+
   const hosts = Array.from(
     new Set(
-      raw
+      rawWithR2
         .split(",")
         .map((h) => h.trim())
         .filter(Boolean),
@@ -116,6 +133,13 @@ const nextConfig: NextConfig = {
   // now require a prefix segment. Add a leading `/:file*` so the matcher
   // has a stable prefix, which is the minimum shape Next 16 accepts.
   async headers() {
+    // Dev: Turbopack recompiles chunks on every edit. If we ship immutable
+    // Cache-Control here, the browser caches the old chunk graph and after
+    // an edit (e.g. removing an import) throws "module factory is not
+    // available" because the cached chunk still references the removed
+    // module. Only apply long-cache headers in production.
+    if (process.env.NODE_ENV !== "production") return [];
+
     const longCache = [
       {
         key: "Cache-Control",

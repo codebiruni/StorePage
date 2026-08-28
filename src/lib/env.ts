@@ -63,6 +63,16 @@ type EnvShape = {
   CLOUDINARY_CLOUD_NAME: string;
   CLOUDINARY_PRESET: string;
 
+  // --- Cloudflare R2 (server) ---
+  // New image uploads go through R2 (S3-compatible) and are served from the
+  // custom CDN domain below. Existing Cloudinary URLs in the DB are left
+  // untouched and continue to render on the front-end.
+  R2_ACCOUNT_ID: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
+  R2_BUCKET_NAME: string;
+  R2_PUBLIC_DOMAIN: string;
+
   // --- Chatbot (server) ---
   GEMINI_API_KEY: string;
 
@@ -89,7 +99,7 @@ function requireString(key: string): string {
   if (!v || v.length === 0) {
     throw new Error(
       `❌ Missing required environment variable: ${key}. ` +
-        `Add it to .env (see .env.example) before starting the server.`,
+      `Add it to .env (see .env.example) before starting the server.`,
     );
   }
   return v;
@@ -136,6 +146,19 @@ export const env: EnvShape = {
   ),
   CLOUDINARY_CLOUD_NAME: readString("CLOUDINARY_CLOUD_NAME", "demo"),
   CLOUDINARY_PRESET: readString("CLOUDINARY_PRESET", ""),
+
+  // Cloudflare R2 — new image upload pipeline. Keys are server-only secrets.
+  // R2_PUBLIC_DOMAIN is the custom CDN domain that fronts the bucket; it is
+  // also needed client-side for rendering, so a NEXT_PUBLIC_ mirror is read
+  // in publicEnv (see below). Here we keep the server copy for signing.
+  R2_ACCOUNT_ID: readString("R2_ACCOUNT_ID", ""),
+  R2_ACCESS_KEY_ID: readString("R2_ACCESS_KEY_ID", ""),
+  R2_SECRET_ACCESS_KEY: readString("R2_SECRET_ACCESS_KEY", ""),
+  R2_BUCKET_NAME: readString("R2_BUCKET_NAME", "client-brandx-assets"),
+  R2_PUBLIC_DOMAIN: readString(
+    "R2_PUBLIC_DOMAIN",
+    "https://storepage.codebiruni.com",
+  ),
 
   // Chatbot
   GEMINI_API_KEY: readString("GEMINI_API_KEY"),

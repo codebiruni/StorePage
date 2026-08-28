@@ -17,23 +17,10 @@
  */
 
 import { useState } from "react";
-import axios from "axios";
 import { ImageIcon, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-
-const CLOUDINARY_UPLOAD_URL =
-  process.env.NEXT_PUBLIC_CLOUDINARY_IMAGE_API ??
-  process.env.NEXT_PUBLIC_IMAGE_API ??
-  "";
-const CLOUDINARY_CLOUD_NAME =
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ??
-  process.env.NEXT_PUBLIC_CLOUD_NAME ??
-  "";
-const CLOUDINARY_UPLOAD_PRESET =
-  process.env.NEXT_PUBLIC_CLOUDINARY_PRESET ??
-  process.env.NEXT_PUBLIC_PRESET ??
-  "";
+import { uploadImageToR2 } from "@/lib/uploadImage";
 
 interface ImageUploadFieldProps {
   label: string;
@@ -61,24 +48,10 @@ export function ImageUploadField({
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
-    if (
-      !CLOUDINARY_UPLOAD_URL ||
-      !CLOUDINARY_CLOUD_NAME ||
-      !CLOUDINARY_UPLOAD_PRESET
-    ) {
-      setError("Image upload is not configured (missing Cloudinary env).");
-      return;
-    }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-      formData.append("cloud_name", CLOUDINARY_CLOUD_NAME);
-      const res = await axios.post(CLOUDINARY_UPLOAD_URL, formData);
-      const url: string | undefined = res.data?.secure_url ?? res.data?.url;
-      if (!url) throw new Error("Upload succeeded but no URL was returned");
-      onChange(url);
+      const { publicUrl } = await uploadImageToR2(file);
+      onChange(publicUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -130,9 +103,8 @@ export function ImageUploadField({
             onChange={handleUpload}
           />
           <span
-            className={`inline-flex h-9 cursor-pointer items-center rounded-md border border-black/10 bg-white px-3 text-xs font-medium transition hover:bg-black/[0.04] ${
-              disabled || uploading ? "pointer-events-none opacity-50" : ""
-            }`}
+            className={`inline-flex h-9 cursor-pointer items-center rounded-md border border-black/10 bg-white px-3 text-xs font-medium transition hover:bg-black/[0.04] ${disabled || uploading ? "pointer-events-none opacity-50" : ""
+              }`}
           >
             {value ? "Replace image" : "Upload image"}
           </span>

@@ -32,6 +32,7 @@ type PublicEnvShape = {
   NEXT_PUBLIC_CLOUDINARY_IMAGE_API: string;
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: string;
   NEXT_PUBLIC_CLOUDINARY_PRESET: string;
+  NEXT_PUBLIC_R2_PUBLIC_DOMAIN: string;
 };
 
 function readString(key: string, fallback?: string): string {
@@ -83,6 +84,15 @@ export const publicEnv: PublicEnvShape = {
   NEXT_PUBLIC_CLOUDINARY_PRESET: readString(
     "NEXT_PUBLIC_CLOUDINARY_PRESET",
     readString("CLOUDINARY_PRESET", ""),
+  ),
+  /**
+   * Public CDN domain that fronts the Cloudflare R2 bucket. New product
+   * image uploads return URLs under this host, so the browser needs it at
+   * render time. Falls back to the canonical agency CDN domain.
+   */
+  NEXT_PUBLIC_R2_PUBLIC_DOMAIN: readString(
+    "NEXT_PUBLIC_R2_PUBLIC_DOMAIN",
+    readString("R2_PUBLIC_DOMAIN", "https://storepage.codebiruni.com"),
   ),
 };
 

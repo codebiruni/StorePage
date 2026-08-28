@@ -1,6 +1,6 @@
 "use client";
+
 import { useState, useCallback } from "react";
-import axios from "axios";
 import {
   UploadCloud,
   Loader2,
@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
+import { uploadImagesToR2 } from "@/lib/uploadImage";
 
 interface MultipleImageUploadProps {
   onUpload: (urls: string[]) => void;
@@ -16,36 +17,26 @@ interface MultipleImageUploadProps {
 }
 
 /**
- * Cloudinary upload targets — read the canonical NEXT_PUBLIC_CLOUDINARY_*
- * names first (matching `.env`) and fall back to the legacy aliases so
- * older deploys keep working. Surfacing a missing config early is the whole
- * point of these fallbacks: a 404 from `axios.post(undefined, ...)` is what
- * produced the "POST /dashboard/products/edit/undefined 404" trace.
+ * Multi-image uploader backed by the Cloudflare R2 pipeline.
+ *
+ * Selected files are compressed to WebP in the browser, then PUT directly
+ * to R2 via a presigned URL from `/api/upload-url`. The returned public URLs
+ * (https://storepage.codebiruni.com/...) are passed to the parent form.
+ *
+ * Existing Cloudinary URLs passed via `initialImages` are rendered as-is and
+ * never re-uploaded — they keep working on the storefront.
  */
-const CLOUDINARY_UPLOAD_URL =
-  process.env.NEXT_PUBLIC_CLOUDINARY_IMAGE_API ??
-  process.env.NEXT_PUBLIC_IMAGE_API ??
-  "";
-const CLOUDINARY_CLOUD_NAME =
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ??
-  process.env.NEXT_PUBLIC_CLOUD_NAME ??
-  "";
-const CLOUDINARY_UPLOAD_PRESET =
-  process.env.NEXT_PUBLIC_CLOUDINARY_PRESET ??
-  process.env.NEXT_PUBLIC_PRESET ??
-  "";
-
 export default function MultipleImageUpload({
   onUpload,
   initialImages = [],
 }: MultipleImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<"success" | "error" | null>(
-    null
+    null,
   );
   const [errorMessage, setErrorMessage] = useState("");
   const [previews, setPreviews] = useState<{ file: File; preview: string }[]>(
-    []
+    [],
   );
   const [uploadedUrls, setUploadedUrls] = useState<string[]>(initialImages);
 
@@ -82,55 +73,42 @@ export default function MultipleImageUpload({
   const uploadImages = useCallback(async () => {
     if (previews.length === 0) return;
 
-    if (!CLOUDINARY_UPLOAD_URL || !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-      const missing = [
-        !CLOUDINARY_UPLOAD_URL && "NEXT_PUBLIC_CLOUDINARY_IMAGE_API",
-        !CLOUDINARY_CLOUD_NAME && "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
-        !CLOUDINARY_UPLOAD_PRESET && "NEXT_PUBLIC_CLOUDINARY_PRESET",
-      ]
-        .filter(Boolean)
-        .join(", ");
-      setUploadStatus("error");
-      setErrorMessage(
-        `Image upload is not configured. Missing env: ${missing}.`,
-      );
-      console.error(
-        "[MultipleImageUpload] Cloudinary env not configured:",
-        missing,
-      );
-      return;
-    }
-
     setIsUploading(true);
     setUploadStatus(null);
     setErrorMessage("");
 
     try {
-      const uploadPromises = previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append("file", preview.file);
-        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-        formData.append("cloud_name", CLOUDINARY_CLOUD_NAME);
+      const results = await uploadImagesToR2(previews.map((p) => p.file));
+      const ok = results.filter(
+        (r): r is { publicUrl: string; key: string; fileName: string } =>
+          r !== null,
+      );
 
-        const response = await axios.post(CLOUDINARY_UPLOAD_URL, formData);
+      if (ok.length === 0) {
+        throw new Error("All uploads failed");
+      }
 
-        if (response.status !== 200) {
-          throw new Error("Failed to upload image");
-        }
-
-        return response.data.secure_url || response.data.url;
-      });
-
-      const urls = await Promise.all(uploadPromises);
-      const allUrls = [...uploadedUrls, ...urls];
+      const newUrls = ok.map((r) => r.publicUrl);
+      const allUrls = [...uploadedUrls, ...newUrls];
       setUploadedUrls(allUrls);
       onUpload(allUrls);
-      setPreviews([]);
+      setPreviews((prev) => {
+        prev.forEach((p) => URL.revokeObjectURL(p.preview));
+        return [];
+      });
       setUploadStatus("success");
+
+      if (ok.length < results.length) {
+        setErrorMessage(
+          `${results.length - ok.length} image(s) failed to upload and were skipped.`,
+        );
+      }
     } catch (error) {
       console.error("Error uploading images:", error);
       setUploadStatus("error");
-      setErrorMessage("Failed to upload some images");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to upload some images",
+      );
     } finally {
       setIsUploading(false);
     }
@@ -144,10 +122,9 @@ export default function MultipleImageUpload({
             htmlFor="file-upload"
             className={`
               flex flex-col items-center justify-center w-full p-6 border-2 h-[135px] border-dashed rounded-lg cursor-pointer
-              ${
-                isUploading
-                  ? "border-gray-300 bg-gray-50"
-                  : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+              ${isUploading
+                ? "border-gray-300 bg-gray-50"
+                : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
               }
               transition-colors duration-200
             `}
@@ -160,13 +137,13 @@ export default function MultipleImageUpload({
               )}
               <div className="text-sm text-gray-600">
                 {isUploading ? (
-                  <p>Uploading...</p>
+                  <p>Compressing & uploading to R2…</p>
                 ) : (
                   <>
                     <p className="font-medium text-gray-900">
                       Click to upload or drag and drop
                     </p>
-                    <p>PNG, JPG, WEBP, SVG (MAX. 10MB each)</p>
+                    <p>PNG, JPG, JPEG, HEIC, WEBP — auto-converted to WebP</p>
                   </>
                 )}
               </div>
@@ -174,7 +151,7 @@ export default function MultipleImageUpload({
             <input
               id="file-upload"
               type="file"
-              accept=".jpg, .jpeg, .png, .webp, .svg"
+              accept=".jpg, .jpeg, .png, .webp, .heic, .heif, .avif, .svg"
               onChange={handleImageChange}
               disabled={isUploading}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -233,6 +210,7 @@ export default function MultipleImageUpload({
                       src={url}
                       alt={`Uploaded ${index + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                   <button
@@ -271,8 +249,8 @@ export default function MultipleImageUpload({
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <CheckCircle2 className="w-4 h-4 text-green-500" />
           <span>
-            Successfully uploaded {previews.length} image
-            {previews.length > 1 ? "s" : ""}!
+            Successfully uploaded to R2!
+            {errorMessage ? ` ${errorMessage}` : ""}
           </span>
         </div>
       )}

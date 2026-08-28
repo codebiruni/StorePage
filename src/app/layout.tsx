@@ -20,6 +20,7 @@ import { Suspense } from "react";
 
 import MetaPixel from "@/components/MetaPixel";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
 import SiteConfigProvider from "@/defaults/context/SiteConfigProvider";
 import { getSiteConfig } from "@/lib/siteConfig";
 
@@ -151,8 +152,8 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-        <head>
-          {/*
+      <head>
+        {/*
             Preconnect hints shave 100-300ms off the very first request to
             these origins. Next.js next/font/google self-hosts the actual
             font files, but the CSS comes from fonts.googleapis.com, and
@@ -160,51 +161,51 @@ export default async function RootLayout({
             handshake on cold loads. Listing them here is the cheapest
             performance win for first-time FB-ad visitors.
           */}
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://connect.facebook.net" />
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link
+          rel="dns-prefetch"
+          href="https://www.googletagmanager.com"
+        />
+        {/* Image CDN allowlist hosts (best-effort, runtime-extended via NEXT_PUBLIC_IMAGE_HOSTS). */}
+        {Array.from(
+          new Set(
+            (
+              process.env.NEXT_PUBLIC_IMAGE_HOSTS ||
+              [
+                process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+                  ? `res.cloudinary.com`
+                  : null,
+                process.env.CLOUDINARY_CLOUD_NAME
+                  ? `res.cloudinary.com`
+                  : null,
+                "res.cloudinary.com",
+              ]
+                .filter(Boolean)
+                .join(",")
+            )
+              .split(",")
+              .map((h) => h.trim())
+              .filter(Boolean),
+          ),
+        ).map((host) => (
           <link
-            rel="preconnect"
-            href="https://fonts.gstatic.com"
-            crossOrigin="anonymous"
-          />
-          <link rel="preconnect" href="https://res.cloudinary.com" />
-          <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-          <link rel="preconnect" href="https://connect.facebook.net" />
-          <link rel="dns-prefetch" href="https://connect.facebook.net" />
-          <link rel="preconnect" href="https://www.googletagmanager.com" />
-          <link
+            key={`pre-${host}`}
             rel="dns-prefetch"
-            href="https://www.googletagmanager.com"
+            href={`https://${host}`}
           />
-          {/* Image CDN allowlist hosts (best-effort, runtime-extended via NEXT_PUBLIC_IMAGE_HOSTS). */}
-          {Array.from(
-            new Set(
-              (
-                process.env.NEXT_PUBLIC_IMAGE_HOSTS ||
-                [
-                  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-                    ? `res.cloudinary.com`
-                    : null,
-                  process.env.CLOUDINARY_CLOUD_NAME
-                    ? `res.cloudinary.com`
-                    : null,
-                  "res.cloudinary.com",
-                ]
-                  .filter(Boolean)
-                  .join(",")
-              )
-                .split(",")
-                .map((h) => h.trim())
-                .filter(Boolean),
-            ),
-          ).map((host) => (
-            <link
-              key={`pre-${host}`}
-              rel="dns-prefetch"
-              href={`https://${host}`}
-            />
-          ))}
+        ))}
 
-          <meta name="application-name" content={cfg.name} />
+        <meta name="application-name" content={cfg.name} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
@@ -315,6 +316,7 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ServiceWorkerCleanup />
           <AosWrapper>
             <NextTopLoader
               color={cfg.themeColor}
@@ -325,8 +327,8 @@ export default async function RootLayout({
             <SiteConfigProvider initialConfig={cfg}>
               <Context>
                 <Suspense fallback={null}>
-                    <MetaPixel pixelId={cfg.metaPixelId} />
-                    <GoogleAnalytics gaId={cfg.gaMeasurementId} />
+                  <MetaPixel pixelId={cfg.metaPixelId} />
+                  <GoogleAnalytics gaId={cfg.gaMeasurementId} />
                 </Suspense>
 
                 <Toaster className="z-[999999]" />

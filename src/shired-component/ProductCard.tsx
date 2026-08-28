@@ -44,6 +44,7 @@ export default function ProductCard({ product }: { product: any }) {
           height={300}
           src={firstImage}
           alt={product.name}
+          loading="lazy"
           className="absolute inset-0 w-full h-full object-cover rounded-t-xl transition-opacity duration-500 group-hover:opacity-0"
         />
         <Image
@@ -51,6 +52,7 @@ export default function ProductCard({ product }: { product: any }) {
           height={300}
           src={secondImage}
           alt={product.name}
+          loading="lazy"
           className="absolute inset-0 w-full h-full object-cover rounded-t-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         />
       </div>
