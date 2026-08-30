@@ -1,13 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import mongoose from "mongoose";
 
-// Use the cleaner server-side variable name we configured in Vercel
-const mongoUri = process.env.MONGODB_URI as string;
-
-if (!mongoUri) {
-  throw new Error("❌ MongoDB URI is not defined in environment variables.");
-}
-
 // Maintain a cached connection state across serverless function invocations
 let cached = (global as any).mongoose;
 
@@ -16,6 +9,13 @@ if (!cached) {
 }
 
 const connectDb = async (): Promise<void> => {
+  // Defer the env check to runtime so the module can be imported during
+  // Next.js build (static page collection) without crashing.
+  const mongoUri = process.env.MONGODB_URI as string;
+
+  if (!mongoUri) {
+    throw new Error("❌ MongoDB URI is not defined in environment variables.");
+  }
   // If a connection is already established and healthy, reuse it instantly
   if (cached.conn) {
     console.log("🚀 MongoDB already connected (using cached connection).");

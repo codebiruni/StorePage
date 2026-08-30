@@ -5,10 +5,11 @@
  * multi-tenant codebase. Throws early at boot if a *required* server-side
  * key is missing, so we never discover misconfiguration inside a request.
  *
- * IMPORTANT: This module imports `requireString` calls at the top level, so
- * it must NEVER be bundled to the browser. Only `'use server'` modules
- * (Server Components, Route Handlers, `lib/*.ts` called from those) may
- * import `env` from here.
+ * IMPORTANT: Required secrets (MONGODB_URI, JWT_*) use lazy getters so the
+ * module can be imported during Next.js build (static page collection)
+ * without crashing. Validation still happens at runtime — the first access
+ * to a missing required key will throw. This module must still NEVER be
+ * bundled to the browser.
  *
  * Client-side code that needs branding/URL defaults must import `publicEnv`
  * from `@/lib/publicEnv` instead — that module is safe to ship to the
@@ -113,12 +114,18 @@ const nodeEnv: EnvShape["NODE_ENV"] =
 
 export const env: EnvShape = {
   // Infra
-  MONGODB_URI: requireString("MONGODB_URI"),
+  get MONGODB_URI() {
+    return requireString("MONGODB_URI");
+  },
   NODE_ENV: nodeEnv,
 
   // Auth
-  JWT_ACCESS_SECRET: requireString("JWT_ACCESS_SECRET"),
-  JWT_REFRESH_SECRET: requireString("JWT_REFRESH_SECRET"),
+  get JWT_ACCESS_SECRET() {
+    return requireString("JWT_ACCESS_SECRET");
+  },
+  get JWT_REFRESH_SECRET() {
+    return requireString("JWT_REFRESH_SECRET");
+  },
   JWT_ACCESS_EXPIRES_IN: readString("JWT_ACCESS_EXPIRES_IN", "5h"),
   JWT_REFRESH_EXPIRES_IN: readString("JWT_REFRESH_EXPIRES_IN", "90d"),
 
