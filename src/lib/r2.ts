@@ -15,12 +15,14 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "@/lib/env";
 
 /**
- * R2 endpoint. Falls back to an empty string when unconfigured so callers
- * can surface a clear error instead of constructing a malformed URL.
+ * R2 endpoint. Computed lazily so the module can be imported during
+ * Next.js build without crashing when env vars are unavailable.
  */
-const r2Endpoint = env.R2_ACCOUNT_ID
-    ? `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
-    : "";
+function getR2Endpoint(): string {
+    return env.R2_ACCOUNT_ID
+        ? `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+        : "";
+}
 
 /** Lazily-built S3 client. Created on first use so a missing R2 config in
  *  dev (e.g. running the app without R2 keys) doesn't crash server boot. */
@@ -35,7 +37,7 @@ export function getR2Client(): S3Client {
     }
     _client = new S3Client({
         region: "auto",
-        endpoint: r2Endpoint,
+        endpoint: getR2Endpoint(),
         credentials: {
             accessKeyId: env.R2_ACCESS_KEY_ID,
             secretAccessKey: env.R2_SECRET_ACCESS_KEY,

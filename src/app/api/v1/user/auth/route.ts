@@ -5,13 +5,15 @@ import UserModel from "@/models/user.model";
 import connectDb from "@/lib/connectdb";
 import { env } from "@/lib/env";
 
-const accessSecret = env.JWT_ACCESS_SECRET;
-const refreshSecret = env.JWT_REFRESH_SECRET;
-const accessExpiresIn = env.JWT_ACCESS_EXPIRES_IN;
-const refreshExpiresIn = env.JWT_REFRESH_EXPIRES_IN;
-
 export async function POST(request: NextRequest) {
   try {
+    // Read secrets at runtime so the build doesn't crash when .env is
+    // unavailable (CI/CD, static page collection, etc.).
+    const accessSecret = env.JWT_ACCESS_SECRET;
+    const refreshSecret = env.JWT_REFRESH_SECRET;
+    const accessExpiresIn = env.JWT_ACCESS_EXPIRES_IN;
+    const refreshExpiresIn = env.JWT_REFRESH_EXPIRES_IN;
+
     const { identifier, password } = await request.json();
 
     if (!identifier || !password) {

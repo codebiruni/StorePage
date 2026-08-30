@@ -98,6 +98,13 @@ function readString(key: string, fallback?: string): string {
 function requireString(key: string): string {
   const v = process.env[key];
   if (!v || v.length === 0) {
+    // During Next.js build (static page collection), env vars from .env
+    // may not be available (e.g. in CI/CD). Don't crash the build —
+    // return empty string and let the runtime throw when the server
+    // actually starts handling requests.
+    if (process.env.NEXT_PHASE) {
+      return "";
+    }
     throw new Error(
       `❌ Missing required environment variable: ${key}. ` +
       `Add it to .env (see .env.example) before starting the server.`,
