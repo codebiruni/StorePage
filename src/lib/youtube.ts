@@ -21,7 +21,7 @@ export function getYouTubeId(raw?: string | null): string | null {
       const id = u.pathname.replace(/^\/+/, "").split("/")[0];
       return /^[A-Za-z0-9_-]{6,15}$/.test(id) ? id : null;
     }
-    if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+    if (isTrustedYouTubeHost(host)) {
       // /watch?v=ID, /embed/ID, /shorts/ID, /live/ID
       const v = u.searchParams.get("v");
       if (v && /^[A-Za-z0-9_-]{6,15}$/.test(v)) return v;
@@ -37,6 +37,23 @@ export function getYouTubeId(raw?: string | null): string | null {
     // fall through
   }
   return null;
+}
+
+/**
+ * Exact-or-proper-subdomain check for YouTube hosts.
+ *
+ * A naive `host.endsWith("youtube.com")` also accepts look-alike domains
+ * such as `notyoutube.com` or `evilyoutube.com`, which would let an
+ * attacker-controlled origin through into an embed. Require either an exact
+ * match or a `.`-delimited subdomain boundary.
+ */
+function isTrustedYouTubeHost(host: string): boolean {
+  return (
+    host === "youtube.com" ||
+    host.endsWith(".youtube.com") ||
+    host === "youtube-nocookie.com" ||
+    host.endsWith(".youtube-nocookie.com")
+  );
 }
 
 export function getVimeoId(raw?: string | null): string | null {

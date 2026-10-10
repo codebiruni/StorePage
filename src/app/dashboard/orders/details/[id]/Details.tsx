@@ -2,15 +2,16 @@
 
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
+import { resolveProductImage } from "@/lib/productImage"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent,  CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Package, 
-  User, 
-  MapPin, 
-  CreditCard, 
+import {
+  Package,
+  User,
+  MapPin,
+  CreditCard,
   Calendar,
   Edit,
   Printer,
@@ -94,13 +95,13 @@ export default function OrderDetails() {
       try {
         setLoading(true)
         const response = await fetch(`/api/v1/order/${id}`)
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch order')
         }
-        
+
         const result: ApiResponse = await response.json()
-        
+
         if (result.success) {
           setOrder(result.data)
         } else {
@@ -144,7 +145,7 @@ export default function OrderDetails() {
       delivered: { variant: "success" as const, label: "Delivered" },
       cancelled: { variant: "destructive" as const, label: "Cancelled" }
     }
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
     return <Badge >{config.label}</Badge>
   }
@@ -155,7 +156,7 @@ export default function OrderDetails() {
       paid: { variant: "success" as const, label: "Paid" },
       failed: { variant: "destructive" as const, label: "Failed" }
     }
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
     return <Badge >{config.label}</Badge>
   }
@@ -163,7 +164,7 @@ export default function OrderDetails() {
   const handlePrint = () => {
     const printContent = document.getElementById('print-voucher')
     const originalContents = document.body.innerHTML
-    
+
     if (printContent) {
       document.body.innerHTML = printContent.innerHTML
       window.print()
@@ -277,24 +278,24 @@ export default function OrderDetails() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="w-5 h-5" />
-                Order Items ({order.products.length})
+                Order Items ({(order.products ?? []).filter(Boolean).length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {order.products.map((product, index) => (
-                  <div key={`${product._id}-${index}`} className="flex gap-4 pb-4 border-b last:border-0 last:pb-0">
+                {(order.products ?? []).filter(Boolean).map((product, index) => (
+                  <div key={`${product?._id || index}-${index}`} className="flex gap-4 pb-4 border-b last:border-0 last:pb-0">
                     <Image width={100} height={100}
-                      src={product.images[0]}
-                      alt={product.name}
+                      src={resolveProductImage(product?.images)}
+                      alt={product?.name || "Product"}
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <h4 className="font-semibold">{product.name}</h4>
-                      <p className="text-sm text-muted-foreground">{product.brand}</p>
+                      <h4 className="font-semibold">{product?.name || "Product"}</h4>
+                      <p className="text-sm text-muted-foreground">{product?.brand || ""}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="font-semibold">{formatPrice(product.generalPrice.currentPrice)}</span>
-                        {product.generalPrice.prevPrice > product.generalPrice.currentPrice && (
+                        <span className="font-semibold">{formatPrice(product?.generalPrice?.currentPrice ?? 0)}</span>
+                        {(product?.generalPrice?.prevPrice ?? 0) > (product?.generalPrice?.currentPrice ?? 0) && (
                           <span className="text-sm text-muted-foreground line-through">
                             {formatPrice(product.generalPrice.prevPrice)}
                           </span>
@@ -327,7 +328,7 @@ export default function OrderDetails() {
               <div className="flex justify-between items-center">
                 <span>Delivery:</span>
                 {order.isDelivered ? (
-                  <Badge  className="flex items-center gap-1">
+                  <Badge className="flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
                     Delivered
                   </Badge>
@@ -341,7 +342,7 @@ export default function OrderDetails() {
               <div className="flex justify-between items-center">
                 <span>Payment:</span>
                 {order.isPaid ? (
-                  <Badge  className="flex items-center gap-1">
+                  <Badge className="flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
                     Paid
                   </Badge>
@@ -411,9 +412,9 @@ export default function OrderDetails() {
           {/* Header */}
           <div className="text-center border-b-2 border-gray-300 pb-4 mb-6">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <Image width={80} height={80} 
-                src="/logo.png" 
-                alt="Logo" 
+              <Image width={80} height={80}
+                src="/logo.png"
+                alt="Logo"
                 className="h-12 w-12 object-contain"
               />
               <h1 className="text-2xl font-bold">{shopName}</h1>
@@ -452,16 +453,16 @@ export default function OrderDetails() {
                 </tr>
               </thead>
               <tbody>
-                {order.products.map((product, index) => (
-                  <tr key={`${product._id}-${index}`} className="border-b border-gray-200">
+                {(order.products ?? []).filter(Boolean).map((product, index) => (
+                  <tr key={`${product?._id || index}-${index}`} className="border-b border-gray-200">
                     <td className="py-2">
                       <div>
-                        <p className="font-semibold">{product.name}</p>
-                        <p className="text-sm text-gray-600">{product.brand}</p>
+                        <p className="font-semibold">{product?.name || "Product"}</p>
+                        <p className="text-sm text-gray-600">{product?.brand || ""}</p>
                       </div>
                     </td>
                     <td className="text-right py-2">
-                      {formatPrice(product.generalPrice.currentPrice)}
+                      {formatPrice(product?.generalPrice?.currentPrice ?? 0)}
                     </td>
                   </tr>
                 ))}

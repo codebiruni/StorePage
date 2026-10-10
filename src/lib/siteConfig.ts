@@ -181,10 +181,15 @@ function buildSiteConfig(doc: any, base: SiteConfig): SiteConfig {
 
   if (!doc) return base;
 
+  const rawLogo = doc.logo ?? base.logo;
+  const logo = typeof rawLogo === "string" && rawLogo.startsWith("http://")
+    ? rawLogo.replace(/^http:\/\//i, "https://")
+    : rawLogo;
+
   return {
     name: doc.name ?? base.name,
     tagline: doc.tagline ?? base.tagline,
-    logo: doc.logo ?? base.logo,
+    logo,
     themeColor: base.themeColor, // siteInfo has no `themeColor` yet; env wins
     contact: {
       email: doc.email ?? base.contact.email,

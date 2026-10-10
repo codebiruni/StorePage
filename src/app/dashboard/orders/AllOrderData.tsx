@@ -2,47 +2,47 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table"
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select"
 import {
   MoreHorizontal,
@@ -63,6 +63,7 @@ import { toast } from "sonner"
 import Image from 'next/image'
 import Link from 'next/link'
 import { publicEnv } from '@/lib/publicEnv'
+import { resolveProductImage } from '@/lib/productImage'
 import { useSiteConfig } from '@/defaults/context/SiteConfigProvider'
 import { Checkbox } from "@/components/ui/checkbox"
 
@@ -83,7 +84,9 @@ interface Order {
   name: string
   number: string
   address: string
-  products: Product[]
+  // Optional: legacy/incomplete rows (pre-product orders) come back from the
+  // API without a `products` key at all, so every read must be null-safe.
+  products?: Product[]
   totalAmount: number
   deliveryCharge: number
   discount: number
@@ -154,7 +157,7 @@ export default function AllOrderData() {
   const [paymentMethod, setPaymentMethod] = useState<string>('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(50)
-  
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -175,7 +178,7 @@ export default function AllOrderData() {
   const [creatingBulkRedx, setCreatingBulkRedx] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  
+
   const [editForm, setEditForm] = useState<EditOrderForm>({
     name: '',
     number: '',
@@ -225,11 +228,11 @@ export default function AllOrderData() {
 
   useEffect(() => {
     fetchOrders()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, search, orderStatus, paymentStatus, paymentMethod])
 
 
-  
+
   const handleUpdateOrder = async () => {
     if (!selectedOrder) return
 
@@ -263,7 +266,7 @@ export default function AllOrderData() {
   const handleCreateSteadfastOrder = async (order: Order) => {
     setSelectedOrder(order)
     setCreatingSteadfast(true)
-    
+
     try {
       const response = await fetch('/api/v1/steadfast-order', {
         method: 'POST',
@@ -482,8 +485,8 @@ export default function AllOrderData() {
   }
 
   const toggleOrderSelection = (orderId: string) => {
-    setSelectedOrders(prev => 
-      prev.includes(orderId) 
+    setSelectedOrders(prev =>
+      prev.includes(orderId)
         ? prev.filter(id => id !== orderId)
         : [...prev, orderId]
     )
@@ -640,7 +643,7 @@ export default function AllOrderData() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="orderStatus">Order Status</Label>
               <Select value={orderStatus} onValueChange={setOrderStatus}>
@@ -736,7 +739,7 @@ export default function AllOrderData() {
                 const statusBadge = getStatusBadge(order.orderStatus)
                 const paymentBadge = getPaymentStatusBadge(order.paymentStatus)
                 const isSelected = selectedOrders.includes(order._id)
-                
+
                 return (
                   <TableRow key={order._id} className={isSelected ? 'bg-blue-50 transition-colors duration-150' : 'transition-colors duration-150'}>
                     <TableCell>
@@ -766,25 +769,28 @@ export default function AllOrderData() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="flex -space-x-2">
-                          {order.products.slice(0, 3).map((product, index) => (
-                            <div key={index} className="relative">
+                          {(Array.isArray(order.products) ? order.products : [])
+                            .filter(Boolean)
+                            .slice(0, 3)
+                            .map((product, index) => (
+                            <div key={product?._id || index} className="relative">
                               <Image
-                                src={product.images[0]}
-                                alt={product.name}
+                                src={resolveProductImage(product?.images)}
+                                alt={product?.name || "Product"}
                                 width={32}
                                 height={32}
                                 className="rounded-full border-2 border-background object-cover"
                               />
-                              {index === 2 && order.products.length > 3 && (
+                              {index === 2 && (Array.isArray(order.products) ? order.products : []).filter(Boolean).length > 3 && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full text-white text-xs">
-                                  +{order.products.length - 3}
+                                  +{(Array.isArray(order.products) ? order.products : []).filter(Boolean).length - 3}
                                 </div>
                               )}
                             </div>
                           ))}
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          {order.products.length} items
+                          {(Array.isArray(order.products) ? order.products : []).filter(Boolean).length} items
                         </span>
                       </div>
                     </TableCell>
@@ -802,7 +808,7 @@ export default function AllOrderData() {
                           {paymentBadge.label}
                         </Badge>
                         <span className="text-xs text-muted-foreground capitalize">
-                          {order.paymentMethod.replace(/-/g, ' ')}
+                          {(order.paymentMethod || 'N/A').replace(/-/g, ' ')}
                         </span>
                       </div>
                     </TableCell>
@@ -948,7 +954,7 @@ export default function AllOrderData() {
               Complete information for this order
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedOrder && (
             <div className="space-y-6">
               {/* Order Summary */}
@@ -998,7 +1004,7 @@ export default function AllOrderData() {
                     </div>
                     <div className="flex justify-between">
                       <span>Payment Method:</span>
-                      <span className="capitalize">{selectedOrder.paymentMethod.replace(/-/g, ' ')}</span>
+                      <span className="capitalize">{(selectedOrder.paymentMethod || 'N/A').replace(/-/g, ' ')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Order Date:</span>
@@ -1021,20 +1027,22 @@ export default function AllOrderData() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {selectedOrder.products.map((product, index) => (
-                      <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
+                    {(Array.isArray(selectedOrder.products) ? selectedOrder.products : [])
+                      .filter(Boolean)
+                      .map((product, index) => (
+                      <div key={product?._id || index} className="flex items-center gap-4 p-3 border rounded-lg">
                         <Image
-                          src={product.images[0]}
-                          alt={product.name}
+                          src={resolveProductImage(product?.images)}
+                          alt={product?.name || "Product"}
                           width={60}
                           height={60}
                           className="rounded-md object-cover"
                         />
                         <div className="flex-1">
-                          <h4 className="font-medium">{product.name}</h4>
+                          <h4 className="font-medium">{product?.name || "Product"}</h4>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>Price: {formatCurrency(product.generalPrice.currentPrice)}</span>
-                            {product.generalPrice.prevPrice > product.generalPrice.currentPrice && (
+                            <span>Price: {formatCurrency(product?.generalPrice?.currentPrice ?? 0)}</span>
+                            {(product?.generalPrice?.prevPrice ?? 0) > (product?.generalPrice?.currentPrice ?? 0) && (
                               <span className="line-through">
                                 {formatCurrency(product.generalPrice.prevPrice)}
                               </span>
@@ -1096,7 +1104,7 @@ export default function AllOrderData() {
               Update order information and status
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedOrder && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1105,7 +1113,7 @@ export default function AllOrderData() {
                   <Input
                     id="name"
                     value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -1113,7 +1121,7 @@ export default function AllOrderData() {
                   <Input
                     id="number"
                     value={editForm.number}
-                    onChange={(e) => setEditForm({...editForm, number: e.target.value})}
+                    onChange={(e) => setEditForm({ ...editForm, number: e.target.value })}
                   />
                 </div>
               </div>
@@ -1123,16 +1131,16 @@ export default function AllOrderData() {
                 <Input
                   id="address"
                   value={editForm.address}
-                  onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="orderStatus">Order Status</Label>
-                  <Select 
-                    value={editForm.orderStatus} 
-                    onValueChange={(value) => setEditForm({...editForm, orderStatus: value})}
+                  <Select
+                    value={editForm.orderStatus}
+                    onValueChange={(value) => setEditForm({ ...editForm, orderStatus: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1150,9 +1158,9 @@ export default function AllOrderData() {
 
                 <div className="space-y-2">
                   <Label htmlFor="paymentStatus">Payment Status</Label>
-                  <Select 
-                    value={editForm.paymentStatus} 
-                    onValueChange={(value) => setEditForm({...editForm, paymentStatus: value})}
+                  <Select
+                    value={editForm.paymentStatus}
+                    onValueChange={(value) => setEditForm({ ...editForm, paymentStatus: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1173,7 +1181,7 @@ export default function AllOrderData() {
                     type="checkbox"
                     id="isDelivered"
                     checked={editForm.isDelivered}
-                    onChange={(e) => setEditForm({...editForm, isDelivered: e.target.checked})}
+                    onChange={(e) => setEditForm({ ...editForm, isDelivered: e.target.checked })}
                     className="rounded border-gray-300"
                   />
                   <Label htmlFor="isDelivered">Order Delivered</Label>
@@ -1183,7 +1191,7 @@ export default function AllOrderData() {
                     type="checkbox"
                     id="isPaid"
                     checked={editForm.isPaid}
-                    onChange={(e) => setEditForm({...editForm, isPaid: e.target.checked})}
+                    onChange={(e) => setEditForm({ ...editForm, isPaid: e.target.checked })}
                     className="rounded border-gray-300"
                   />
                   <Label htmlFor="isPaid">Payment Received</Label>
@@ -1204,185 +1212,189 @@ export default function AllOrderData() {
       </Dialog>
 
       {/* Print Receipt Dialog */}
-<Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
-  <DialogContent className="max-w-2xl">
-    <DialogHeader>
-      <DialogTitle>Order Receipt - {selectedOrder?.orderId}</DialogTitle>
-    </DialogHeader>
-    
-    {selectedOrder && (
-      <>
-        {/* Receipt content for display */}
-        <div className="space-y-6">
-          {/* Receipt Header */}
-          <div className="text-center border-b pb-4">
-            {shopLogo && (
-              <Image
-                src={shopLogo}
-                alt="Shop Logo"
-                width={80}
-                height={80}
-                className="mx-auto mb-2"
-              />
-            )}
-            <h2 className="text-2xl font-bold">{shopName}</h2>
-            <p className="text-muted-foreground">Order Receipt</p>
-          </div>
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Order Receipt - {selectedOrder?.orderId}</DialogTitle>
+          </DialogHeader>
 
-          {/* Order Information */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <strong>Order ID:</strong> {selectedOrder.orderId}
-            </div>
-            <div>
-              <strong>Date:</strong> {formatDate(selectedOrder.createdAt)}
-            </div>
-            <div>
-              <strong>Customer:</strong> {selectedOrder.name}
-            </div>
-            <div>
-              <strong>Phone:</strong> {selectedOrder.number}
-            </div>
-          </div>
-
-          {/* Products */}
-          <div>
-            <h3 className="font-semibold mb-2">Order Items:</h3>
-            <div className="space-y-2">
-              {selectedOrder.products.map((product, index) => (
-                <div key={index} className="flex justify-between text-sm">
-                  <span>{product.name}</span>
-                  <span>{formatCurrency(product.generalPrice.currentPrice)}</span>
+          {selectedOrder && (
+            <>
+              {/* Receipt content for display */}
+              <div className="space-y-6">
+                {/* Receipt Header */}
+                <div className="text-center border-b pb-4">
+                  {shopLogo && (
+                    <Image
+                      src={shopLogo}
+                      alt="Shop Logo"
+                      width={80}
+                      height={80}
+                      className="mx-auto mb-2"
+                    />
+                  )}
+                  <h2 className="text-2xl font-bold">{shopName}</h2>
+                  <p className="text-muted-foreground">Order Receipt</p>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Pricing Summary */}
-          <div className="border-t pt-2 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>{formatCurrency(selectedOrder.totalAmount)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Delivery:</span>
-              <span>{formatCurrency(selectedOrder.deliveryCharge)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Discount:</span>
-              <span>-{formatCurrency(selectedOrder.discount)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-base border-t pt-2">
-              <span>Total:</span>
-              <span>{formatCurrency(selectedOrder.grandTotal)}</span>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center text-xs text-muted-foreground border-t pt-4">
-            <p>Thank you for your business!</p>
-            <p>For any queries, contact: {selectedOrder.number}</p>
-          </div>
-        </div>
-
-        {/* Hidden receipt content for printing only */}
-        <div id="receipt-print-content" className="hidden">
-          <div className="p-8 max-w-md mx-auto">
-            {/* Receipt Header */}
-            <div className="text-center border-b-2 border-gray-800 pb-4 mb-6">
-               <Image width={100} height={100}
-                  src='/logo.png'
-                  alt="Shop Logo" 
-                  className="h-16 w-16 mx-auto mb-2 object-contain"
-                />
-              <h2 className="text-xl font-bold">{shopName}</h2>
-              <p className="text-sm text-gray-600">Order Receipt</p>
-            </div>
-
-            {/* Order Information */}
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span><strong>Order ID:</strong></span>
-                <span>{selectedOrder.orderId}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span><strong>Date:</strong></span>
-                <span>{formatDate(selectedOrder.createdAt)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span><strong>Customer:</strong></span>
-                <span>{selectedOrder.name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span><strong>Phone:</strong></span>
-                <span>{selectedOrder.number}</span>
-              </div>
-            </div>
-
-            {/* Products */}
-            <div className="mb-4">
-              <h3 className="font-semibold text-sm mb-2 border-b border-gray-300 pb-1">Order Items:</h3>
-              <div className="space-y-1">
-                {selectedOrder.products.map((product, index) => (
-                  <div key={index} className="flex justify-between text-xs">
-                    <span className="flex-1">{product.name}</span>
-                    <span className="ml-2">{formatCurrency(product.generalPrice.currentPrice)}</span>
+                {/* Order Information */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <strong>Order ID:</strong> {selectedOrder.orderId}
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div>
+                    <strong>Date:</strong> {formatDate(selectedOrder.createdAt)}
+                  </div>
+                  <div>
+                    <strong>Customer:</strong> {selectedOrder.name}
+                  </div>
+                  <div>
+                    <strong>Phone:</strong> {selectedOrder.number}
+                  </div>
+                </div>
 
-            {/* Pricing Summary */}
-            <div className="border-t-2 border-gray-800 pt-2 space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>{formatCurrency(selectedOrder.totalAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Delivery:</span>
-                <span>{formatCurrency(selectedOrder.deliveryCharge)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Discount:</span>
-                <span>-{formatCurrency(selectedOrder.discount)}</span>
-              </div>
-              <div className="flex justify-between font-bold text-base border-t border-gray-300 mt-2 pt-2">
-                <span>Total:</span>
-                <span>{formatCurrency(selectedOrder.grandTotal)}</span>
-              </div>
-            </div>
+                {/* Products */}
+                <div>
+                  <h3 className="font-semibold mb-2">Order Items:</h3>
+                  <div className="space-y-2">
+                    {(Array.isArray(selectedOrder.products) ? selectedOrder.products : [])
+                      .filter(Boolean)
+                      .map((product, index) => (
+                      <div key={product?._id || index} className="flex justify-between text-sm">
+                        <span>{product?.name || "Product"}</span>
+                        <span>{formatCurrency(product?.generalPrice?.currentPrice ?? 0)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Footer */}
-            <div className="text-center text-xs text-gray-500 border-t border-gray-300 mt-4 pt-4">
-              <p>Thank you for your business!</p>
-              <p>For any queries, contact: {selectedOrder.number}</p>
-            </div>
-          </div>
-        </div>
-      </>
-    )}
+                {/* Pricing Summary */}
+                <div className="border-t pt-2 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(selectedOrder.totalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivery:</span>
+                    <span>{formatCurrency(selectedOrder.deliveryCharge)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Discount:</span>
+                    <span>-{formatCurrency(selectedOrder.discount)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-base border-t pt-2">
+                    <span>Total:</span>
+                    <span>{formatCurrency(selectedOrder.grandTotal)}</span>
+                  </div>
+                </div>
 
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>
-        Close
-      </Button>
-      <Button onClick={() => {
-        const printContent = document.getElementById('receipt-print-content');
-        const originalContents = document.body.innerHTML;
-        
-        if (printContent) {
-          document.body.innerHTML = printContent.innerHTML;
-          window.print();
-          document.body.innerHTML = originalContents;
-          window.location.reload();
-        }
-      }} className="gap-2">
-        <Printer className="h-4 w-4" />
-        Print Receipt
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+                {/* Footer */}
+                <div className="text-center text-xs text-muted-foreground border-t pt-4">
+                  <p>Thank you for your business!</p>
+                  <p>For any queries, contact: {selectedOrder.number}</p>
+                </div>
+              </div>
+
+              {/* Hidden receipt content for printing only */}
+              <div id="receipt-print-content" className="hidden">
+                <div className="p-8 max-w-md mx-auto">
+                  {/* Receipt Header */}
+                  <div className="text-center border-b-2 border-gray-800 pb-4 mb-6">
+                    <Image width={100} height={100}
+                      src='/logo.png'
+                      alt="Shop Logo"
+                      className="h-16 w-16 mx-auto mb-2 object-contain"
+                    />
+                    <h2 className="text-xl font-bold">{shopName}</h2>
+                    <p className="text-sm text-gray-600">Order Receipt</p>
+                  </div>
+
+                  {/* Order Information */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span><strong>Order ID:</strong></span>
+                      <span>{selectedOrder.orderId}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span><strong>Date:</strong></span>
+                      <span>{formatDate(selectedOrder.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span><strong>Customer:</strong></span>
+                      <span>{selectedOrder.name}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span><strong>Phone:</strong></span>
+                      <span>{selectedOrder.number}</span>
+                    </div>
+                  </div>
+
+                  {/* Products */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold text-sm mb-2 border-b border-gray-300 pb-1">Order Items:</h3>
+                    <div className="space-y-1">
+                      {(Array.isArray(selectedOrder.products) ? selectedOrder.products : [])
+                        .filter(Boolean)
+                        .map((product, index) => (
+                        <div key={product?._id || index} className="flex justify-between text-xs">
+                          <span className="flex-1">{product?.name || "Product"}</span>
+                          <span className="ml-2">{formatCurrency(product?.generalPrice?.currentPrice ?? 0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Pricing Summary */}
+                  <div className="border-t-2 border-gray-800 pt-2 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(selectedOrder.totalAmount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Delivery:</span>
+                      <span>{formatCurrency(selectedOrder.deliveryCharge)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Discount:</span>
+                      <span>-{formatCurrency(selectedOrder.discount)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-base border-t border-gray-300 mt-2 pt-2">
+                      <span>Total:</span>
+                      <span>{formatCurrency(selectedOrder.grandTotal)}</span>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="text-center text-xs text-gray-500 border-t border-gray-300 mt-4 pt-4">
+                    <p>Thank you for your business!</p>
+                    <p>For any queries, contact: {selectedOrder.number}</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              const printContent = document.getElementById('receipt-print-content');
+              const originalContents = document.body.innerHTML;
+
+              if (printContent) {
+                document.body.innerHTML = printContent.innerHTML;
+                window.print();
+                document.body.innerHTML = originalContents;
+                window.location.reload();
+              }
+            }} className="gap-2">
+              <Printer className="h-4 w-4" />
+              Print Receipt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Courier Success Dialog (generic — works for all three providers) */}
       <Dialog open={courierSuccessDialogOpen} onOpenChange={setCourierSuccessDialogOpen}>
@@ -1393,8 +1405,8 @@ export default function AllOrderData() {
               {courierSuccessMeta?.courier === 'pathao'
                 ? 'Pathao Order Created'
                 : courierSuccessMeta?.courier === 'redx'
-                ? 'RedX Order Created'
-                : 'Steadfast Order Created'}
+                  ? 'RedX Order Created'
+                  : 'Steadfast Order Created'}
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && courierSuccessMeta && (

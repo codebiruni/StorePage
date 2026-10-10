@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
+import { resolveProductImage } from '@/lib/productImage'
 
 interface PurchaseItem {
   id: string
   name: string
   price: number
-  image: string
+  /** Legacy cart rows may carry a junk value (e.g. "x"), so this is not
+   *  guaranteed to be a usable URL — always resolve it before rendering. */
+  image?: string
   quantity: number
 }
 
@@ -44,17 +47,17 @@ export default function OrderSummary({
         <CardContent className="space-y-4 p-2">
           {itemsWithQuantity.map((item: PurchaseItem, index: number) => (
             <div key={item.id || index} className="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-md transition-shadow duration-200">
-              <Image 
+              <Image
                 width={64}
                 height={64}
-                src={item.image} 
+                src={resolveProductImage(item.image)}
                 alt={item.name}
                 className="w-16 h-16 object-cover rounded-lg"
               />
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-sm truncate">{item.name}</h4>
                 <p className="text-green-600 font-bold">{item.price} BDT</p>
-                
+
                 <div className="flex items-center gap-3 mt-2">
                   <Label htmlFor={`quantity-${item.id}`} className="text-sm text-muted-foreground">
                     Quantity:
@@ -94,9 +97,9 @@ export default function OrderSummary({
               </Button>
             </div>
           ))}
-          
+
           <Separator className="my-4" />
-          
+
           <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600 dark:text-gray-300">Subtotal:</span>

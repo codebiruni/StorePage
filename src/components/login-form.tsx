@@ -107,6 +107,8 @@ export function LoginForm({
             <Input
               id="identifier"
               type="text"
+              name="identifier"
+              autoComplete="username"
               placeholder="name@company.com"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
@@ -124,6 +126,8 @@ export function LoginForm({
             <Input
               id="password"
               type="password"
+              name="password"
+              autoComplete="current-password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

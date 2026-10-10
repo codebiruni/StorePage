@@ -321,7 +321,10 @@ export default function PurchaseProducts() {
       }
 
       const orderedProductIds = itemsWithQuantity.map(item => item.id)
-      const finalOrderId = result.orderId || `ORD-${Date.now()}`
+      // The API responds with { success, data: { orderId, ... } } — read the
+      // server-assigned id from `data` so the thanks page shows the real one.
+      const finalOrderId =
+        result?.data?.orderId || result?.orderId || `ORD-${Date.now()}`
 
       // 👇 1. Block the UI from switching to EmptyCart
       setIsRedirecting(true)
@@ -344,7 +347,7 @@ export default function PurchaseProducts() {
       toast.error('Failed to place order. Please try again.')
     } finally {
       setLoading(false)
-      
+
     }
   }
 

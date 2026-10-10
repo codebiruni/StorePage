@@ -1,44 +1,44 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table"
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select"
-import { 
-  Package, 
-  Search, 
-  Edit, 
+import {
+  Package,
+  Search,
+  Edit,
   AlertTriangle,
   TrendingDown,
   Filter,
@@ -51,6 +51,7 @@ import {
 } from 'lucide-react'
 import { toast } from "sonner"
 import Image from 'next/image'
+import { resolveProductImage } from '@/lib/productImage'
 
 interface Product {
   _id: string
@@ -100,7 +101,7 @@ export default function ProductReports() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
-  
+
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [newQuantity, setNewQuantity] = useState(0)
@@ -136,7 +137,7 @@ export default function ProductReports() {
 
   useEffect(() => {
     fetchProducts()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, search, stockFilter, categoryFilter])
 
   const handleUpdateQuantity = async (productId: string, quantity: number) => {
@@ -274,7 +275,7 @@ export default function ProductReports() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="stockFilter">Stock Status</Label>
               <Select value={stockFilter} onValueChange={(value: 'all' | 'low' | 'critical') => setStockFilter(value)}>
@@ -405,13 +406,13 @@ export default function ProductReports() {
             <TableBody>
               {products.map((product) => {
                 const stockStatus = getStockStatus(product.quentity)
-                
+
                 return (
                   <TableRow key={product._id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Image
-                          src={product.images[0] || '/placeholder-product.jpg'}
+                          src={resolveProductImage(product.images)}
                           alt={product.name}
                           width={40}
                           height={40}
@@ -436,12 +437,11 @@ export default function ProductReports() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className={`font-bold ${
-                          product.quentity === 0 ? 'text-red-700' :
-                          product.quentity < 10 ? 'text-red-500' :
-                          product.quentity < 30 ? 'text-orange-500' :
-                          'text-green-600'
-                        }`}>
+                        <span className={`font-bold ${product.quentity === 0 ? 'text-red-700' :
+                            product.quentity < 10 ? 'text-red-500' :
+                              product.quentity < 30 ? 'text-orange-500' :
+                                'text-green-600'
+                          }`}>
                           {product.quentity}
                         </span>
                         <div className="flex gap-1">
@@ -551,7 +551,7 @@ export default function ProductReports() {
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 border rounded-lg">
                 <Image
-                  src={selectedProduct.images[0] || '/placeholder-product.jpg'}
+                  src={resolveProductImage(selectedProduct.images)}
                   alt={selectedProduct.name}
                   width={60}
                   height={60}

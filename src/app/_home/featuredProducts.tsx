@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { resolveProductImage } from "@/lib/productImage";
 
 interface Product {
   _id: string;
@@ -38,7 +39,7 @@ export default function FeaturedProducts() {
       try {
         const res = await fetch(`/api/v1/home/featured-product`, {
           method: "GET",
-          
+
         });
         const data = await res.json();
         if (data.status === "success") {
@@ -152,7 +153,7 @@ export default function FeaturedProducts() {
                           <Image
                             width={100}
                             height={100}
-                            src={product.images[0]}
+                            src={resolveProductImage(product.images)}
                             alt={product.name}
                             className="object-cover w-full h-full"
                           />
@@ -189,10 +190,10 @@ export default function FeaturedProducts() {
                           </span>
                           {product.generalPrice.prevPrice >
                             product.generalPrice.currentPrice && (
-                            <span className="ml-2 text-xs text-muted-foreground line-through">
-                              ${product.generalPrice.prevPrice}
-                            </span>
-                          )}
+                              <span className="ml-2 text-xs text-muted-foreground line-through">
+                                ${product.generalPrice.prevPrice}
+                              </span>
+                            )}
                           {product.generalPrice.discountPercentage > 0 && (
                             <span className="ml-2 text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">
                               Save {product.generalPrice.discountPercentage}%

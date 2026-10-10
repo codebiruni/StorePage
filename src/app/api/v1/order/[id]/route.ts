@@ -28,8 +28,15 @@ export async function GET(req: NextRequest, context: ParamsType) {
       );
     }
 
+    const orderObj = order.toObject ? order.toObject() : order;
+    if (orderObj) {
+      orderObj.products = Array.isArray(orderObj.products)
+        ? orderObj.products.filter(Boolean)
+        : [];
+    }
+
     return NextResponse.json(
-      { success: true, data: order },
+      { success: true, data: orderObj },
       { status: 200 }
     );
   } catch (error: any) {

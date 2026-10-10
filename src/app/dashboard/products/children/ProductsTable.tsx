@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { resolveProductImage } from "@/lib/productImage";
 import {
   Dialog,
   DialogContent,
@@ -101,7 +102,7 @@ export default function ProductsTable() {
         const res = await fetch(url, {
           method: "GET",
           credentials: "include",
-          
+
         });
 
         const data = await res.json();
@@ -161,7 +162,7 @@ export default function ProductsTable() {
         const res = await fetch(url, {
           method: "GET",
           credentials: "include",
-          
+
         });
         const updatedData = await res.json();
         if (updatedData.success) {
@@ -276,7 +277,7 @@ export default function ProductsTable() {
                   <TableCell className="font-medium w-[200px]">
                     <div className="flex items-center gap-3">
                       <Image
-                        src={product.images[0] || "/placeholder-image.jpg"}
+                        src={resolveProductImage(product.images)}
                         alt={product.name}
                         width={40}
                         height={40}
@@ -294,10 +295,10 @@ export default function ProductsTable() {
                         </span>
                         {product.generalPrice.prevPrice >
                           product.generalPrice.currentPrice && (
-                          <span className="text-sm text-gray-500 line-through">
-                            {formatPrice(product.generalPrice.prevPrice)}
-                          </span>
-                        )}
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatPrice(product.generalPrice.prevPrice)}
+                            </span>
+                          )}
                       </div>
                     ) : (
                       "N/A"

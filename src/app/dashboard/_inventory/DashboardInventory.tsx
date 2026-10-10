@@ -2,12 +2,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -26,11 +26,11 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select"
-import { 
-  AreaChart, 
-  Area, 
-  PieChart, 
-  Pie, 
+import {
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
   Cell,
   RadialBarChart,
   RadialBar,
@@ -356,7 +356,7 @@ export default function DashboardInventory() {
 
   useEffect(() => {
     fetchInventoryData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange])
 
   const formatCurrency = (amount: number) => {
@@ -862,12 +862,12 @@ export default function DashboardInventory() {
               <AreaChart data={areaChartData}>
                 <defs>
                   <linearGradient id="colorProducts" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
                   </linearGradient>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -989,18 +989,16 @@ export default function DashboardInventory() {
               {data.stockAnalysis.criticalProducts.slice(0, 5).map((product) => (
                 <div key={product._id} className="flex items-center justify-between p-3 border border-red-200 rounded-lg bg-red-50">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      product.quentity === 0 ? 'bg-red-500' : 'bg-orange-500'
-                    }`} />
+                    <div className={`w-3 h-3 rounded-full ${product.quentity === 0 ? 'bg-red-500' : 'bg-orange-500'
+                      }`} />
                     <div>
                       <p className="font-medium text-sm">{product.name}</p>
                       <p className="text-xs text-muted-foreground">{product.category}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-bold text-sm ${
-                      product.quentity === 0 ? 'text-red-600' : 'text-orange-600'
-                    }`}>
+                    <p className={`font-bold text-sm ${product.quentity === 0 ? 'text-red-600' : 'text-orange-600'
+                      }`}>
                       {product.quentity} in stock
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -1030,7 +1028,7 @@ export default function DashboardInventory() {
                 <div key={category.category} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }}
                       />
@@ -1042,9 +1040,9 @@ export default function DashboardInventory() {
                     </div>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2">
-                    <div 
+                    <div
                       className="h-2 rounded-full transition-all duration-500"
-                      style={{ 
+                      style={{
                         width: `${category.percentage}%`,
                         backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length]
                       }}
@@ -1084,7 +1082,7 @@ export default function DashboardInventory() {
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-semibold text-sm mb-2">Best Rated Products</h4>
                 <div className="space-y-2">
@@ -1121,9 +1119,9 @@ export default function DashboardInventory() {
           <CardContent>
             {recentOrdersData.length > 0 ? (
               <div className="space-y-3">
-                {recentOrdersData.map((order) => (
+                {recentOrdersData.map((order, index) => (
                   <div
-                    key={order.orderId}
+                    key={`${order.orderId}-${order.createdAt}-${index}`}
                     className="flex flex-col gap-2 p-3 border rounded-lg"
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -1181,7 +1179,7 @@ export default function DashboardInventory() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {stockLevelData.map((level) => (
               <div key={level.level} className="text-center p-4 rounded-lg border">
-                <div 
+                <div
                   className="w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center text-white text-sm font-bold"
                   style={{ backgroundColor: STOCK_COLORS[level.level as keyof typeof STOCK_COLORS] }}
                 >

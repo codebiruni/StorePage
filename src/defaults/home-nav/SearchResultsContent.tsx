@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { SearchResultsContentProps } from "@/interface/types";
+import { resolveProductImage } from "@/lib/productImage";
 
 const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
   searchResults,
@@ -37,46 +38,46 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
   return (
     <Tabs defaultValue="all" className="w-full overflow-y-hidden">
       <TabsList className="grid w-full grid-cols-4 mb-4 gap-1">
-  <TabsTrigger value="all" className="flex items-center gap-2 px-2 sm:px-3">
-    <WalletCards className="h-4 w-4 flex-shrink-0" />
-    <span className="hidden sm:inline">All</span>
-    <span className="hidden sm:inline">({totalResults})</span>
-    {/* Mobile badge */}
-    <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
-      {totalResults}
-    </span>
-  </TabsTrigger>
-  
-  <TabsTrigger value="products" className="flex items-center gap-2 px-2 sm:px-3 relative">
-    <ShoppingBasket className="h-4 w-4 flex-shrink-0" />
-    <span className="hidden sm:inline">Products</span>
-    <span className="hidden sm:inline">({searchResults.products.length})</span>
-    {/* Mobile badge */}
-    <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
-      {searchResults.products.length}
-    </span>
-  </TabsTrigger>
-  
-  <TabsTrigger value="categories" className="flex items-center gap-2 px-2 sm:px-3 relative">
-    <PackageSearch className="h-4 w-4 flex-shrink-0" />
-    <span className="hidden sm:inline">Categories</span>
-    <span className="hidden sm:inline">({searchResults.categories.length})</span>
-    {/* Mobile badge */}
-    <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
-      {searchResults.categories.length}
-    </span>
-  </TabsTrigger>
-  
-  <TabsTrigger value="subcategories" className="flex items-center gap-2 px-2 sm:px-3 relative">
-    <Locate className="h-4 w-4 flex-shrink-0" />
-    <span className="hidden sm:inline">Subcategory</span>
-    <span className="hidden sm:inline">({searchResults.subCategories.length})</span>
-    {/* Mobile badge */}
-    <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
-      {searchResults.subCategories.length}
-    </span>
-  </TabsTrigger>
-</TabsList>
+        <TabsTrigger value="all" className="flex items-center gap-2 px-2 sm:px-3">
+          <WalletCards className="h-4 w-4 flex-shrink-0" />
+          <span className="hidden sm:inline">All</span>
+          <span className="hidden sm:inline">({totalResults})</span>
+          {/* Mobile badge */}
+          <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
+            {totalResults}
+          </span>
+        </TabsTrigger>
+
+        <TabsTrigger value="products" className="flex items-center gap-2 px-2 sm:px-3 relative">
+          <ShoppingBasket className="h-4 w-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Products</span>
+          <span className="hidden sm:inline">({searchResults.products.length})</span>
+          {/* Mobile badge */}
+          <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
+            {searchResults.products.length}
+          </span>
+        </TabsTrigger>
+
+        <TabsTrigger value="categories" className="flex items-center gap-2 px-2 sm:px-3 relative">
+          <PackageSearch className="h-4 w-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Categories</span>
+          <span className="hidden sm:inline">({searchResults.categories.length})</span>
+          {/* Mobile badge */}
+          <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
+            {searchResults.categories.length}
+          </span>
+        </TabsTrigger>
+
+        <TabsTrigger value="subcategories" className="flex items-center gap-2 px-2 sm:px-3 relative">
+          <Locate className="h-4 w-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Subcategory</span>
+          <span className="hidden sm:inline">({searchResults.subCategories.length})</span>
+          {/* Mobile badge */}
+          <span className="sm:hidden absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs h-4 w-4 flex items-center justify-center">
+            {searchResults.subCategories.length}
+          </span>
+        </TabsTrigger>
+      </TabsList>
 
       <TabsContent value="all" className="space-y-4">
         {/* Products */}
@@ -87,7 +88,7 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
               Products
             </h3>
             <div className="space-y-2">
-              {searchResults.products.map((product:any) => (
+              {searchResults.products.map((product: any) => (
                 <Card
                   key={product._id}
                   className="cursor-pointer hover:bg-accent py-0 rounded-sm transition-colors"
@@ -96,9 +97,10 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
                   <CardContent className="flex p-2 items-center space-x-3">
                     <div className="relative h-12 w-12 rounded-md overflow-hidden">
                       <Image
-                        src={product.images[0] || "/placeholder-product.jpg"}
+                        src={resolveProductImage(product.images)}
                         alt={product.name}
                         fill
+                        sizes="48px"
                         className="object-cover"
                       />
                     </div>
@@ -134,7 +136,7 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
               Categories
             </h3>
             <div className="space-y-2">
-              {searchResults.categories.map((category:any) => (
+              {searchResults.categories.map((category: any) => (
                 <Card
                   key={category._id}
                   className="cursor-pointer  py-0 rounded-sm hover:bg-accent transition-colors"
@@ -168,7 +170,7 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
               Sub Categories
             </h3>
             <div className="space-y-2">
-              {searchResults.subCategories.map((subCategory:any) => (
+              {searchResults.subCategories.map((subCategory: any) => (
                 <Card
                   key={subCategory._id}
                   className="cursor-pointer  py-0 rounded-sm hover:bg-accent transition-colors"
@@ -198,7 +200,7 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
       {/* Individual tabs for each type */}
       <TabsContent value="products">
         <div className="space-y-2">
-          {searchResults.products.map((product:any) => (
+          {searchResults.products.map((product: any) => (
             <Card
               key={product._id}
               className="cursor-pointer  py-0 rounded-sm hover:bg-accent transition-colors"
@@ -207,9 +209,10 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
               <CardContent className="p-3 flex items-center space-x-3">
                 <div className="relative h-12 w-12 rounded-md overflow-hidden">
                   <Image
-                    src={product.images[0] || "/placeholder-product.jpg"}
+                    src={resolveProductImage(product.images)}
                     alt={product.name}
                     fill
+                    sizes="48px"
                     className="object-cover"
                   />
                 </div>
@@ -238,7 +241,7 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
 
       <TabsContent value="categories">
         <div className="space-y-2">
-          {searchResults.categories.map((category:any) => (
+          {searchResults.categories.map((category: any) => (
             <Card
               key={category._id}
               className="cursor-pointer  py-0 rounded-sm hover:bg-accent transition-colors"
@@ -265,7 +268,7 @@ const SearchResultsContent: React.FC<SearchResultsContentProps> = ({
 
       <TabsContent value="subcategories">
         <div className="space-y-2">
-          {searchResults.subCategories.map((subCategory:any) => (
+          {searchResults.subCategories.map((subCategory: any) => (
             <Card
               key={subCategory._id}
               className="cursor-pointer  py-0 rounded-sm hover:bg-accent transition-colors"

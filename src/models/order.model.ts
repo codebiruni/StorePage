@@ -16,7 +16,15 @@ const orderSchema = new Schema<IOrder>(
     orderId: {
       type: String,
       unique: true,
-      sparse: true, // multiple `null` orderIds allowed (drafts pre-generation)
+      // A PLAIN unique index (and even `sparse: true`) rejects multiple
+      // drafts, because sparse only skips documents where the field is
+      // ABSENT — not ones where it is explicitly `null`. Drafts store
+      // `orderId: null` until they complete, so we need a partial index that
+      // only enforces uniqueness for real (string) ids.
+      index: {
+        unique: true,
+        partialFilterExpression: { orderId: { $type: "string" } },
+      },
       default: undefined as unknown as string,
       required: function (this: any) {
         // Only enforced when the order has actually been submitted.

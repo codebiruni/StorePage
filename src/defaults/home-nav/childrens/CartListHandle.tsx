@@ -15,14 +15,19 @@ import { useRouter } from "next/navigation";
 interface Product {
   id: string;
   name: string;
-  image: string;
-  image2: string;
+  // Cart snapshots can arrive in either shape. `images[]` is the canonical
+  // DB field, while `image`/`image2` come from the buy-now and compare
+  // snapshots. All are optional because legacy localStorage rows (e.g. the
+  // literal value "x") may hold unusable values.
+  image?: string;
+  image2?: string;
+  images?: string[];
   price: number;
 }
 
-export default function CartListHandle({ products , closeSheet}: { products: Product[] , closeSheet:any}) {
+export default function CartListHandle({ products, closeSheet }: { products: Product[], closeSheet: any }) {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const { removeCartItem , handlePurchasedData } = useContextData();
+  const { removeCartItem, handlePurchasedData } = useContextData();
   const router = useRouter()
 
   const handleSelectProduct = (productId: string) => {
@@ -97,11 +102,10 @@ export default function CartListHandle({ products , closeSheet}: { products: Pro
           products.map((product: any) => (
             <Card
               key={product.id}
-              className={`cursor-pointer p-0 rounded-md transition-all ${
-                selectedProducts.includes(product.id)
+              className={`cursor-pointer p-0 rounded-md transition-all ${selectedProducts.includes(product.id)
                   ? "bg-gray-100 dark:bg-gray-800"
                   : ""
-              }`}
+                }`}
               onClick={() => handleSelectProduct(product.id)}
             >
               <CardContent className="p-4">
@@ -144,7 +148,7 @@ export default function CartListHandle({ products , closeSheet}: { products: Pro
           <Button onClick={handleBuyData} className="w-full" size="lg" >
             Proceed to Checkout
           </Button>
-          
+
         </div>
       )}
     </div>

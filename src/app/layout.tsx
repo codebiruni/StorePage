@@ -94,7 +94,12 @@ const banglaNoto = Noto_Sans_Bengali({
  */
 async function buildMetadata() {
   const cfg = await getSiteConfig();
-  const ogImage = cfg.logo ? `${cfg.siteUrl}${cfg.logo.startsWith("/") ? cfg.logo : `/${cfg.logo}`}` : `${cfg.siteUrl}/logo.png`;
+  const logoUrl = (cfg.logo || "/logo.png").replace(/^http:\/\//i, "https://");
+  const ogImage = cfg.logo
+    ? (cfg.logo.startsWith("http")
+      ? cfg.logo.replace(/^http:\/\//i, "https://")
+      : `${cfg.siteUrl}${cfg.logo.startsWith("/") ? cfg.logo : `/${cfg.logo}`}`)
+    : `${cfg.siteUrl}/logo.png`;
   const description = cfg.marqueeText || cfg.tagline || "Online store";
 
   const metadata: Metadata = {
@@ -105,8 +110,8 @@ async function buildMetadata() {
     description,
     applicationName: cfg.name,
     icons: {
-      icon: cfg.logo || "/logo.png",
-      apple: cfg.logo || "/logo.png",
+      icon: logoUrl,
+      apple: logoUrl,
     },
     openGraph: {
       type: "website",
@@ -149,6 +154,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const { cfg } = await buildMetadata();
+  const logoUrl = (cfg.logo || "/logo.png").replace(/^http:\/\//i, "https://");
+  const ogImage = cfg.logo
+    ? (cfg.logo.startsWith("http")
+      ? cfg.logo.replace(/^http:\/\//i, "https://")
+      : `${cfg.siteUrl}${cfg.logo.startsWith("/") ? cfg.logo : `/${cfg.logo}`}`)
+    : `${cfg.siteUrl}/logo.png`;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -216,37 +227,37 @@ export default async function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
 
-        <link rel="apple-touch-icon" href={cfg.logo || "/logo.png"} />
+        <link rel="apple-touch-icon" href={logoUrl} />
         <link
           rel="apple-touch-icon"
           sizes="152x152"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
         />
         <link
           rel="apple-touch-icon"
           sizes="180x180"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
         />
         <link
           rel="apple-touch-icon"
           sizes="167x167"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
         />
 
         <link
           rel="icon"
           type="image/png"
           sizes="32x32"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
         />
         <link
           rel="icon"
           type="image/png"
           sizes="16x16"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
         />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="mask-icon" href={cfg.logo || "/logo.png"} color={cfg.themeColor} />
+        <link rel="mask-icon" href={logoUrl} color={cfg.themeColor} />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link
           rel="stylesheet"
@@ -262,7 +273,7 @@ export default async function RootLayout({
         />
         <meta
           name="twitter:image"
-          content={`${cfg.siteUrl}${cfg.logo || "/logo.png"}`}
+          content={ogImage}
         />
 
         <meta property="og:type" content="website" />
@@ -272,42 +283,42 @@ export default async function RootLayout({
         <meta property="og:url" content={cfg.siteUrl} />
         <meta
           property="og:image"
-          content={`${cfg.siteUrl}${cfg.logo || "/logo.png"}`}
+          content={ogImage}
         />
 
         <link
           rel="apple-touch-startup-image"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
           sizes="2048x2732"
         />
         <link
           rel="apple-touch-startup-image"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
           sizes="1668x2224"
         />
         <link
           rel="apple-touch-startup-image"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
           sizes="1536x2048"
         />
         <link
           rel="apple-touch-startup-image"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
           sizes="1125x2436"
         />
         <link
           rel="apple-touch-startup-image"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
           sizes="1242x2208"
         />
         <link
           rel="apple-touch-startup-image"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
           sizes="750x1334"
         />
         <link
           rel="apple-touch-startup-image"
-          href={cfg.logo || "/logo.png"}
+          href={logoUrl}
           sizes="640x1136"
         />
       </head>

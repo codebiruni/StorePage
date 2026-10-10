@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
       return product._id || product.productId;
     });
 
-    const products = await Product.find({ 
+    const products = await Product.find({
       _id: { $in: productIds },
-      isDeleted: false 
+      isDeleted: false
     });
 
     if (products.length !== productIds.length) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     for (const productId of productIds) {
       const product = productMap.get(productId.toString());
-      
+
       if (!product) {
         return NextResponse.json(
           { success: false, message: `Product with ID ${productId} not found` },
@@ -73,9 +73,9 @@ export async function POST(request: NextRequest) {
       // Check if product has sufficient quantity
       if (product.quentity !== undefined && product.quentity < 1) {
         return NextResponse.json(
-          { 
-            success: false, 
-            message: `Insufficient quantity for product: ${product.name}. Available: ${product.quentity}` 
+          {
+            success: false,
+            message: `Insufficient quantity for product: ${product.name}. Available: ${product.quentity}`
           },
           { status: 400 }
         );
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         quantityUpdateOperations.push({
           updateOne: {
             filter: { _id: product._id },
-            update: { 
+            update: {
               $inc: { quentity: -1 },
               $set: { updatedAt: new Date() }
             }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     // Execute all quantity updates in bulk
     if (quantityUpdateOperations.length > 0) {
       const updateResult = await Product.bulkWrite(quantityUpdateOperations);
-      
+
       // Verify all updates were successful
       if (updateResult.modifiedCount !== quantityUpdateOperations.length) {
         // Rollback any updates that might have succeeded
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
 
   } catch (err: any) {
     console.error("POST Order error:", err);
-    
+
     // Rollback product quantities in case of error
     if (err.name === 'BulkWriteError') {
       await rollbackProductQuantities(err.products || []);
@@ -210,8 +210,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: err.message || "Failed to create order",
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
       },
@@ -226,7 +226,7 @@ async function rollbackProductQuantities(products: any[]) {
     const rollbackOperations = products.map(product => ({
       updateOne: {
         filter: { _id: product._id },
-        update: { 
+        update: {
           $inc: { quentity: 1 }, // Increment back to original
           $set: { updatedAt: new Date() }
         }
@@ -272,7 +272,11 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    const query: any = { isDeleted: { $ne: true } };
+    // Drafts (isCompleted === false) are leads parked by the buy-product /
+    // checkout flow before submission. They have no orderId, name, or
+    // products yet, so they must never reach the admin order list — they are
+    // surfaced separately via /api/order-draft/list.
+    const query: any = { isDeleted: { $ne: true }, isCompleted: true };
 
     // 🔍 Search by orderId, trackingId, name, number, or address
     if (search && search.trim() !== "") {
@@ -289,11 +293,11 @@ export async function GET(request: NextRequest) {
     if (orderStatus && orderStatus.trim() !== "" && orderStatus !== "all") {
       query.orderStatus = orderStatus.trim();
     }
-    
+
     if (paymentStatus && paymentStatus.trim() !== "" && paymentStatus !== "all") {
       query.paymentStatus = paymentStatus.trim();
     }
-    
+
     if (paymentMethod && paymentMethod.trim() !== "" && paymentMethod !== "all") {
       query.paymentMethod = paymentMethod.trim();
     }
@@ -345,10 +349,17 @@ export async function GET(request: NextRequest) {
       .select("-__v") // Exclude version key
       .lean(); // Convert to plain JavaScript objects for better performance
 
+    const sanitizedOrders = orders.map((order: any) => ({
+      ...order,
+      products: Array.isArray(order.products)
+        ? order.products.filter(Boolean)
+        : [],
+    }));
+
     return NextResponse.json(
       {
         success: true,
-        data: orders,
+        data: sanitizedOrders,
         pagination: {
           total,
           page: validatedPage,
@@ -366,17 +377,17 @@ export async function GET(request: NextRequest) {
           sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
         }
       },
-      { 
+      {
         status: 200
       }
     );
   } catch (err: any) {
     console.error("GET Orders error:", err);
-    
+
     // More specific error handling
     let errorMessage = "Failed to fetch orders";
     let statusCode = 500;
-    
+
     if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
       errorMessage = "Database connection error. Please try again later.";
       statusCode = 503; // Service Unavailable
@@ -386,8 +397,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: errorMessage,
         error: process.env.NODE_ENV === 'development' ? {
           message: err.message,
@@ -458,7 +469,7 @@ async function incrementProductQuantities(products: any[]) {
     const incrementOperations = products.map(product => ({
       updateOne: {
         filter: { _id: product._id, isDeleted: false },
-        update: { 
+        update: {
           $inc: { quentity: 1 },
           $set: { updatedAt: new Date() }
         }
@@ -468,11 +479,11 @@ async function incrementProductQuantities(products: any[]) {
     if (incrementOperations.length > 0) {
       const updateResult = await Product.bulkWrite(incrementOperations);
       console.log(`Incremented quantities for ${updateResult.modifiedCount} products`);
-      
+
       // Check if all products were updated
       if (updateResult.modifiedCount !== incrementOperations.length) {
         console.warn(`Some products couldn't be updated. Expected: ${incrementOperations.length}, Actual: ${updateResult.modifiedCount}`);
-        
+
         // Find which products failed to update
         const failedProductIds = [];
         for (let i = 0; i < products.length; i++) {
@@ -481,7 +492,7 @@ async function incrementProductQuantities(products: any[]) {
             failedProductIds.push(products[i]._id);
           }
         }
-        
+
         if (failedProductIds.length > 0) {
           console.error('Products that could not be updated:', failedProductIds);
         }
@@ -498,12 +509,12 @@ async function decrementProductQuantities(products: any[]) {
   try {
     const decrementOperations = products.map(product => ({
       updateOne: {
-        filter: { 
-          _id: product._id, 
+        filter: {
+          _id: product._id,
           isDeleted: false,
           quentity: { $gte: 1 } // Only decrement if quantity is at least 1
         },
-        update: { 
+        update: {
           $inc: { quentity: -1 },
           $set: { updatedAt: new Date() }
         }
@@ -513,11 +524,11 @@ async function decrementProductQuantities(products: any[]) {
     if (decrementOperations.length > 0) {
       const updateResult = await Product.bulkWrite(decrementOperations);
       console.log(`Decremented quantities for ${updateResult.modifiedCount} products`);
-      
+
       // Check if all products were updated
       if (updateResult.modifiedCount !== decrementOperations.length) {
         console.warn(`Some products couldn't be updated. Expected: ${decrementOperations.length}, Actual: ${updateResult.modifiedCount}`);
-        
+
         // Check for insufficient quantity
         const insufficientQuantityProducts = [];
         for (const product of products) {
@@ -530,7 +541,7 @@ async function decrementProductQuantities(products: any[]) {
             });
           }
         }
-        
+
         if (insufficientQuantityProducts.length > 0) {
           console.error('Products with insufficient quantity:', insufficientQuantityProducts);
           throw new Error(`Cannot restore order: Insufficient quantity for products: ${insufficientQuantityProducts.map(p => p.name).join(', ')}`);
@@ -568,8 +579,8 @@ export async function PATCH(request: NextRequest) {
         {
           success: true,
           data: order,
-          message: newDeleteState 
-            ? "Order is already deleted" 
+          message: newDeleteState
+            ? "Order is already deleted"
             : "Order is already active",
         },
         { status: 200 }

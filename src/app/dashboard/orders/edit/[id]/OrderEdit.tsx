@@ -11,9 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { 
-  Package, 
-  User, 
+import {
+  Package,
+  User,
   Save,
   ArrowLeft,
   Trash2,
@@ -22,6 +22,7 @@ import {
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import Image from 'next/image'
+import { resolveProductImage } from '@/lib/productImage'
 
 interface Product {
   _id: string
@@ -121,20 +122,20 @@ export default function OrderEdit() {
       try {
         setLoading(true)
         const response = await fetch(`/api/v1/order/${id}`)
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch order')
         }
-        
+
         const result: ApiResponse = await response.json()
-        
+
         if (result.success) {
           setOrder(result.data)
           setEditForm({
             name: result.data.name,
             number: result.data.number,
             address: result.data.address,
-            products: result.data.products.map(p => p._id),
+            products: (result.data.products ?? []).filter(Boolean).map(p => p._id),
             deliveryCharge: result.data.deliveryCharge,
             discount: result.data.discount,
             paymentMethod: result.data.paymentMethod,
@@ -230,12 +231,12 @@ export default function OrderEdit() {
   const calculateTotals = () => {
     if (!order) return { totalAmount: 0, grandTotal: 0 }
 
-    const currentProducts = order.products.filter(product => 
-      editForm.products.includes(product._id)
+    const currentProducts = (order.products ?? []).filter(product =>
+      product && editForm.products.includes(product._id)
     )
 
-    const totalAmount = currentProducts.reduce((sum, product) => 
-      sum + product.generalPrice.currentPrice, 0
+    const totalAmount = currentProducts.reduce((sum, product) =>
+      sum + (product.generalPrice?.currentPrice ?? 0), 0
     )
 
     const grandTotal = totalAmount + editForm.deliveryCharge - editForm.discount
@@ -316,8 +317,8 @@ export default function OrderEdit() {
     )
   }
 
-  const currentProducts = order.products.filter(product => 
-    editForm.products.includes(product._id)
+  const currentProducts = (order.products ?? []).filter(product =>
+    product && editForm.products.includes(product._id)
   )
 
   return (
@@ -407,7 +408,7 @@ export default function OrderEdit() {
                     <CardContent className="p-4">
                       <div className="flex gap-4">
                         <Image width={100} height={100}
-                          src={product.images[0]}
+                          src={resolveProductImage(product.images)}
                           alt={product.name}
                           className="w-16 h-16 object-cover rounded-lg"
                         />
@@ -465,7 +466,7 @@ export default function OrderEdit() {
                       >
                         <div className="flex items-center gap-3">
                           <Image width={100} height={100}
-                            src={removed.product.images[0]}
+                            src={resolveProductImage(removed.product.images)}
                             alt={removed.product.name}
                             className="w-10 h-10 object-cover rounded"
                           />
@@ -651,9 +652,9 @@ export default function OrderEdit() {
           {/* Actions */}
           <Card>
             <CardContent className="pt-6">
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={saving}
                 size="lg"
               >

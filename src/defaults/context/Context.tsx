@@ -66,7 +66,7 @@ export default function Context({ children }: ContextProviderProps) {
   const [compareData, setCompareData] = useState<CompareProduct[]>([]);
   const [wishlistData, setWishlistData] = useState<WishlistProduct[]>([]);
   const [cartData, setCartData] = useState<CartProduct[]>([]);
-  const [purchasesData , setPurchasesData] = useState<CartProduct[]>([])
+  const [purchasesData, setPurchasesData] = useState<CartProduct[]>([])
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -90,8 +90,8 @@ export default function Context({ children }: ContextProviderProps) {
 
         // Fetch user data
         const userRes = await fetch("/api/v1/me");
-const userJson = await userRes.json();
-setUserData(userJson.user);
+        const userJson = await userRes.json();
+        setUserData(userJson.user);
       } catch (err) {
         console.error("Failed to fetch data:", err);
         setError(
@@ -136,18 +136,40 @@ setUserData(userJson.user);
       );
       setCartData(validProducts);
     }
+
+    // Restore the buy-now selection so a refresh on /buy-product keeps the
+    // items the user picked from the cart/wishlist/product-detail "Buy Now".
+    const storedPurchases = localStorage.getItem("purchasesData");
+    if (storedPurchases) {
+      try {
+        const parsedPurchases = JSON.parse(storedPurchases);
+        setPurchasesData(Array.isArray(parsedPurchases) ? parsedPurchases : []);
+      } catch {
+        localStorage.removeItem("purchasesData");
+      }
+    }
   }, []);
 
- const handlePurchasedData = (data: any) => {
+  const handlePurchasedData = (data: any) => {
     console.log('handlePurchasedData called with:', data)
+    let next: CartProduct[]
     if (Array.isArray(data)) {
-        setPurchasesData(data) // ✅ REPLACE the entire array
+      next = data // ✅ REPLACE the entire array
     } else if (data) {
-        setPurchasesData([data]) // ✅ REPLACE with single item array
+      next = [data] // ✅ REPLACE with single item array
     } else {
-        setPurchasesData([]) // ✅ Clear if null/undefined
+      next = [] // ✅ Clear if null/undefined
     }
-}
+    setPurchasesData(next)
+    // Persist the buy-now selection. Without this, refreshing `/buy-product`
+    // (or opening it in a new tab) lost the selection entirely because
+    // `purchasesData` is plain React state, which reset to [] on every mount.
+    try {
+      localStorage.setItem("purchasesData", JSON.stringify(next))
+    } catch (e) {
+      console.error("Failed to persist purchasesData:", e)
+    }
+  }
 
   const removeCartItem = (productId: string) => {
     const currentData = cartData.filter(

@@ -17,8 +17,11 @@ export async function fetchActiveOrders(
   if (!orderIds?.length) {
     throw new Error("Order IDs are required.");
   }
+  // `isCompleted: true` keeps unfinished drafts out of the push. A draft has
+  // no orderId, recipient, or products, so couriers would reject it anyway —
+  // and the missing `products` array breaks callers that iterate it.
   const orders = await (OrderModel as unknown as OrderModelLike)
-    .find({ _id: { $in: orderIds }, isDeleted: false })
+    .find({ _id: { $in: orderIds }, isDeleted: false, isCompleted: true })
     .populate("products");
   return orders as unknown as OrderDocument[];
 }

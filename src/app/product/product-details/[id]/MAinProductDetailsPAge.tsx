@@ -7,6 +7,7 @@ import ImageParts from "./ImageParts";
 import ProductIntroduce from "./ProductIntroduce";
 import BasicInfo from "./BasicInfo";
 import useContextData from "@/defaults/custom-component/useContextData";
+import { resolveProductImage } from "@/lib/productImage";
 
 export default function ProductDetailsClient({ product }: { product: any }) {
   const { handlePurchasedData } = useContextData();
@@ -31,11 +32,13 @@ export default function ProductDetailsClient({ product }: { product: any }) {
 
   // Base shape used by the cart and the buy-now flow. `price` reflects the
   // currently-selected variant (falls back to general price when no variant).
+  // Images resolve through the shared helper so a product saved without any
+  // image still yields a valid src for `next/image`.
   const compaireData = {
     id: product._id,
     name: product.name,
-    image: product.images[0],
-    image2: product.images[1] || product.images[0],
+    image: resolveProductImage(product.images),
+    image2: resolveProductImage([product.images?.[1], product.images?.[0]]),
     price: priceInfo.currentPrice,
     priceInfo,
   };
