@@ -122,9 +122,9 @@ export async function POST(request: NextRequest) {
       message: "Pathao access token issued.",
       data: {
         courier: {
-          pathaoAccessToken: doc.courier.pathaoAccessToken,
-          pathaoRefreshToken: doc.courier.pathaoRefreshToken,
-          pathaoTokenExpiresAt: doc.courier.pathaoTokenExpiresAt,
+          pathaoAccessToken: doc.courier?.pathaoAccessToken,
+          pathaoRefreshToken: doc.courier?.pathaoRefreshToken,
+          pathaoTokenExpiresAt: doc.courier?.pathaoTokenExpiresAt,
         },
       },
     });

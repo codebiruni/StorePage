@@ -78,7 +78,7 @@ export default function ProductsTable() {
   );
   const [isSubmiting, setIsSubmiting] = useState(false);
   const [deleteInfo, setDeleteInfo] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [offerFilter, setOfferFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const itemsPerPage = 50;
@@ -134,10 +134,24 @@ export default function ProductsTable() {
 
   const confirmDelete = async () => {
     if (!selectedProductId) return;
+
+    const targetId = selectedProductId;
+    const isRestoring = deleteInfo;
+
+    // Snapshot state for rollback if deletion fails
+    const previousProducts = productsData;
+    const previousTotal = totalProducts;
+
+    // Optimistic UI: Immediately remove product from table & close dialog
+    setDeleteDialogOpen(false);
+    setSelectedProductId(null);
+    setProductsData((prev) => prev.filter((p) => p._id !== targetId));
+    setTotalProducts((prev) => Math.max(0, prev - 1));
+
     setIsSubmiting(true);
     try {
       const response = await fetch(
-        `/api/v1/product/status/${selectedProductId}`,
+        `/api/v1/product/status/${targetId}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -147,8 +161,12 @@ export default function ProductsTable() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Product deleted successfully");
-        // Refresh the data
+        toast.success(
+          isRestoring
+            ? "Product restored successfully"
+            : "Product deleted successfully"
+        );
+        // Refresh the data silently in the background
         let url = `/api/v1/product?search=${searchTerm}&page=${currentPage}&limit=${itemsPerPage}`;
 
         if (statusFilter !== "all") {
@@ -162,7 +180,6 @@ export default function ProductsTable() {
         const res = await fetch(url, {
           method: "GET",
           credentials: "include",
-
         });
         const updatedData = await res.json();
         if (updatedData.success) {
@@ -170,14 +187,18 @@ export default function ProductsTable() {
           setTotalProducts(updatedData.pagination.total);
         }
       } else {
+        // Rollback on failure
+        setProductsData(previousProducts);
+        setTotalProducts(previousTotal);
         toast.error(data.message || "Failed to delete product");
       }
     } catch (error) {
       console.error("Error deleting product:", error);
+      // Rollback on failure
+      setProductsData(previousProducts);
+      setTotalProducts(previousTotal);
       toast.error("Failed to delete product");
     } finally {
-      setDeleteDialogOpen(false);
-      setSelectedProductId(null);
       setIsSubmiting(false);
     }
   };

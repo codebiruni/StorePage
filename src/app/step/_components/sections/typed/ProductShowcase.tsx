@@ -17,7 +17,7 @@ export default function ProductShowcaseSection({
     <section className="lp-section" data-tone="canvas">
       <div className="lp-container">
         {data.caption ? (
-          <p className="mb-6 text-center text-sm font-medium uppercase tracking-wide text-black/60">
+          <p className="mb-6 text-center text-sm font-medium uppercase tracking-wide opacity-75">
             {data.caption}
           </p>
         ) : null}

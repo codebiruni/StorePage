@@ -121,6 +121,13 @@ export function buildLandingConfig(
       theme: string;
       primaryColor?: string;
       accentColor?: string;
+      backgroundColor?: string;
+      surfaceColor?: string;
+      textColor?: string;
+      headingColor?: string;
+      fontFamily?: string;
+      borderRadius?: string;
+      customCss?: string;
       sections: LandingConfig["sections"];
       updatedAt?: string;
     };
@@ -137,6 +144,13 @@ export function buildLandingConfig(
             : "health") as LandingConfig["theme"]["presetId"],
         primaryColor: lpAny.primaryColor,
         accentColor: lpAny.accentColor,
+        backgroundColor: lpAny.backgroundColor,
+        surfaceColor: lpAny.surfaceColor,
+        textColor: lpAny.textColor,
+        headingColor: lpAny.headingColor,
+        fontFamily: lpAny.fontFamily,
+        borderRadius: lpAny.borderRadius,
+        customCss: lpAny.customCss,
       },
       sections: lpAny.sections,
       updatedAt: lpAny.updatedAt,

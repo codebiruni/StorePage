@@ -71,6 +71,13 @@ export interface LandingFormValue {
   sections?: Section[];
   primaryColor?: string;
   accentColor?: string;
+  backgroundColor?: string;
+  surfaceColor?: string;
+  textColor?: string;
+  headingColor?: string;
+  fontFamily?: string;
+  borderRadius?: string;
+  customCss?: string;
 }
 
 export const EMPTY_LANDING_VALUE: LandingFormValue = {
@@ -116,6 +123,34 @@ function normalize(input: Partial<LandingFormValue> | undefined): LandingFormVal
     typeof base.accentColor === "string" && base.accentColor.length > 0
       ? base.accentColor
       : undefined;
+  const backgroundColor =
+    typeof base.backgroundColor === "string" && base.backgroundColor.length > 0
+      ? base.backgroundColor
+      : undefined;
+  const surfaceColor =
+    typeof base.surfaceColor === "string" && base.surfaceColor.length > 0
+      ? base.surfaceColor
+      : undefined;
+  const textColor =
+    typeof base.textColor === "string" && base.textColor.length > 0
+      ? base.textColor
+      : undefined;
+  const headingColor =
+    typeof base.headingColor === "string" && base.headingColor.length > 0
+      ? base.headingColor
+      : undefined;
+  const fontFamily =
+    typeof base.fontFamily === "string" && base.fontFamily.length > 0
+      ? base.fontFamily
+      : undefined;
+  const borderRadius =
+    typeof base.borderRadius === "string" && base.borderRadius.length > 0
+      ? base.borderRadius
+      : undefined;
+  const customCss =
+    typeof base.customCss === "string" && base.customCss.length > 0
+      ? base.customCss
+      : undefined;
   return {
     theme,
     heroTitle: base.heroTitle ?? "",
@@ -140,6 +175,13 @@ function normalize(input: Partial<LandingFormValue> | undefined): LandingFormVal
     ...(sections ? { sections } : null),
     ...(primaryColor ? { primaryColor } : null),
     ...(accentColor ? { accentColor } : null),
+    ...(backgroundColor ? { backgroundColor } : null),
+    ...(surfaceColor ? { surfaceColor } : null),
+    ...(textColor ? { textColor } : null),
+    ...(headingColor ? { headingColor } : null),
+    ...(fontFamily ? { fontFamily } : null),
+    ...(borderRadius ? { borderRadius } : null),
+    ...(customCss ? { customCss } : null),
   };
 }
 
@@ -234,12 +276,13 @@ export default function LandingPageEditor({
     return () => window.removeEventListener("message", onMessage);
   }, [productId]);
 
-  function flushDraft() {
+  function flushDraft(directFlat?: FlatLandingPage) {
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
+    const payload = directFlat ?? latestFlatRef.current;
     try {
       win.postMessage(
-        { type: "landing-draft", flat: latestFlatRef.current },
+        { type: "landing-draft", flat: payload },
         "*",
       );
     } catch {
@@ -247,8 +290,7 @@ export default function LandingPageEditor({
     }
   }
 
-  // Push every config edit (i.e. every keystroke that mutates the typed
-  // `config`) through to the iframe so the mirror updates in real time.
+  // Push every config edit through to the iframe so the mirror updates in real time.
   useEffect(() => {
     if (!productId) return;
     flushDraft();
@@ -257,8 +299,10 @@ export default function LandingPageEditor({
   function handleConfigChange(next: LandingConfig) {
     setConfig(next);
     const flat = toFlat(next, value);
+    latestFlatRef.current = flat as unknown as FlatLandingPage;
     if (!controlled) setInternal(flat);
     onChange?.(flat);
+    flushDraft(flat as unknown as FlatLandingPage);
   }
 
   const origin =

@@ -30,7 +30,7 @@ export default function BenefitsSection({
           {data.items.map((it, i) => (
             <li
               key={i}
-              className="flex items-start gap-3 rounded-lg border border-black/5 bg-white p-4"
+              className="flex items-start gap-3 rounded-lg border border-black/5 bg-white p-4 text-neutral-800"
             >
               <span
                 className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full text-xs font-bold text-white"

@@ -392,7 +392,7 @@ export default function DeliveryDetailsPage() {
               </div>
             </div>
           </div>
-          <Button className="mt-6 dark:bg-blue-600 dark:hover:bg-blue-700">
+          <Button className="mt-6">
             Contact Support <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardContent>

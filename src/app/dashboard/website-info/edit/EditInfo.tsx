@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -47,13 +47,31 @@ import {
   MessageCircle,
   BarChart3,
   X as XIcon,
-  ExternalLink,
   Sparkles,
+  Palette,
+  Check,
+  RotateCcw,
+  ShoppingBag,
+  ShoppingCart,
+  Eye,
 } from "lucide-react";
 import SingleImageUpload from "@/shired-component/SingleImageUpload";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import WorkspaceHeader from "../../_shared/WorkspaceHeader";
+
+const BUTTON_COLOR_PRESETS = [
+  { name: "Default Slate", bg: "#0f172a", fg: "#ffffff" },
+  { name: "Emerald Green", bg: "#16a34a", fg: "#ffffff" },
+  { name: "Royal Blue", bg: "#2563eb", fg: "#ffffff" },
+  { name: "Vibrant Indigo", bg: "#4f46e5", fg: "#ffffff" },
+  { name: "Crimson Red", bg: "#dc2626", fg: "#ffffff" },
+  { name: "Rose Pink", bg: "#e11d48", fg: "#ffffff" },
+  { name: "Vibrant Purple", bg: "#7c3aed", fg: "#ffffff" },
+  { name: "Amber Orange", bg: "#d97706", fg: "#ffffff" },
+  { name: "Cyan Teal", bg: "#0891b2", fg: "#ffffff" },
+  { name: "Pitch Black", bg: "#000000", fg: "#ffffff" },
+];
 
 type SocialKey =
   | "facebook"
@@ -136,6 +154,9 @@ interface FormValues {
   email: string;
   name: string;
   logo: string;
+  themeColor?: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
   banner: {
     carousel: CarouselItem[];
     firstImage: { image: string; link?: string };
@@ -158,12 +179,6 @@ interface FormValues {
   gaMeasurementId?: string;
 }
 
-function safeHref(value: string) {
-  if (!value) return "#";
-  if (/^https?:\/\//i.test(value)) return value;
-  return `https://${value}`;
-}
-
 export default function EditInfo() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -175,6 +190,9 @@ export default function EditInfo() {
       email: "",
       name: "",
       logo: "",
+      themeColor: "#0f172a",
+      buttonColor: "#0f172a",
+      buttonTextColor: "#ffffff",
       banner: {
         carousel: [{ image: "", link: "" }],
         firstImage: { image: "", link: "" },
@@ -215,6 +233,87 @@ export default function EditInfo() {
     append: appendFooter,
     remove: removeFooter,
   } = useFieldArray({ control: form.control, name: "footerLinks" });
+
+  const watchedButtonColor = useWatch({
+    control: form.control,
+    name: "buttonColor",
+    defaultValue: "#0f172a",
+  });
+  const watchedButtonTextColor = useWatch({
+    control: form.control,
+    name: "buttonTextColor",
+    defaultValue: "#ffffff",
+  });
+  const [isSavingColors, setIsSavingColors] = useState(false);
+
+  // Instantly repaint buttons across the screen in real time as the user picks colors
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const color = watchedButtonColor || "#0f172a";
+    const text = watchedButtonTextColor || "#ffffff";
+
+    root.style.setProperty("--primary", color, "important");
+    root.style.setProperty("--color-primary", color, "important");
+    root.style.setProperty("--ring", color, "important");
+    root.style.setProperty("--theme-button-bg", color, "important");
+    root.style.setProperty("--lp-accent", color, "important");
+    root.style.setProperty("--primary-foreground", text, "important");
+    root.style.setProperty("--color-primary-foreground", text, "important");
+    root.style.setProperty("--theme-button-fg", text, "important");
+
+    let styleTag = document.getElementById("site-button-colors") as HTMLStyleElement | null;
+    if (!styleTag) {
+      styleTag = document.createElement("style");
+      styleTag.id = "site-button-colors";
+      document.head.appendChild(styleTag);
+    }
+    styleTag.textContent = `:root, .dark, [data-theme], body {
+  --primary: ${color} !important;
+  --color-primary: ${color} !important;
+  --theme-button-bg: ${color} !important;
+  --ring: ${color} !important;
+  --lp-accent: ${color} !important;
+  --primary-foreground: ${text} !important;
+  --color-primary-foreground: ${text} !important;
+  --theme-button-fg: ${text} !important;
+}`;
+  }, [watchedButtonColor, watchedButtonTextColor]);
+
+  const saveButtonColorsOnly = async () => {
+    setIsSavingColors(true);
+    try {
+      const color = form.getValues("buttonColor") || watchedButtonColor || "#0f172a";
+      const text = form.getValues("buttonTextColor") || watchedButtonTextColor || "#ffffff";
+      const response = await fetch("/api/v1/web-info", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          buttonColor: color,
+          buttonTextColor: text,
+          themeColor: color,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update button colors");
+      }
+      form.setValue("buttonColor", color, { shouldDirty: false });
+      form.setValue("buttonTextColor", text, { shouldDirty: false });
+      form.setValue("themeColor", color, { shouldDirty: false });
+      toast.success("Button colors saved successfully! Site updated.");
+      router.refresh();
+    } catch (error) {
+      console.error("Save button colors error:", error);
+      toast.error("Failed to save button colors", {
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    } finally {
+      setIsSavingColors(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -276,6 +375,9 @@ export default function EditInfo() {
           marqueeText: fetchedData.marqueeText || "",
           metaPixelId: fetchedData.metaPixelId || "",
           gaMeasurementId: fetchedData.gaMeasurementId || "",
+          themeColor: fetchedData.themeColor || "#0f172a",
+          buttonColor: fetchedData.buttonColor || "#0f172a",
+          buttonTextColor: fetchedData.buttonTextColor || "#ffffff",
         });
       } catch (error) {
         console.error("Fetch error:", error);
@@ -334,17 +436,24 @@ export default function EditInfo() {
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
+      const payload = {
+        ...values,
+        buttonColor: values.buttonColor || watchedButtonColor || "#0f172a",
+        buttonTextColor: values.buttonTextColor || watchedButtonTextColor || "#ffffff",
+        themeColor: values.buttonColor || watchedButtonColor || "#0f172a",
+      };
       const response = await fetch("/api/v1/web-info", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || "Failed to update website info");
       }
       toast.success("Website information updated successfully");
+      router.refresh();
     } catch (error) {
       console.error("Submission error:", error);
       toast.error("Failed to update website info", {
@@ -362,7 +471,8 @@ export default function EditInfo() {
       Object.entries(errors).forEach(([field, message]) => {
         form.setError(field as keyof FormValues, { type: "manual", message });
       });
-      toast.error("Please fill all required fields correctly");
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError || "Please fill all required fields correctly");
       return;
     }
     await onSubmit(data);
@@ -558,6 +668,247 @@ export default function EditInfo() {
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
+
+              {/* WEBSITE BUTTONS & THEME COLOR */}
+              <Card>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Palette className="h-5 w-5 text-primary" />
+                      Website Buttons & Theme Colors
+                    </CardTitle>
+                    <CardDescription>
+                      Customize the button background and text colors across your entire storefront (product cards, &ldquo;View Details&rdquo;, &ldquo;Buy Now&rdquo;, &ldquo;Add to Cart&rdquo;, and checkout buttons).
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        form.setValue("buttonColor", "#0f172a", { shouldDirty: true, shouldValidate: true });
+                        form.setValue("buttonTextColor", "#ffffff", { shouldDirty: true, shouldValidate: true });
+                        form.setValue("themeColor", "#0f172a", { shouldDirty: true, shouldValidate: true });
+                      }}
+                      className="text-xs h-9 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      Default
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={saveButtonColorsOnly}
+                      disabled={isSavingColors}
+                      className="h-9 gap-1.5 cursor-pointer font-semibold shadow-sm"
+                    >
+                      {isSavingColors ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5" />
+                      )}
+                      {isSavingColors ? "Saving…" : "Save Button Colors"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Preset swatches */}
+                  <div className="space-y-2">
+                    <FormLabel className="text-sm font-medium">Quick Preset Palettes</FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Click any preset palette to instantly apply matching button background and text colors.
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {BUTTON_COLOR_PRESETS.map((preset) => {
+                        const currentBg = (watchedButtonColor || "#0f172a").toLowerCase();
+                        const currentFg = (watchedButtonTextColor || "#ffffff").toLowerCase();
+                        const isSelected =
+                          currentBg === preset.bg.toLowerCase() &&
+                          currentFg === preset.fg.toLowerCase();
+                        return (
+                          <button
+                            key={preset.name}
+                            type="button"
+                            onClick={() => {
+                              form.setValue("buttonColor", preset.bg, { shouldDirty: true, shouldValidate: true });
+                              form.setValue("buttonTextColor", preset.fg, { shouldDirty: true, shouldValidate: true });
+                              form.setValue("themeColor", preset.bg, { shouldDirty: true, shouldValidate: true });
+                            }}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
+                              isSelected
+                                ? "ring-2 ring-primary ring-offset-2 border-primary bg-primary/10"
+                                : "hover:border-foreground/40 border-muted bg-background"
+                            }`}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                              style={{ backgroundColor: preset.bg }}
+                            />
+                            <span>{preset.name}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-primary ml-0.5" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Color pickers */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Button Background Color */}
+                    <FormField
+                      control={form.control}
+                      name="buttonColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center justify-between">
+                            <span>Button Background Color</span>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {field.value || "#0f172a"}
+                            </span>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex items-center gap-3">
+                              <div className="relative w-11 h-10 rounded-md border overflow-hidden shrink-0 shadow-sm cursor-pointer">
+                                <input
+                                  type="color"
+                                  value={field.value || "#0f172a"}
+                                  onChange={(e) => {
+                                    field.onChange(e.target.value);
+                                    form.setValue("themeColor", e.target.value, { shouldDirty: true });
+                                  }}
+                                  className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer border-0 p-0"
+                                />
+                              </div>
+                              <Input
+                                placeholder="#0f172a"
+                                value={field.value || ""}
+                                onChange={(e) => {
+                                  field.onChange(e.target.value);
+                                  form.setValue("themeColor", e.target.value, { shouldDirty: true });
+                                }}
+                                className="font-mono"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Primary background color for all main action buttons on the site.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Button Text Color */}
+                    <FormField
+                      control={form.control}
+                      name="buttonTextColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center justify-between">
+                            <span>Button Text Color</span>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {field.value || "#ffffff"}
+                            </span>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex items-center gap-3">
+                              <div className="relative w-11 h-10 rounded-md border overflow-hidden shrink-0 shadow-sm cursor-pointer">
+                                <input
+                                  type="color"
+                                  value={field.value || "#ffffff"}
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                  className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer border-0 p-0"
+                                />
+                              </div>
+                              <Input
+                                placeholder="#ffffff"
+                                value={field.value || ""}
+                                onChange={(e) => field.onChange(e.target.value)}
+                                className="font-mono"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Text and icon color displayed on buttons (recommended: high contrast).
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Live Interactive Preview */}
+                  <div className="rounded-xl border bg-muted/20 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Live Storefront Buttons Preview
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Updates live as you pick colors
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      Here is how your buttons appear live across product cards, product details, and the checkout page:
+                    </p>
+
+                    <div className="pt-2 flex flex-wrap items-center gap-3">
+                      {/* View Details button sample */}
+                      <div
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm transition-opacity hover:opacity-90 cursor-default select-none"
+                        style={{
+                          backgroundColor: watchedButtonColor || "#0f172a",
+                          color: watchedButtonTextColor || "#ffffff",
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Details
+                      </div>
+
+                      {/* Buy Now button sample */}
+                      <div
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm transition-opacity hover:opacity-90 cursor-default select-none"
+                        style={{
+                          backgroundColor: watchedButtonColor || "#0f172a",
+                          color: watchedButtonTextColor || "#ffffff",
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        Buy Now (অর্ডার করুন)
+                      </div>
+
+                      {/* Add to Cart button sample */}
+                      <div
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm transition-opacity hover:opacity-90 cursor-default select-none"
+                        style={{
+                          backgroundColor: watchedButtonColor || "#0f172a",
+                          color: watchedButtonTextColor || "#ffffff",
+                        }}
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        Add to Cart (কার্ট এ যোগ করুন)
+                      </div>
+
+                      {/* Checkout Confirm button sample */}
+                      <div
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm shadow-md transition-opacity hover:opacity-90 cursor-default select-none"
+                        style={{
+                          backgroundColor: watchedButtonColor || "#0f172a",
+                          color: watchedButtonTextColor || "#ffffff",
+                        }}
+                      >
+                        অর্ডার কনফার্ম করুন (Checkout)
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

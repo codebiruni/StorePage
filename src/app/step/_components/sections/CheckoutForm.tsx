@@ -45,10 +45,6 @@ export default function CheckoutForm({
   // Precedence: explicit `note` prop (from Form Title section) → legacy
   // `checkoutNote` prop → persisted checkoutNote on the product.
   const note = noteProp ?? checkoutNote ?? product.landingPage?.checkoutNote ?? "";
-  const resolvedHeading =
-    headingText && headingText.length > 0
-      ? headingText
-      : "অর্ডার করতে নিচের ফর্মটি পূরণ করুন";
 
   // Auto-save partial input so we never lose the lead.
   const { draftId, saveDraft } = useOrderDraft({ source: "landing" });
@@ -110,17 +106,19 @@ export default function CheckoutForm({
       style={dark ? { background: "#0f172a", color: "#f8fafc" } : undefined}
     >
       <div className="step-container step-container--narrow">
-        <h2
-          id={`order-${product._id}`}
-          style={{
-            fontSize: 24,
-            fontWeight: 800,
-            margin: "0 0 16px",
-            color: dark ? "#f8fafc" : undefined,
-          }}
-        >
-          {headingText}
-        </h2>
+        {headingText ? (
+          <h2
+            id={`order-${product._id}`}
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              margin: "0 0 16px",
+              color: dark ? "#f8fafc" : undefined,
+            }}
+          >
+            {headingText}
+          </h2>
+        ) : null}
 
         {note ? (
           <p
@@ -139,10 +137,11 @@ export default function CheckoutForm({
           style={{
             display: "grid",
             gap: 12,
-            background: dark ? "#1e293b" : "#fff",
-            border: dark ? "1px solid #334155" : "1px solid #e2e8f0",
-            padding: 16,
-            borderRadius: 12,
+            background: dark ? "#1e293b" : "var(--lp-card-bg, #fff)",
+            border: dark ? "1px solid #334155" : "1px solid var(--lp-line, #e2e8f0)",
+            padding: 20,
+            borderRadius: "var(--lp-radius-lg, 12px)",
+            boxShadow: "var(--lp-shadow, 0 1px 3px rgba(0,0,0,0.08))",
           }}
         >
           <input
@@ -176,14 +175,15 @@ export default function CheckoutForm({
             type="submit"
             disabled={loading}
             style={{
-              background: loading ? "#94a3b8" : "var(--lp-accent, #dc2626)",
-              color: "#fff",
+              background: loading ? "#94a3b8" : "var(--lp-accent, var(--primary, #dc2626))",
+              color: "var(--primary-foreground, #fff)",
               border: 0,
-              padding: "12px 20px",
-              borderRadius: 10,
+              padding: "14px 20px",
+              borderRadius: "var(--lp-btn-radius, 8px)",
               fontSize: 16,
               fontWeight: 700,
               cursor: loading ? "wait" : "pointer",
+              transition: "opacity 0.15s ease",
             }}
           >
             {loading ? "অপেক্ষা করুন…" : `অর্ডার করুন — ৳${grandTotal}`}
@@ -196,11 +196,11 @@ export default function CheckoutForm({
 
 function inputStyle(dark?: boolean): React.CSSProperties {
   return {
-    padding: "10px 12px",
-    borderRadius: 8,
-    border: dark ? "1px solid #334155" : "1px solid #cbd5e1",
+    padding: "10px 14px",
+    borderRadius: "var(--lp-radius, 8px)",
+    border: dark ? "1px solid #334155" : "1px solid var(--lp-line, #cbd5e1)",
     background: dark ? "#0f172a" : "#fff",
-    color: dark ? "#f8fafc" : "#0f172a",
+    color: dark ? "#f8fafc" : "var(--lp-fg, #0f172a)",
     fontSize: 15,
   };
 }

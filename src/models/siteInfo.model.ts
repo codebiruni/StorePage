@@ -65,6 +65,9 @@ const SiteInfoSchema: Schema = new Schema<ISiteInfo>(
     ],
 
     marqueeText: { type: String, required: true },
+    themeColor: { type: String, default: "" },
+    buttonColor: { type: String, default: "" },
+    buttonTextColor: { type: String, default: "" },
 
     // Courier credentials for Pathao / Steadfast / RedX integrations.
     // Stored per-store inside the (single-tenant) siteInfo doc so admins can
@@ -149,7 +152,15 @@ SiteInfoSchema.pre<SiteInfoDocument>(
   }
 );
 
+if (
+  models.SiteInfo &&
+  !(models.SiteInfo.schema.paths as Record<string, unknown>).buttonColor
+) {
+  mongoose.deleteModel("SiteInfo");
+}
+
 const SiteInfo =
-  models.SiteInfo || model<ISiteInfo>("SiteInfo", SiteInfoSchema);
+  (models.SiteInfo as mongoose.Model<ISiteInfo>) ||
+  model<ISiteInfo>("SiteInfo", SiteInfoSchema);
 
 export default SiteInfo;

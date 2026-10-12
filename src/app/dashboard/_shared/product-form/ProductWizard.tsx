@@ -68,6 +68,13 @@ function toLandingFormValue(
     sections?: LandingFormValue["sections"];
     primaryColor?: string;
     accentColor?: string;
+    backgroundColor?: string;
+    surfaceColor?: string;
+    textColor?: string;
+    headingColor?: string;
+    fontFamily?: string;
+    borderRadius?: string;
+    customCss?: string;
     updatedAt?: string;
   };
   // Treat a nested `comparison.*` as authoritative — only fall back to the
@@ -86,6 +93,38 @@ function toLandingFormValue(
     typeof flat.accentColor === "string" && flat.accentColor.length > 0
       ? flat.accentColor
       : undefined;
+  const backgroundColor =
+    typeof flat.backgroundColor === "string" && flat.backgroundColor.length > 0
+      ? flat.backgroundColor
+      : undefined;
+  const surfaceColor =
+    typeof flat.surfaceColor === "string" && flat.surfaceColor.length > 0
+      ? flat.surfaceColor
+      : undefined;
+  const textColor =
+    typeof flat.textColor === "string" && flat.textColor.length > 0
+      ? flat.textColor
+      : undefined;
+  const headingColor =
+    typeof flat.headingColor === "string" && flat.headingColor.length > 0
+      ? flat.headingColor
+      : undefined;
+  const fontFamily =
+    typeof flat.fontFamily === "string" && flat.fontFamily.length > 0
+      ? flat.fontFamily
+      : undefined;
+  const borderRadius =
+    typeof flat.borderRadius === "string" && flat.borderRadius.length > 0
+      ? baseNonEmpty(flat.borderRadius)
+      : undefined;
+  const customCss =
+    typeof flat.customCss === "string" && flat.customCss.length > 0
+      ? flat.customCss
+      : undefined;
+
+  function baseNonEmpty(val: string | undefined) {
+    return val && val.trim().length > 0 ? val : undefined;
+  }
   return {
     theme: (flat.theme as LandingFormValue["theme"]) ?? "health",
     heroTitle: flat.heroTitle ?? "",
@@ -112,6 +151,13 @@ function toLandingFormValue(
     ...(sections ? { sections } : null),
     ...(primaryColor ? { primaryColor } : null),
     ...(accentColor ? { accentColor } : null),
+    ...(backgroundColor ? { backgroundColor } : null),
+    ...(surfaceColor ? { surfaceColor } : null),
+    ...(textColor ? { textColor } : null),
+    ...(headingColor ? { headingColor } : null),
+    ...(fontFamily ? { fontFamily } : null),
+    ...(borderRadius ? { borderRadius } : null),
+    ...(customCss ? { customCss } : null),
   };
 }
 

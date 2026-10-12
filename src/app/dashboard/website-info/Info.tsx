@@ -49,6 +49,10 @@ import {
   AlertTriangle,
   Loader2,
   Rocket,
+  Palette,
+  ShoppingBag,
+  ShoppingCart,
+  Eye,
 } from "lucide-react";
 import WorkspaceHeader from "../_shared/WorkspaceHeader";
 
@@ -75,6 +79,9 @@ interface WebsiteInfo {
   mapLink: string;
   footerLinks: Array<{ name: string; url?: string; _id: string }>;
   marqueeText: string;
+  themeColor?: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -510,6 +517,113 @@ export default function Info() {
                 <Button variant="outline" onClick={handleEdit}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Update logo
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Website Buttons & Theme Colors */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                Website Buttons & Theme Colors
+              </CardTitle>
+              <CardDescription>
+                Color theme applied to buttons and key action elements across your entire storefront.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/20">
+                  <div
+                    className="w-10 h-10 rounded-md border shadow-sm shrink-0"
+                    style={{ backgroundColor: data.buttonColor || "#0f172a" }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Button Background Color</p>
+                    <p className="font-mono text-sm font-semibold truncate">
+                      {data.buttonColor || "#0f172a"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => copy(data.buttonColor || "#0f172a", "Button Color")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/20">
+                  <div
+                    className="w-10 h-10 rounded-md border shadow-sm shrink-0"
+                    style={{ backgroundColor: data.buttonTextColor || "#ffffff" }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Button Text Color</p>
+                    <p className="font-mono text-sm font-semibold truncate">
+                      {data.buttonTextColor || "#ffffff"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => copy(data.buttonTextColor || "#ffffff", "Button Text Color")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Sample Buttons Preview */}
+              <div className="rounded-xl border bg-muted/20 p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Storefront Buttons Appearance
+                  </span>
+                </div>
+                <div className="pt-1 flex flex-wrap items-center gap-3">
+                  <div
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm select-none"
+                    style={{
+                      backgroundColor: data.buttonColor || "#0f172a",
+                      color: data.buttonTextColor || "#ffffff",
+                    }}
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Details
+                  </div>
+                  <div
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm select-none"
+                    style={{
+                      backgroundColor: data.buttonColor || "#0f172a",
+                      color: data.buttonTextColor || "#ffffff",
+                    }}
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    Buy Now (অর্ডার করুন)
+                  </div>
+                  <div
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm select-none"
+                    style={{
+                      backgroundColor: data.buttonColor || "#0f172a",
+                      color: data.buttonTextColor || "#ffffff",
+                    }}
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Add to Cart (কার্ট এ যোগ করুন)
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button variant="outline" onClick={handleEdit}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Change button colors
                 </Button>
               </div>
             </CardContent>

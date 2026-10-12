@@ -29,7 +29,7 @@ export default function TrustBadgeSection({
             />
           </div>
           {data.caption ? (
-            <p className="text-sm text-black/60">{data.caption}</p>
+            <p className="text-sm opacity-75">{data.caption}</p>
           ) : null}
         </div>
       </div>

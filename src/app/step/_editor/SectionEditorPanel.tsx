@@ -14,7 +14,7 @@
  * live preview work without debouncing or iframes.
  */
 
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Code, GripVertical, Paintbrush, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 import { ColorPickerField } from "./primitives/ColorPickerField";
 import {
@@ -51,16 +52,15 @@ interface Props {
 }
 
 /**
- * Display labels for theme presets. The `THEME_PRESETS` map stores tokens
- * only, so we keep a parallel map for human-readable names. Order is
- * stable across renders so the dropdown is predictable.
+ * Display labels for theme presets. Shown in the dropdown alongside a
+ * colour swatch so admins can see the brand colour at a glance.
  */
 const PRESET_LABELS: Record<ThemePresetId, string> = {
-  health: "Health (red)",
-  organic: "Organic (green)",
-  fashion: "Fashion (purple)",
-  food: "Food (green & amber)",
-  default: "Default (slate & blue)",
+  health: "Health — Red & Rose",
+  organic: "Organic — Green & Gold",
+  fashion: "Fashion — Purple & Violet",
+  food: "Food — Green & Amber",
+  default: "Default — Slate & Blue",
 };
 
 export default function SectionEditorPanel({ value, onChange }: Props) {
@@ -71,6 +71,7 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
    * read on `drop`, and cleared on `dragend`.
    */
   const [dragId, setDragId] = useState<string | null>(null);
+  const [showCss, setShowCss] = useState(false);
 
   function patchTheme(patch: Partial<LandingTheme>) {
     onChange({ ...value, theme: { ...value.theme, ...patch } });
@@ -80,6 +81,19 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
     onChange({
       ...value,
       sections: value.sections.map((s) => (s.id === next.id ? next : s)),
+    });
+  }
+
+  function updateSectionStyle(
+    section: Section,
+    patch: Partial<NonNullable<Section["style"]>>
+  ) {
+    updateSection({
+      ...section,
+      style: {
+        ...(section.style ?? {}),
+        ...patch,
+      },
     });
   }
 
@@ -110,9 +124,6 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
     const id = newSectionId();
     const order = value.sections.length;
     const section = makeSection(type, order);
-    // makeSection already fills in defaults via `defaultSectionData`. Set
-    // a fresh id (its internal one was generated already but the call
-    // site owns the canonical id so other UI can predict it).
     section.id = id;
     section.data = defaultSectionData(type) as Section["data"];
     onChange({ ...value, sections: [...value.sections, section] });
@@ -134,47 +145,149 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
   return (
     <div className="space-y-6">
       {/* ── Theme ───────────────────────────────────────────────────── */}
-      <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4">
+      <section className="space-y-4 rounded-lg border border-black/10 bg-white p-4">
         <header>
-          <h3 className="text-sm font-semibold">Theme</h3>
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Paintbrush className="h-4 w-4" />
+            Theme Preset &amp; Global Colors
+          </h3>
           <p className="text-xs text-black/50">
-            Pick a preset, then override the primary or accent color if you
-            want a custom accent. Clearing a color returns to the preset.
+            Pick a base preset — the whole page repaints instantly. Optionally override individual colors below.
           </p>
         </header>
 
+        {/* Preset picker with colour swatches */}
         <div className="space-y-1.5">
           <label className="text-xs font-medium">Preset</label>
           <Select
             value={value.theme.presetId}
             onValueChange={(v) => setPreset(v as ThemePresetId)}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a preset" />
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Select preset">
+                {/* Show the active preset's swatch + label in the trigger */}
+                <span className="flex items-center gap-2">
+                  <span
+                    className="inline-block h-3.5 w-3.5 rounded-full border border-black/10 flex-none"
+                    style={{ background: THEME_PRESETS[value.theme.presetId]?.primary ?? "#999" }}
+                  />
+                  <span>{PRESET_LABELS[value.theme.presetId]}</span>
+                </span>
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(THEME_PRESETS) as ThemePresetId[]).map((id) => (
                 <SelectItem key={id} value={id}>
-                  {PRESET_LABELS[id]}
+                  <span className="flex items-center gap-2.5">
+                    {/* Primary swatch */}
+                    <span
+                      className="inline-block h-3.5 w-3.5 rounded-full border border-black/10 flex-none"
+                      style={{ background: THEME_PRESETS[id].primary }}
+                    />
+                    {/* Accent swatch */}
+                    <span
+                      className="inline-block h-3.5 w-3.5 rounded-full border border-black/10 flex-none"
+                      style={{ background: THEME_PRESETS[id].accent }}
+                    />
+                    <span>{PRESET_LABELS[id]}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <ColorPickerField
-            label="Primary"
-            hint="Used for backgrounds and headings."
-            value={value.theme.primaryColor ?? ""}
-            onChange={(primaryColor) => patchTheme({ primaryColor })}
-          />
-          <ColorPickerField
-            label="Accent"
-            hint="Used for buttons and the offer price."
-            value={value.theme.accentColor ?? ""}
-            onChange={(accentColor) => patchTheme({ accentColor })}
-          />
+        {/* Active preset colour strip */}
+        <div className="flex gap-1.5 rounded-lg overflow-hidden border border-black/5 h-6">
+          {(["background", "sunken", "surface", "primary", "accent", "ink"] as const).map((key) => {
+            const preset = THEME_PRESETS[value.theme.presetId] ?? THEME_PRESETS.default;
+            return (
+              <span
+                key={key}
+                title={key}
+                className="flex-1 h-full"
+                style={{ background: preset[key] }}
+              />
+            );
+          })}
+        </div>
+
+        <div className="border-t border-black/5 pt-3">
+          <span className="text-xs font-medium text-black/70 mb-2 block">
+            Color Palette Overrides
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <ColorPickerField
+              label="Primary"
+              hint="Headings &amp; badges."
+              value={value.theme.primaryColor ?? ""}
+              onChange={(primaryColor) => patchTheme({ primaryColor })}
+            />
+            <ColorPickerField
+              label="Accent / CTA"
+              hint="Buttons &amp; prices."
+              value={value.theme.accentColor ?? ""}
+              onChange={(accentColor) => patchTheme({ accentColor })}
+            />
+            <ColorPickerField
+              label="Page Background"
+              hint="Overall page bg."
+              value={value.theme.backgroundColor ?? ""}
+              onChange={(backgroundColor) => patchTheme({ backgroundColor })}
+            />
+            <ColorPickerField
+              label="Surface / Card Bg"
+              hint="Cards &amp; panels."
+              value={value.theme.surfaceColor ?? ""}
+              onChange={(surfaceColor) => patchTheme({ surfaceColor })}
+            />
+            <ColorPickerField
+              label="Body Text"
+              hint="Paragraphs &amp; list text."
+              value={value.theme.textColor ?? ""}
+              onChange={(textColor) => patchTheme({ textColor })}
+            />
+            <ColorPickerField
+              label="Heading Text"
+              hint="Headline color."
+              value={value.theme.headingColor ?? ""}
+              onChange={(headingColor) => patchTheme({ headingColor })}
+            />
+          </div>
+        </div>
+
+        {/* Custom CSS accordion */}
+        <div className="border-t border-black/5 pt-2">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between text-xs font-medium text-black/60 hover:text-black py-1"
+            onClick={() => setShowCss((v) => !v)}
+          >
+            <span className="flex items-center gap-1.5">
+              <Code className="h-3.5 w-3.5" />
+              Advanced Custom CSS
+            </span>
+            {showCss ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+          </button>
+          {showCss && (
+            <div className="pt-2 space-y-1.5">
+              <p className="text-[11px] text-black/50">
+                Write CSS rules to override anything on the landing page (e.g.{" "}
+                <code>.lp-headline &#123; text-transform: uppercase; &#125;</code>).
+              </p>
+              <Textarea
+                rows={4}
+                value={value.theme.customCss ?? ""}
+                placeholder=".lp-section { ... }"
+                className="font-mono text-xs"
+                onChange={(e) => patchTheme({ customCss: e.target.value })}
+              />
+            </div>
+          )}
         </div>
       </section>
 
@@ -224,14 +337,14 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                   dragId === section.id && "opacity-50",
                 )}
               >
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-black/[0.02]"
-                  onClick={() =>
-                    setOpenId((cur) => (cur === section.id ? null : section.id))
-                  }
-                >
-                  <span className="flex flex-1 items-center gap-2">
+                <div className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-black/[0.02]">
+                  <button
+                    type="button"
+                    className="flex flex-1 cursor-pointer items-center gap-2 text-left bg-transparent border-0 p-0"
+                    onClick={() =>
+                      setOpenId((cur) => (cur === section.id ? null : section.id))
+                    }
+                  >
                     <span
                       // Drag handle — separate from the row click target so
                       // clicking the body still toggles open. Browsers only
@@ -256,14 +369,9 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                         always last
                       </span>
                     ) : null}
-                  </span>
+                  </button>
 
-                  <span
-                    className="flex items-center gap-1"
-                    // Stop the row-toggle from firing when the admin uses
-                    // the delete button — it's nested inside the row button.
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="flex items-center gap-1">
                     <Button
                       type="button"
                       size="icon"
@@ -273,11 +381,37 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </span>
-                </button>
+                  </div>
+                </div>
 
                 {openId === section.id && (
-                  <div className="border-t border-black/5 px-3 py-3">
+                  <div className="border-t border-black/5 px-3 py-3 space-y-4">
+                    {/* Per-section background & styling */}
+                    <div className="rounded-lg border border-black/10 bg-neutral-50/70 p-3 space-y-3">
+                      <span className="text-xs font-semibold text-neutral-800 flex items-center gap-1.5">
+                        <Paintbrush className="h-3.5 w-3.5 text-neutral-600" />
+                        Section Background & Styling
+                      </span>
+                      <div className="grid grid-cols-2 gap-3">
+                        <ColorPickerField
+                          label="Section Background"
+                          hint="Override this section's bg"
+                          value={section.style?.backgroundColor ?? ""}
+                          onChange={(backgroundColor) =>
+                            updateSectionStyle(section, { backgroundColor })
+                          }
+                        />
+                        <ColorPickerField
+                          label="Section Text Color"
+                          hint="Override text in this section"
+                          value={section.style?.textColor ?? ""}
+                          onChange={(textColor) =>
+                            updateSectionStyle(section, { textColor })
+                          }
+                        />
+                      </div>
+                    </div>
+
                     {renderSectionForm(section, updateSection)}
                   </div>
                 )}

@@ -38,9 +38,9 @@ export default function OrderSummary({
   return (
     <div className="space-y-6">
       <Card className="shadow-lg border-0 pt-0  overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-50 py-2 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+        <CardHeader className="bg-primary/5 py-2.5 dark:bg-primary/10">
           <CardTitle className="flex items-center gap-2 text-xl">
-            <ShoppingCart className="h-6 w-6 pt-4 pb-2 text-blue-600" />
+            <ShoppingCart className="h-5 w-5 text-primary" />
             Order Summary ({itemsWithQuantity.reduce((sum, item) => sum + item.quantity, 0)} items)
           </CardTitle>
         </CardHeader>
@@ -82,7 +82,7 @@ export default function OrderSummary({
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
-                  <span className="text-sm font-bold ml-auto text-blue-600">
+                  <span className="text-sm font-bold ml-auto text-primary">
                     = {item.price * item.quantity} BDT
                   </span>
                 </div>
@@ -116,7 +116,7 @@ export default function OrderSummary({
             <Separator />
             <div className="flex justify-between items-center text-lg font-bold pt-2">
               <span className="text-gray-900 dark:text-white">Grand Total:</span>
-              <span className="text-green-600 text-xl">{grandTotal} BDT</span>
+              <span className="text-primary text-xl font-bold">{grandTotal} BDT</span>
             </div>
           </div>
         </CardContent>

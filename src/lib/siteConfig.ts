@@ -31,6 +31,8 @@ export interface SiteConfig {
   tagline: string;
   logo: string;
   themeColor: string;
+  buttonColor: string;
+  buttonTextColor: string;
 
   // Contact
   contact: {
@@ -99,7 +101,9 @@ export function getEnvSiteConfig(): SiteConfig {
     name: publicEnv.NEXT_PUBLIC_BRAND_NAME,
     tagline: publicEnv.NEXT_PUBLIC_BRAND_TAGLINE,
     logo: publicEnv.NEXT_PUBLIC_DEFAULT_LOGO,
-    themeColor: publicEnv.NEXT_PUBLIC_THEME_COLOR,
+    themeColor: publicEnv.NEXT_PUBLIC_THEME_COLOR || "#0f172a",
+    buttonColor: publicEnv.NEXT_PUBLIC_THEME_COLOR || "#0f172a",
+    buttonTextColor: "#ffffff",
     contact: {
       email: publicEnv.NEXT_PUBLIC_CONTACT_EMAIL,
       phone: publicEnv.NEXT_PUBLIC_CONTACT_PHONE,
@@ -186,11 +190,30 @@ function buildSiteConfig(doc: any, base: SiteConfig): SiteConfig {
     ? rawLogo.replace(/^http:\/\//i, "https://")
     : rawLogo;
 
+  const buttonColor =
+    (typeof doc.buttonColor === "string" && doc.buttonColor.trim().length > 0
+      ? doc.buttonColor
+      : typeof doc.themeColor === "string" && doc.themeColor.trim().length > 0
+      ? doc.themeColor
+      : base.buttonColor) || "#0f172a";
+
+  const buttonTextColor =
+    (typeof doc.buttonTextColor === "string" && doc.buttonTextColor.trim().length > 0
+      ? doc.buttonTextColor
+      : base.buttonTextColor) || "#ffffff";
+
+  const themeColor =
+    (typeof doc.themeColor === "string" && doc.themeColor.trim().length > 0
+      ? doc.themeColor
+      : buttonColor) || base.themeColor;
+
   return {
     name: doc.name ?? base.name,
     tagline: doc.tagline ?? base.tagline,
     logo,
-    themeColor: base.themeColor, // siteInfo has no `themeColor` yet; env wins
+    themeColor,
+    buttonColor,
+    buttonTextColor,
     contact: {
       email: doc.email ?? base.contact.email,
       phone: doc.number ?? base.contact.phone,

@@ -135,7 +135,7 @@ export default function ShippingForm({
                 name="shippingZone"
                 checked={hasSelectedZone && !isInsideDhaka}
                 onChange={selectOutside}
-                className="w-4.5 h-4.5 accent-[#e53e3e] cursor-pointer"
+                className="w-4.5 h-4.5 accent-primary cursor-pointer"
               />
               <span className="text-[15px] text-foreground">ঢাকার বাহিরে:</span>
             </div>
@@ -150,7 +150,7 @@ export default function ShippingForm({
                 name="shippingZone"
                 checked={hasSelectedZone && isInsideDhaka}
                 onChange={selectInside}
-                className="w-4.5 h-4.5 accent-[#e53e3e] cursor-pointer"
+                className="w-4.5 h-4.5 accent-primary cursor-pointer"
               />
               <span className="text-[15px] text-foreground">ঢাকার ভিতরে:</span>
             </div>
@@ -175,7 +175,7 @@ export default function ShippingForm({
       <Button
         onClick={onSubmitOrder}
         disabled={loading || !isFormValid}
-        className="w-full h-13 text-base font-bold text-white bg-[#1a8a3c] dark:bg-[#22c55e] dark:hover:bg-[#16a34a] rounded-lg shadow-sm border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 transition-all flex items-center justify-center"
+        className="w-full h-13 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-sm border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 transition-all flex items-center justify-center"
       >
         {loading ? (
           <>

@@ -17,17 +17,19 @@ export default function FormTitleSection({
   data: FormTitleSectionData;
 }) {
   return (
-    <div className="lp-container lp-container--narrow pt-8 text-center">
-      <h2
-        className="lp-headline"
-        data-size="xl"
-        style={{ color: "var(--lp-primary)" }}
-      >
-        {data.heading || "অর্ডার করতে নিচের ফর্মটি পূরণ করুন"}
-      </h2>
-      {data.subheading ? (
-        <p className="mt-2 text-sm text-black/70">{data.subheading}</p>
-      ) : null}
-    </div>
+    <section className="lp-section py-8 text-center" data-tone="canvas">
+      <div className="lp-container lp-container--narrow">
+        <h2
+          className="lp-headline"
+          data-size="xl"
+          style={{ color: "var(--lp-primary)" }}
+        >
+          {data.heading || "অর্ডার করতে নিচের ফর্মটি পূরণ করুন"}
+        </h2>
+        {data.subheading ? (
+          <p className="mt-2 text-sm opacity-80">{data.subheading}</p>
+        ) : null}
+      </div>
+    </section>
   );
 }

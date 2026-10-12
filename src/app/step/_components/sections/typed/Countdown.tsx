@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { CountdownSectionData } from "@/app/step/_lib/landing-config";
+import type { CountdownSectionData, SectionStyle } from "@/app/step/_lib/landing-config";
 
 function diff(target: number): {
   d: number;
@@ -33,8 +33,10 @@ function pad(n: number): string {
 
 export default function CountdownSection({
   data,
+  style,
 }: {
   data: CountdownSectionData;
+  style?: SectionStyle;
 }) {
   const target = new Date(data.endsAt).getTime();
   const [state, setState] = useState(() => diff(target));
@@ -45,18 +47,36 @@ export default function CountdownSection({
     return () => clearInterval(id);
   }, [target]);
 
+  const bg = style?.backgroundColor || "var(--lp-primary)";
+  const textColor = style?.textColor || "#ffffff";
+
   return (
-    <section className="lp-section" data-tone="ink" style={{ padding: "32px 0" }}>
-      <div className="lp-container text-center text-white">
+    <section
+      className="lp-section"
+      style={{
+        padding: "32px 0",
+        background: bg,
+        color: textColor,
+      }}
+    >
+      <div className="lp-container text-center" style={{ color: textColor }}>
         {data.label ? (
-          <p className="mb-3 text-sm font-medium uppercase tracking-wide text-white/80">
+          <p
+            className="mb-3 text-sm font-medium uppercase tracking-wide opacity-90"
+            style={{ color: textColor }}
+          >
             {data.label}
           </p>
         ) : null}
         {state.expired ? (
-          <p className="text-lg font-semibold">অফার শেষ</p>
+          <p className="text-lg font-semibold" style={{ color: textColor }}>
+            অফার শেষ
+          </p>
         ) : (
-          <div className="flex items-center justify-center gap-3 text-2xl font-bold tabular-nums sm:text-3xl">
+          <div
+            className="flex items-center justify-center gap-3 text-2xl font-bold tabular-nums sm:text-3xl"
+            style={{ color: textColor }}
+          >
             <span>{state.d} দিন</span>
             <span>·</span>
             <span>

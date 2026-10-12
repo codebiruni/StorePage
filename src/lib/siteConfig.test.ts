@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { findOne, connectDb } = vi.hoisted(() => ({
@@ -51,6 +52,8 @@ describe("siteConfig › getEnvSiteConfig", () => {
             "tagline",
             "logo",
             "themeColor",
+            "buttonColor",
+            "buttonTextColor",
             "marqueeText",
             "mapLink",
             "siteUrl",
@@ -106,12 +109,19 @@ describe("siteConfig › getSiteConfig", () => {
         expect((await getSiteConfig()).social.instagram).toBe("https://ig.me/x");
     });
 
-    it("always keeps env themeColor and siteUrl (siteInfo has no such field)", async () => {
-        const base = getEnvSiteConfig();
-        stubDoc({ themeColor: "#hacked", siteUrl: "https://evil.test" });
+    it("lets document buttonColor and themeColor override env defaults", async () => {
+        stubDoc({ buttonColor: "#16a34a", buttonTextColor: "#f8fafc" });
         const config = await getSiteConfig();
 
-        expect(config.themeColor).toBe(base.themeColor);
+        expect(config.buttonColor).toBe("#16a34a");
+        expect(config.buttonTextColor).toBe("#f8fafc");
+    });
+
+    it("always keeps env siteUrl (siteInfo has no siteUrl field)", async () => {
+        const base = getEnvSiteConfig();
+        stubDoc({ siteUrl: "https://evil.test" });
+        const config = await getSiteConfig();
+
         expect(config.siteUrl).toBe(base.siteUrl);
     });
 

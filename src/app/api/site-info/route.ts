@@ -21,9 +21,7 @@ export async function GET() {
       {
         status: 200,
         headers: {
-          // Allow a brief cache so repeated navigations don't hammer Mongo,
-          // but stay fresh enough that admin edits appear quickly.
-          "Cache-Control": "public, max-age=30, s-maxage=60",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
         },
       },
     );

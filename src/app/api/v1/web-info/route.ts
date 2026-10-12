@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { USER_ROLE } from "@/interface/auth.constent";
 import { auth } from "@/lib/auth";
 import { SITE_CONFIG_TAG } from "@/lib/siteConfig";
@@ -7,12 +7,14 @@ import connectDb from "@/lib/connectdb";
 import SiteInfo from "@/models/siteInfo.model";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 // Create or Replace SiteInfo
 export async function POST(request: NextRequest) {
   try {
     const siteInfoData = await request.json();
     await connectDb();
-    await auth(USER_ROLE.SUPER_ADMIN);
+    await auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN);
 
     // Remove any existing SiteInfo before creating a new one
     await SiteInfo.deleteMany({});
@@ -20,6 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Bust the cached SiteConfig so the next render picks up the new branding.
     revalidateTag(SITE_CONFIG_TAG, "max");
+    revalidatePath("/", "layout");
 
     return NextResponse.json(
       {
@@ -57,7 +60,10 @@ export async function GET() {
     return NextResponse.json(
       { success: true, data: siteInfo },
       { 
-        status: 200
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
       }
     );
   } catch (err: any) {
@@ -74,26 +80,26 @@ export async function PATCH(request: NextRequest) {
   try {
     const updateData = await request.json();
     await connectDb();
-    await auth(USER_ROLE.SUPER_ADMIN);
+    await auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN);
 
-    const siteInfo = await SiteInfo.findOne();
-    if (!siteInfo) {
-      return NextResponse.json(
-        { success: false, message: "No SiteInfo found to update" },
-        { status: 404 }
-      );
-    }
-
-    Object.assign(siteInfo, updateData);
-    await siteInfo.save();
+    const updated = await SiteInfo.findOneAndUpdate(
+      {},
+      { $set: updateData },
+      { new: true, upsert: true }
+    );
 
     // Bust the cached SiteConfig so the next render picks up the new branding.
-    revalidateTag(SITE_CONFIG_TAG, "max");
+    try {
+      revalidateTag(SITE_CONFIG_TAG, "max");
+    } catch {}
+    try {
+      revalidatePath("/", "layout");
+    } catch {}
 
     return NextResponse.json(
       {
         success: true,
-        data: siteInfo,
+        data: updated,
         message: "SiteInfo updated successfully",
       },
       { status: 200 }
@@ -111,7 +117,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE() {
   try {
     await connectDb();
-    await auth(USER_ROLE.SUPER_ADMIN);
+    await auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN);
 
     const deleted = await SiteInfo.findOneAndDelete();
     if (!deleted) {
@@ -123,6 +129,7 @@ export async function DELETE() {
 
     // Bust the cached SiteConfig so the next render falls back to env defaults.
     revalidateTag(SITE_CONFIG_TAG, "max");
+    revalidatePath("/", "layout");
 
     return NextResponse.json(
       {

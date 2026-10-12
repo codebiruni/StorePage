@@ -321,6 +321,23 @@ export default async function RootLayout({
           href={logoUrl}
           sizes="640x1136"
         />
+        {cfg.buttonColor && (
+          <style
+            id="site-button-colors"
+            dangerouslySetInnerHTML={{
+              __html: `:root, .dark, [data-theme], body {
+  --primary: ${cfg.buttonColor} !important;
+  --color-primary: ${cfg.buttonColor} !important;
+  --theme-button-bg: ${cfg.buttonColor} !important;
+  --ring: ${cfg.buttonColor} !important;
+  --lp-accent: ${cfg.buttonColor} !important;
+  ${cfg.buttonTextColor ? `--primary-foreground: ${cfg.buttonTextColor} !important;
+  --color-primary-foreground: ${cfg.buttonTextColor} !important;
+  --theme-button-fg: ${cfg.buttonTextColor} !important;` : ""}
+}`,
+            }}
+          />
+        )}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${displayFraunces.variable} ${displayInstrumentSerif.variable} ${displaySpaceGrotesk.variable} ${banglaHind.variable} ${banglaNoto.variable} antialiased`}
@@ -330,7 +347,7 @@ export default async function RootLayout({
           <ServiceWorkerCleanup />
           <AosWrapper>
             <NextTopLoader
-              color={cfg.themeColor}
+              color={cfg.buttonColor || cfg.themeColor}
               showSpinner={true}
               height={3}
               zIndex={99999999999}

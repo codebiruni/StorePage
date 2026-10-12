@@ -18,11 +18,19 @@ export type LandingThemeId =
   | "food"
   | "default";
 
+export interface ISectionStyle {
+  backgroundColor?: string;
+  textColor?: string;
+  paddingY?: "compact" | "normal" | "spacious";
+  layoutVariant?: string;
+}
+
 export interface ILandingSection {
   id: string;
   order: number;
   type: string;
   data: Record<string, unknown>;
+  style?: ISectionStyle;
 }
 
 export interface ILandingPage {
@@ -53,9 +61,16 @@ export interface ILandingPage {
 
   /** New typed-section model. Optional so legacy products keep loading. */
   sections?: ILandingSection[];
-  /** Per-product color overrides for the new theme system. */
+  /** Per-product color and styling overrides for the theme system. */
   primaryColor?: string;
   accentColor?: string;
+  backgroundColor?: string;
+  surfaceColor?: string;
+  textColor?: string;
+  headingColor?: string;
+  fontFamily?: string;
+  borderRadius?: string;
+  customCss?: string;
   /** Last save timestamp; written by the editor. */
   updatedAt?: string;
 }

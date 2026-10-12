@@ -7,15 +7,15 @@ import Link from "next/link";
 export default function FeaturedBanner() {
   return (
     <div className="container mx-auto  p-4">
-      <Card className="relative  overflow-hidden border-0 bg-gradient-to-br from-purple-600/10 to-blue-600/5 dark:from-purple-600/20 dark:to-blue-600/10">
+      <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10">
         {/* Decorative elements */}
-        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-purple-600/10 dark:bg-purple-600/20"></div>
-        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-600/5 dark:bg-blue-600/10"></div>
+        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 dark:bg-primary/20"></div>
+        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-primary/5 dark:bg-primary/10"></div>
 
         {/* Animated elements */}
-        <Sparkles className="absolute top-6 right-20 h-6 w-6 animate-pulse text-purple-400/60" />
-        <Zap className="absolute bottom-10 left-24 h-5 w-5 animate-ping text-blue-400/40" />
-        <Star className="absolute top-1/2 right-1/4 h-4 w-4 animate-bounce text-purple-400/50 delay-300" />
+        <Sparkles className="absolute top-6 right-20 h-6 w-6 animate-pulse text-primary/60" />
+        <Zap className="absolute bottom-10 left-24 h-5 w-5 animate-ping text-primary/40" />
+        <Star className="absolute top-1/2 right-1/4 h-4 w-4 animate-bounce text-primary/50 delay-300" />
 
         {/* Shimmer effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 animate-shimmer"></div>
@@ -25,7 +25,7 @@ export default function FeaturedBanner() {
           <div className="space-y-3">
             <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Best Featured Collection
-              <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              <span className="block text-primary">
                 Store to Your Doorstep!
               </span>
             </h3>
@@ -34,12 +34,12 @@ export default function FeaturedBanner() {
                 Discover exclusive products with exceptional quality and style
                 for every occasion.
               </p>
-              <div className="h-1 w-8 rounded-full bg-purple-600/30"></div>
+              <div className="h-1 w-8 rounded-full bg-primary/30"></div>
               <div className="flex gap-2">
-                <span className="inline-flex items-center rounded-full bg-purple-600/10 px-3 py-1 text-xs font-medium text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                   New Arrivals
                 </span>
-                <span className="inline-flex items-center rounded-full bg-blue-600/10 px-3 py-1 text-xs font-medium text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                   Limited Stock
                 </span>
               </div>
@@ -47,7 +47,7 @@ export default function FeaturedBanner() {
           </div>
           <Link href={"/products"}>
             <Button
-              className="group bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium shadow-lg hover:shadow-purple-500/25"
+              className="group bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-md transition-all"
               size="lg"
             >
               Explore more Collection

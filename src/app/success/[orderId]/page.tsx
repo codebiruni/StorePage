@@ -19,7 +19,7 @@ export default function OrderSuccessPage() {
                 </div>
                 <button
                     onClick={() => router.push('/')}
-                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+                    className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
                 >
                     Return to Shop
                 </button>

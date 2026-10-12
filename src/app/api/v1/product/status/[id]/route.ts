@@ -167,7 +167,7 @@ export async function DELETE(req: NextRequest, context: ParamsType) {
   const { id } = await context.params;
   try {
     await connectDb();
-    await auth(USER_ROLE.SUPER_ADMIN);
+    await auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN);
 
     // Find product first
     const product = await Product.findById(id);
@@ -183,10 +183,17 @@ export async function DELETE(req: NextRequest, context: ParamsType) {
     product.isDeleted = !product.isDeleted;
     await product.save();
 
+    revalidatePath(`/product/product-details/${id}`);
+    revalidatePath(`/step/${id}`);
+    revalidatePath("/dashboard/products");
+    revalidatePath("/");
+    revalidateTag(`product:${id}`, "max");
+    revalidateTag("home-products", "max");
+
     return NextResponse.json({
       success: true,
       message: product.isDeleted
-        ? "product soft deleted successfully"
+        ? "product deleted successfully"
         : "product restored successfully",
       data: product,
     });

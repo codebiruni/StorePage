@@ -8,7 +8,7 @@ import AddCart from "./add-cart";
 import AddWishlist from "./add-wishlist";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import AddCompaire from "./add-compaire";
+
 
 export default function ProductCard({ product }: { product: any }) {
   const router = useRouter();
@@ -31,7 +31,6 @@ export default function ProductCard({ product }: { product: any }) {
       <div className="absolute top-2 right-2 flex flex-col gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
         <AddWishlist product={compaireData} />
         <AddCart product={compaireData} />
-        <AddCompaire product={compaireData} />
       </div>
 
       {/* Product Image */}
@@ -74,7 +73,7 @@ export default function ProductCard({ product }: { product: any }) {
           )}
         </div>
         {product.generalPrice.discountPercentage > 0 && (
-          <span className="text-xs text-green-600 font-medium">
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
             -{product.generalPrice.discountPercentage}% off
           </span>
         )}

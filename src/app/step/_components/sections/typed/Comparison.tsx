@@ -28,7 +28,7 @@ export default function ComparisonSection({
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div
-            className="rounded-2xl border border-black/5 bg-white p-6"
+            className="rounded-2xl border border-black/5 bg-white p-6 text-neutral-800"
             style={{ borderTop: "4px solid var(--lp-accent)" }}
           >
             <h3
@@ -46,7 +46,7 @@ export default function ComparisonSection({
               ))}
             </ul>
           </div>
-          <div className="rounded-2xl border border-black/5 bg-white p-6">
+          <div className="rounded-2xl border border-black/5 bg-white p-6 text-neutral-800">
             <h3 className="mb-4 text-lg font-semibold text-black/60">
               {data.theirsTitle || "অন্যরা"}
             </h3>

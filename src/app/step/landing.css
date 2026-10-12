@@ -1,25 +1,35 @@
 :root {
-  --lp-bg: #ffffff;
-  --lp-bg-raised: #ffffff;
-  --lp-bg-sunken: #f4f1ec;
-  --lp-bg-ink: #0b0b0a;
-  --lp-fg: #0b0b0a;
-  --lp-fg-muted: #4a4a48;
-  --lp-fg-faint: #8a8a86;
-  --lp-fg-on-ink: #f6f4ef;
-  --lp-accent: #b8533a;
-  --lp-accent-soft: rgba(184, 83, 58, 0.12);
-  --lp-line: rgba(11, 11, 10, 0.1);
-  --lp-radius: 4px;
-  --lp-radius-lg: 12px;
-  --lp-shadow: 0 1px 2px rgba(11, 11, 10, 0.06),
-    0 8px 30px rgba(11, 11, 10, 0.08);
+  /* ── Default theme tokens ("default" preset) ────────────────────────── */
+  /* ThemeProvider overwrites every --lp-* var at render time based on    */
+  /* the chosen preset + per-product overrides. These values are fallbacks */
+  /* for server-rendered snapshots before hydration.                       */
+  --lp-primary: #1f2937;
+  --lp-heading: #1f2937;
+  --lp-accent: #2563eb;
+  --lp-accent-soft: rgba(37,99,235,0.10);
 
-  --lp-font-display: var(--font-display, ui-serif, Georgia, serif);
-  --lp-font-body: var(--font-body, ui-sans-serif, system-ui, sans-serif);
-  --lp-font-mono: var(--font-mono, ui-monospace, monospace);
-  --lp-leading-display: 1.05;
-  --lp-tracking-eyebrow: 0.18em;
+  --lp-bg: #ffffff;
+  --lp-bg-raised: #f9fafb;
+  --lp-bg-sunken: #f3f4f6;
+  --lp-bg-ink: #111827;
+  --lp-card-bg: #f9fafb;
+
+  --lp-fg: #111827;
+  --lp-fg-muted: #6b7280;
+  --lp-fg-faint: #9ca3af;
+  --lp-fg-on-ink: #f9fafb;
+
+  --lp-line: rgba(31,41,55,0.10);
+  --lp-radius: 8px;
+  --lp-radius-lg: 12px;
+  --lp-btn-radius: 8px;
+  --lp-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 8px 30px rgba(0,0,0,0.08);
+
+  --lp-font-display: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --lp-font-body: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --lp-font-mono: ui-monospace, monospace;
+  --lp-leading-display: 1.08;
+  --lp-tracking-eyebrow: 0.14em;
 }
 
 .step-landing-body {
@@ -58,6 +68,26 @@
   color: var(--lp-fg-on-ink);
 }
 
+/* ─── Per-section background override wrapper ────────────────────────── */
+.lp-section-wrapper {
+  position: relative;
+  width: 100%;
+}
+.lp-section-wrapper .lp-section,
+.lp-section-wrapper footer.lp-section,
+.lp-section-wrapper header.lp-section {
+  background: var(--lp-section-bg, inherit) !important;
+  color: var(--lp-section-fg, inherit) !important;
+}
+.lp-section-wrapper[style*="--lp-section-fg"] .lp-headline {
+  color: var(--lp-section-fg) !important;
+}
+.lp-section-wrapper[style*="--lp-section-fg"] .lp-lede {
+  color: var(--lp-section-fg) !important;
+  opacity: 0.85;
+}
+
+
 /* ─── Container primitive ─────────────────────────────────────────────── */
 .lp-container {
   width: min(100%, 1200px);
@@ -94,11 +124,11 @@
 /* ─── Headline primitive ──────────────────────────────────────────────── */
 .lp-headline {
   font-family: var(--lp-font-display);
-  font-weight: 500;
+  font-weight: 700;
   line-height: var(--lp-leading-display);
   letter-spacing: -0.01em;
   margin: 0;
-  color: inherit;
+  color: var(--lp-heading, var(--lp-primary, inherit));
 }
 
 .lp-headline[data-size="display"] {
@@ -333,46 +363,7 @@
   }
 }
 
-/* ════════════════════════════════════════════════════════════════════════
-   THEME: Health — single-file demo6 layout. Reddish warm palette, light
-   canvas, classical health-product funnel: header → hero → benefits →
-   video → comparison → phone CTA → order form → footer. Bengali-first
-   typography via Hind Siliguri w/ Noto Sans Bengali fallback.
-   ════════════════════════════════════════════════════════════════════════ */
-[data-theme="health"] {
-  /* Primary — reddish brand (CTAs, phone band, sticky bar) */
-  --hp-red: #c62828;
-  --hp-red-deep: #8e1a1a;
-  --hp-red-soft: rgba(198, 40, 40, 0.12);
-  /* Secondary — used for the "ours" green dot/check */
-  --hp-green: #2e7d32;
-  --hp-green-dark: #1b5e20;
-
-  --hp-bg: #ffffff;
-  --hp-bg-soft: #fdf6f4;
-  --hp-bg-warm: #fff7f4;
-  --hp-text: #1f1f1f;
-  --hp-muted: #5d5d5d;
-  --hp-line: #ecd9d3;
-  --hp-radius: 12px;
-
-  --lp-bg: var(--hp-bg);
-  --lp-bg-sunken: var(--hp-bg-soft);
-  --lp-fg: var(--hp-text);
-  --lp-fg-muted: var(--hp-muted);
-  --lp-accent: var(--hp-red);
-  --lp-accent-soft: var(--hp-red-soft);
-  --lp-radius: 999px;
-  --lp-radius-lg: var(--hp-radius);
-
-  /* Bengali-first typography (registered in layout.tsx via next/font/google) */
-  --lp-font-display: var(--font-bangla), var(--font-bangla-fallback),
-    "Hind Siliguri", "Noto Sans Bengali", "Segoe UI", sans-serif;
-  --lp-font-body: var(--font-bangla), var(--font-bangla-fallback),
-    "Hind Siliguri", "Noto Sans Bengali", "Segoe UI", sans-serif;
-  --lp-leading-display: 1.2;
-  --lp-tracking-eyebrow: 0.12em;
-}
+/* [data-theme="health"] CSS block removed — themes are now fully driven by ThemeProvider JS tokens */
 
 .health-page {
   font-family: var(--lp-font-body);

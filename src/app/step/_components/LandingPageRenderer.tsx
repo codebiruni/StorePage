@@ -88,10 +88,11 @@ export default function LandingPageRenderer({ config, product }: Props) {
         {/* Order form lives below every editable section. Wrapped in an
             anchor target so the typed Hero / Header CTAs can scroll to it. */}
         <span id="order" />
+        {formTitleSection ? <SectionSwitch section={formTitleSection} /> : null}
         <OrderFormSection
           product={product}
-          headingText={formHeading}
-          note={formSubheading || product.landingPage?.checkoutNote}
+          headingText={formTitleSection ? "" : formHeading}
+          note={formTitleSection ? "" : (formSubheading || product.landingPage?.checkoutNote)}
         />
         {footerSection ? <SectionSwitch section={footerSection} /> : null}
       </div>
@@ -106,32 +107,78 @@ function SectionSwitch({
 }: {
   section: Section;
 }) {
-  switch (section.type) {
-    case "header":
-      return <HeaderSection data={section.data} />;
-    case "hero":
-      return <HeroSection data={section.data} />;
-    case "benefits":
-      return <BenefitsSection data={section.data} />;
-    case "trustBadge":
-      return <TrustBadgeSection data={section.data} />;
-    case "productShowcase":
-      return <ProductShowcaseSection data={section.data} />;
-    case "pricing":
-      return <PricingSection data={section.data} />;
-    case "comparison":
-      return <ComparisonSection data={section.data} />;
-    case "testimonials":
-      return <TestimonialsSection data={section.data} />;
-    case "faq":
-      return <FaqSection data={section.data} />;
-    case "countdown":
-      return <CountdownSection data={section.data} />;
-    case "footer":
-      return <FooterSection data={section.data} />;
-    case "formTitle":
-      return <FormTitleSection data={section.data} />;
-    default:
-      return null;
+  const content = (() => {
+    switch (section.type) {
+      case "header":
+        return <HeaderSection data={section.data} />;
+      case "hero":
+        return <HeroSection data={section.data} />;
+      case "benefits":
+        return <BenefitsSection data={section.data} />;
+      case "trustBadge":
+        return <TrustBadgeSection data={section.data} />;
+      case "productShowcase":
+        return <ProductShowcaseSection data={section.data} />;
+      case "pricing":
+        return <PricingSection data={section.data} />;
+      case "comparison":
+        return <ComparisonSection data={section.data} />;
+      case "testimonials":
+        return <TestimonialsSection data={section.data} />;
+      case "faq":
+        return <FaqSection data={section.data} />;
+      case "countdown":
+        return <CountdownSection data={section.data} style={section.style} />;
+      case "footer":
+        return <FooterSection data={section.data} />;
+      case "formTitle":
+        return <FormTitleSection data={section.data} />;
+      default:
+        return null;
+    }
+  })();
+
+  if (!content) return null;
+
+  if (section.style) {
+    const s = section.style;
+    const hasCustomBg = Boolean(s.backgroundColor);
+    const hasCustomFg = Boolean(s.textColor);
+    const hasCustomPadding = Boolean(s.paddingY && s.paddingY !== "normal");
+
+    if (hasCustomBg || hasCustomFg || hasCustomPadding) {
+      const wrapperStyle: React.CSSProperties & Record<`--${string}`, string> = {};
+      if (s.backgroundColor) {
+        wrapperStyle["--lp-bg"] = s.backgroundColor;
+        wrapperStyle["--lp-bg-raised"] = s.backgroundColor;
+        wrapperStyle["--lp-bg-sunken"] = s.backgroundColor;
+        wrapperStyle["--lp-bg-ink"] = s.backgroundColor;
+        wrapperStyle["--lp-section-bg"] = s.backgroundColor;
+        wrapperStyle.backgroundColor = s.backgroundColor;
+      }
+      if (s.textColor) {
+        wrapperStyle["--lp-primary"] = s.textColor;
+        wrapperStyle["--lp-heading"] = s.textColor;
+        wrapperStyle["--lp-fg"] = s.textColor;
+        wrapperStyle["--lp-fg-muted"] = s.textColor;
+        wrapperStyle["--lp-fg-on-ink"] = s.textColor;
+        wrapperStyle["--lp-section-fg"] = s.textColor;
+        wrapperStyle.color = s.textColor;
+      }
+      if (s.paddingY === "compact") {
+        wrapperStyle.paddingTop = "1.5rem";
+        wrapperStyle.paddingBottom = "1.5rem";
+      } else if (s.paddingY === "spacious") {
+        wrapperStyle.paddingTop = "6rem";
+        wrapperStyle.paddingBottom = "6rem";
+      }
+      return (
+        <div style={wrapperStyle} className="lp-section-wrapper">
+          {content}
+        </div>
+      );
+    }
   }
+
+  return content;
 }

@@ -42,6 +42,15 @@ export interface ILandingPage {
    * the social proof and the checkout form (e.g. "ফোনে অর্ডার করুন").
    */
   phoneStripNote?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  surfaceColor?: string;
+  textColor?: string;
+  headingColor?: string;
+  fontFamily?: string;
+  borderRadius?: string;
+  customCss?: string;
   [key: string]: unknown;
 }
 

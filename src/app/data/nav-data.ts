@@ -79,7 +79,6 @@ export const data = {
         { title: "All Orders", url: "/dashboard/orders" },
         { title: "Drafts & Abandoned", url: "/dashboard/orders/drafts" },
         { title: "Order Analysis", url: "/dashboard/order-analysis" },
-        { title: "Steadfast Courier", url: "/dashboard/steadfast" },
       ],
     },
     {

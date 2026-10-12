@@ -3,45 +3,18 @@
 
 import React, { useState, useEffect } from 'react'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select"
-import {
   AreaChart,
   Area,
   PieChart,
   Pie,
   Cell,
-  RadialBarChart,
-  RadialBar,
   ResponsiveContainer,
-  Legend,
   Tooltip,
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid
+  CartesianGrid,
 } from 'recharts'
 import {
   Package,
@@ -50,18 +23,26 @@ import {
   DollarSign,
   Star,
   ShoppingCart,
-  Tag,
   BarChart3,
   Target,
   Download,
   RefreshCw,
-  Zap,
   FileText,
-  Building2,
   Loader2,
-  ChevronDown
+  Zap,
+  Tag,
 } from 'lucide-react'
-import { toast } from "sonner"
+import { toast } from 'sonner'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface InventoryData {
   overview: {
@@ -98,22 +79,10 @@ interface InventoryData {
     percentage: number
   }>
   priceAnalysis: {
-    priceRanges: Array<{
-      range: string
-      count: number
-      percentage: number
-    }>
+    priceRanges: Array<{ range: string; count: number; percentage: number }>
     averageProductPrice: number
-    highestPricedProduct: {
-      name: string
-      price: number
-      category: string
-    }
-    lowestPricedProduct: {
-      name: string
-      price: number
-      category: string
-    }
+    highestPricedProduct: { name: string; price: number; category: string }
+    lowestPricedProduct: { name: string; price: number; category: string }
   }
   salesPerformance: {
     topSellingProducts: Array<{
@@ -187,26 +156,10 @@ interface InventoryData {
       deliveredOrders: number
       pendingOrders: number
     }
-    statusBreakdown: Array<{
-      status: string
-      count: number
-      percentage: number
-    }>
-    paymentBreakdown: Array<{
-      method: string
-      count: number
-      percentage: number
-    }>
-    monthlyOrders: Array<{
-      month: string
-      orders: number
-      revenue: number
-    }>
-    sourceBreakdown: Array<{
-      source: string
-      count: number
-      percentage: number
-    }>
+    statusBreakdown: Array<{ status: string; count: number; percentage: number }>
+    paymentBreakdown: Array<{ method: string; count: number; percentage: number }>
+    monthlyOrders: Array<{ month: string; orders: number; revenue: number }>
+    sourceBreakdown: Array<{ source: string; count: number; percentage: number }>
     recentOrders: Array<{
       orderId: string
       name: string
@@ -220,22 +173,21 @@ interface InventoryData {
   }
 }
 
-// Color palettes for charts
-const STOCK_COLORS = {
+// ─── Colour tokens ───────────────────────────────────────────────────────────
+
+const STOCK_COLORS: Record<string, string> = {
   'Out of Stock': '#ef4444',
-  'Critical': '#f97316',
-  'Low': '#eab308',
-  'Medium': '#22c55e',
-  'High': '#15803d'
+  Critical: '#f97316',
+  Low: '#eab308',
+  Medium: '#22c55e',
+  High: '#15803d',
 }
 
 const CATEGORY_COLORS = [
-  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-  '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+  '#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899',
+  '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#3b82f6',
 ]
 
-// Order status palette — keep the same color across charts and badges so
-// merchants can scan the dashboard without cross-referencing legends.
 const ORDER_STATUS_COLORS: Record<string, string> = {
   pending: '#f59e0b',
   confirmed: '#3b82f6',
@@ -245,20 +197,20 @@ const ORDER_STATUS_COLORS: Record<string, string> = {
   cancelled: '#ef4444',
 }
 
-const ORDER_STATUS_BADGE: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-800 border-amber-200',
-  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
-  processing: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  shipped: 'bg-sky-100 text-sky-800 border-sky-200',
-  delivered: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
+const ORDER_STATUS_PILL: Record<string, string> = {
+  pending:    'bg-amber-50  text-amber-700  border-amber-200  dark:bg-amber-950/40  dark:text-amber-400  dark:border-amber-800',
+  confirmed:  'bg-blue-50   text-blue-700   border-blue-200   dark:bg-blue-950/40   dark:text-blue-400   dark:border-blue-800',
+  processing: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800',
+  shipped:    'bg-sky-50    text-sky-700    border-sky-200    dark:bg-sky-950/40    dark:text-sky-400    dark:border-sky-800',
+  delivered:  'bg-green-50  text-green-700  border-green-200  dark:bg-green-950/40  dark:text-green-400  dark:border-green-800',
+  cancelled:  'bg-red-50    text-red-700    border-red-200    dark:bg-red-950/40    dark:text-red-400    dark:border-red-800',
 }
 
-const PAYMENT_STATUS_BADGE: Record<string, string> = {
-  paid: 'bg-green-100 text-green-800 border-green-200',
-  pending: 'bg-amber-100 text-amber-800 border-amber-200',
-  failed: 'bg-red-100 text-red-800 border-red-200',
-  refunded: 'bg-slate-100 text-slate-800 border-slate-200',
+const PAYMENT_STATUS_PILL: Record<string, string> = {
+  paid:     'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800',
+  pending:  'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800',
+  failed:   'bg-red-50   text-red-700   border-red-200   dark:bg-red-950/40   dark:text-red-400   dark:border-red-800',
+  refunded: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800',
 }
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
@@ -269,6 +221,77 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
   card: 'Card',
 }
 
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+interface KpiCardProps {
+  label: string
+  value: string
+  sub?: string
+  icon: React.ReactNode
+  accent: string   // tailwind gradient classes e.g. "from-indigo-500 to-violet-600"
+  danger?: boolean
+}
+
+function KpiCard({ label, value, sub, icon, accent, danger }: KpiCardProps) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-card border border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+      {/* subtle top accent bar */}
+      <div className={`h-1 w-full bg-gradient-to-r ${accent}`} />
+      <div className="p-5">
+        <div className="flex items-start justify-between">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+          <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white shadow`}>
+            {icon}
+          </span>
+        </div>
+        <p className={`mt-3 text-2xl font-bold tracking-tight ${danger ? 'text-red-500' : 'text-foreground'}`}>
+          {value}
+        </p>
+        {sub && <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{sub}</p>}
+      </div>
+    </div>
+  )
+}
+
+interface SectionCardProps {
+  title: string
+  description?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+  className?: string
+  action?: React.ReactNode
+}
+
+function SectionCard({ title, description, icon, children, className = '', action }: SectionCardProps) {
+  return (
+    <div className={`rounded-2xl bg-card border border-border/60 shadow-sm overflow-hidden ${className}`}>
+      <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border/40">
+        <div className="flex items-center gap-2.5">
+          {icon && (
+            <span className="text-muted-foreground">{icon}</span>
+          )}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  )
+}
+
+function StatusPill({ status, map }: { status: string; map: Record<string, string> }) {
+  const cls = map[status] ?? 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800'
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
+      {status}
+    </span>
+  )
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 
 export default function DashboardInventory() {
   const [data, setData] = useState<InventoryData | null>(null)
@@ -281,7 +304,6 @@ export default function DashboardInventory() {
       setLoading(true)
       const response = await fetch(`/api/v1/inventory?range=${timeRange}`)
       const result = await response.json()
-
       if (result.success) {
         setData(result.data)
       } else {
@@ -295,57 +317,35 @@ export default function DashboardInventory() {
     }
   }
 
-  /**
-   * POST to /api/v1/reports and stream the resulting PDF into a browser
-   * download. Falls back to a JSON error toast if the route returns
-   * anything other than application/pdf.
-   */
-  const handleExportReport = async (type: 'monthly' | 'corporate') => {
+  const handleExportReport = async () => {
     try {
-      setReportType(type)
+      setReportType('monthly')
       const res = await fetch('/api/v1/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type,
-          // For monthly reports anchor to the first day of the current month.
-          month:
-            type === 'monthly'
-              ? new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-              : undefined,
+          type: 'monthly',
+          month: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
         }),
       })
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || `Request failed (${res.status})`)
+        throw new Error((err as any).error || `Request failed (${res.status})`)
       }
-
       const contentType = res.headers.get('Content-Type') || ''
-      if (!contentType.includes('application/pdf')) {
-        throw new Error('Server did not return a PDF.')
-      }
-
+      if (!contentType.includes('application/pdf')) throw new Error('Server did not return a PDF.')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       const disposition = res.headers.get('Content-Disposition') || ''
-      const filenameMatch = disposition.match(/filename="([^"]+)"/i)
-      a.download = filenameMatch?.[1] ||
-        (type === 'corporate'
-          ? `corporate-overview-${new Date().toISOString().slice(0, 10)}.pdf`
-          : `monthly-sales-${new Date().toISOString().slice(0, 7)}.pdf`)
+      const match = disposition.match(/filename="([^"]+)"/i)
+      a.download = match?.[1] ?? `monthly-sales-${new Date().toISOString().slice(0, 7)}.pdf`
       document.body.appendChild(a)
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
-
-      toast.success(
-        type === 'corporate'
-          ? 'Corporate Overview PDF downloaded.'
-          : 'Monthly Sales PDF downloaded.',
-      )
+      toast.success('Monthly Sales PDF downloaded.')
     } catch (err) {
       console.error('Report export failed:', err)
       toast.error(err instanceof Error ? err.message : 'Report export failed')
@@ -359,173 +359,132 @@ export default function DashboardInventory() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange])
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-BD', {
-      style: 'currency',
-      currency: 'BDT',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  // ── Formatters ──────────────────────────────────────────────────────────────
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat().format(num)
-  }
+  const fmt = (amount: number) =>
+    new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(amount)
 
-  // Prepare data for charts from actual API data
-  const stockLevelData = data?.stockAnalysis.stockLevels || []
-  const priceRangeData = data?.priceAnalysis.priceRanges || []
-  const salesCategoryData = data?.salesPerformance.categorySales.slice(0, 6) || []
-  const monthlyTrendsData = data?.inventoryTrends.monthlyInventoryChange || []
-  const topSellingProducts = data?.salesPerformance.topSellingProducts.slice(0, 5) || []
-  const bestRatedProducts = data?.productPerformance.bestRatedProducts.slice(0, 5) || []
+  const fmtNum = (n: number) => new Intl.NumberFormat().format(n)
 
-  // Area Chart Data - Using actual monthly inventory trends
-  const areaChartData = monthlyTrendsData.map(item => ({
-    name: item.month,
-    products: item.productsAdded,
-    value: Math.round(item.inventoryValueChange / 1000),
-    movement: item.stockMovement
-  }))
-
-
-
-  // Radial Chart Data - Stock level distribution
-  const radialData = stockLevelData.map(level => ({
-    name: level.level,
-    value: level.percentage,
-    count: level.count,
-    fill: STOCK_COLORS[level.level as keyof typeof STOCK_COLORS]
-  }))
-
-  // Pie Chart Data - Price range distribution
-  const pieChartData = priceRangeData.map(range => ({
-    name: range.range,
-    value: range.count,
-    percentage: range.percentage
-  }))
-
-  // Bar Chart Data - Top selling products
-  const barChartData = topSellingProducts.map(product => ({
-    name: product.name.length > 15 ? product.name.substring(0, 15) + '...' : product.name,
-    sales: product.salesCount,
-    revenue: product.revenue
-  }))
-
-  // Order Insights — pulled once, used for the KPI strip, the trend chart,
-  // the status donut, and the recent-orders list card below.
-  const orderInsights = data?.orderInsights
-  const orderTotals = orderInsights?.totals
-  const monthlyOrdersData = orderInsights?.monthlyOrders ?? []
-  const statusBreakdownData = orderInsights?.statusBreakdown ?? []
-  const paymentBreakdownData = orderInsights?.paymentBreakdown ?? []
-  const sourceBreakdownData = orderInsights?.sourceBreakdown ?? []
-  const recentOrdersData = orderInsights?.recentOrders ?? []
-
-  // Orders trend area chart data. Revenue is converted to thousands for
-  // parity with the existing Inventory Trends chart so axes are comparable.
-  const ordersTrendChartData = monthlyOrdersData.map((row) => ({
-    name: row.month,
-    orders: row.orders,
-    revenue: Math.round(row.revenue / 1000),
-  }))
-
-  // Donut chart: order status breakdown. Colors fall back to a muted blue if
-  // the API ever returns an unfamiliar status (defensive — the enum should
-  // already cover every value).
-  const orderStatusChartData = statusBreakdownData.map((row) => ({
-    name: row.status,
-    value: row.count,
-    percentage: row.percentage,
-    fill: ORDER_STATUS_COLORS[row.status] ?? '#3b82f6',
-  }))
-
-  // Helper used everywhere we render a status/method/payment badge so the
-  // styling and labels stay consistent across the dashboard.
-  const getStatusBadgeClass = (status: string) =>
-    ORDER_STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-800 border-slate-200'
-  const getPaymentBadgeClass = (status: string) =>
-    PAYMENT_STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-800 border-slate-200'
-  const getPaymentMethodLabel = (method: string) =>
-    PAYMENT_METHOD_LABEL[method] ?? method
-
-  const formatDate = (iso: string) => {
+  const fmtDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString('en-BD', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
+      return new Date(iso).toLocaleDateString('en-BD', { day: '2-digit', month: 'short', year: 'numeric' })
     } catch {
       return iso
     }
   }
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border rounded-lg p-3 shadow-lg">
-          <p className="font-semibold">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {entry.name.includes('revenue') || entry.name.includes('Value') ? formatCurrency(entry.value) : formatNumber(entry.value)}
-            </p>
-          ))}
-        </div>
-      )
-    }
-    return null
+  const getPaymentMethodLabel = (m: string) => PAYMENT_METHOD_LABEL[m] ?? m
+
+  // ── Chart datasets ───────────────────────────────────────────────────────────
+
+  const monthlyTrendsData = data?.inventoryTrends.monthlyInventoryChange ?? []
+  const salesCategoryData = data?.salesPerformance.categorySales.slice(0, 6) ?? []
+  const topSellingProducts = data?.salesPerformance.topSellingProducts.slice(0, 5) ?? []
+  const bestRatedProducts = data?.productPerformance.bestRatedProducts.slice(0, 5) ?? []
+  const stockLevelData = data?.stockAnalysis.stockLevels ?? []
+  const priceRangeData = data?.priceAnalysis.priceRanges ?? []
+
+  const areaChartData = monthlyTrendsData.map((item) => ({
+    name: item.month,
+    Products: item.productsAdded,
+    Value: Math.round(item.inventoryValueChange / 1000),
+  }))
+
+  const pieChartData = priceRangeData.map((r) => ({ name: r.range, value: r.count }))
+
+  const barChartData = topSellingProducts.map((p) => ({
+    name: p.name.length > 14 ? p.name.substring(0, 14) + '…' : p.name,
+    Sales: p.salesCount,
+    Revenue: p.revenue,
+  }))
+
+  const orderInsights = data?.orderInsights
+  const orderTotals = orderInsights?.totals
+  const monthlyOrdersData = orderInsights?.monthlyOrders ?? []
+  const statusBreakdownData = orderInsights?.statusBreakdown ?? []
+  const paymentBreakdownData = orderInsights?.paymentBreakdown ?? []
+  const recentOrdersData = orderInsights?.recentOrders ?? []
+
+  const ordersTrendData = monthlyOrdersData.map((r) => ({
+    name: r.month,
+    Orders: r.orders,
+    Revenue: Math.round(r.revenue / 1000),
+  }))
+
+  const orderStatusPieData = statusBreakdownData.map((r) => ({
+    name: r.status,
+    value: r.count,
+    fill: ORDER_STATUS_COLORS[r.status] ?? '#3b82f6',
+  }))
+
+  // ── Custom tooltip ───────────────────────────────────────────────────────────
+
+  const ChartTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null
+    return (
+      <div className="rounded-xl border border-border bg-popover px-3 py-2.5 shadow-xl text-xs">
+        <p className="font-semibold text-foreground mb-1">{label}</p>
+        {payload.map((entry: any, i: number) => (
+          <p key={i} style={{ color: entry.color }} className="leading-5">
+            {entry.name}:{' '}
+            {entry.name === 'Revenue' || entry.name === 'Value'
+              ? `${fmtNum(entry.value)}K BDT`
+              : fmtNum(entry.value)}
+          </p>
+        ))}
+      </div>
+    )
   }
+
+  // ── Loading / empty states ───────────────────────────────────────────────────
 
   if (loading && !data) {
     return (
-      <div className="container mx-auto py-6">
-        <Card>
-          <CardContent className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Loading inventory dashboard...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex h-96 items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-sm">Loading dashboard…</p>
+        </div>
       </div>
     )
   }
 
   if (!data) {
     return (
-      <div className="container mx-auto py-6">
-        <Card>
-          <CardContent className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold">No Data Available</h3>
-              <p className="text-muted-foreground mb-4">
-                Unable to load inventory data
-              </p>
-              <Button onClick={fetchInventoryData}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex h-96 items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Package className="h-12 w-12 text-muted-foreground" />
+          <div>
+            <p className="font-semibold">No data available</p>
+            <p className="text-sm text-muted-foreground">Unable to load inventory data</p>
+          </div>
+          <Button size="sm" onClick={fetchInventoryData}>
+            <RefreshCw className="h-3.5 w-3.5 mr-2" />
+            Try again
+          </Button>
+        </div>
       </div>
     )
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8 pb-10">
+
+      {/* ── Page header ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory </h1>
-          <p className="text-muted-foreground">
-            Comprehensive inventory analytics and stock management overview
+          <h1 className="text-2xl font-bold tracking-tight">Analytics Overview</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Real-time inventory, sales &amp; order intelligence
           </p>
         </div>
-        <div className="flex gap-2">
-          <Select value={timeRange} onValueChange={(value: '7d' | '30d' | '90d') => setTimeRange(value)}>
-            <SelectTrigger className="w-32">
+
+        <div className="flex items-center gap-2">
+          <Select value={timeRange} onValueChange={(v: '7d' | '30d' | '90d') => setTimeRange(v)}>
+            <SelectTrigger className="h-9 w-32 text-xs rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -535,664 +494,409 @@ export default function DashboardInventory() {
             </SelectContent>
           </Select>
 
-          <Button onClick={fetchInventoryData} variant="outline" className="gap-2">
-            <RefreshCw className="h-4 w-4" />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 gap-1.5 rounded-lg text-xs"
+            onClick={fetchInventoryData}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                className="gap-2"
-                disabled={reportType !== null}
-                aria-label="Export PDF report"
-              >
-                {reportType ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                Export
-                <ChevronDown className="h-3 w-3 opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>PDF Reports</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => handleExportReport('monthly')}
-                className="flex items-start gap-3 py-3"
-              >
-                <FileText className="h-4 w-4 mt-0.5 text-indigo-600" />
-                <div className="flex flex-col">
-                  <span className="font-medium">Monthly Sales Report</span>
-                  <span className="text-xs text-muted-foreground">
-                    KPIs, MoM trend, top sellers &amp; payment mix for this month
-                  </span>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleExportReport('corporate')}
-                className="flex items-start gap-3 py-3"
-              >
-                <Building2 className="h-4 w-4 mt-0.5 text-indigo-600" />
-                <div className="flex flex-col">
-                  <span className="font-medium">Corporate Overview</span>
-                  <span className="text-xs text-muted-foreground">
-                    Lifetime catalogue, fulfilment, inventory &amp; top categories
-                  </span>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+          <Button
+            size="sm"
+            className="h-9 gap-1.5 rounded-lg text-xs"
+            disabled={reportType !== null}
+            onClick={handleExportReport}
+          >
+            {reportType ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            <FileText className="h-3.5 w-3.5" />
+            Monthly Report
+          </Button>
         </div>
       </div>
 
-      {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(data.overview.totalProducts)}</div>
-            <p className="text-xs text-muted-foreground">
-              {data.overview.totalCategories} categories • {data.overview.totalSubCategories} sub-categories
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.overview.totalInventoryValue)}</div>
-            <p className="text-xs text-muted-foreground">
-              Avg: {formatCurrency(data.priceAnalysis.averageProductPrice)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stock Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-500">
-              {data.overview.lowStockProducts + data.overview.outOfStockProducts}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {data.overview.outOfStockProducts} out of stock • {data.overview.lowStockProducts} low stock
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.overview.averageRating.toFixed(1)}/5</div>
-            <p className="text-xs text-muted-foreground">
-              Based on product reviews and ratings
-            </p>
-          </CardContent>
-        </Card>
+      {/* ── Inventory KPI row ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <KpiCard
+          label="Total Products"
+          value={fmtNum(data.overview.totalProducts)}
+          sub={`${data.overview.totalCategories} categories · ${data.overview.totalSubCategories} sub-categories`}
+          icon={<Package className="h-4 w-4" />}
+          accent="from-indigo-500 to-violet-600"
+        />
+        <KpiCard
+          label="Inventory Value"
+          value={fmt(data.overview.totalInventoryValue)}
+          sub={`Avg price ${fmt(data.priceAnalysis.averageProductPrice)}`}
+          icon={<DollarSign className="h-4 w-4" />}
+          accent="from-emerald-500 to-teal-600"
+        />
+        <KpiCard
+          label="Stock Alerts"
+          value={String(data.overview.lowStockProducts + data.overview.outOfStockProducts)}
+          sub={`${data.overview.outOfStockProducts} out of stock · ${data.overview.lowStockProducts} low`}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          accent="from-orange-500 to-red-500"
+          danger
+        />
+        <KpiCard
+          label="Avg Rating"
+          value={`${data.overview.averageRating.toFixed(1)} / 5`}
+          sub="Based on product reviews"
+          icon={<Star className="h-4 w-4" />}
+          accent="from-amber-400 to-orange-500"
+        />
       </div>
 
-      {/* Orders KPI Strip */}
+      {/* ── Orders KPI row ────────────────────────────────────────────────────── */}
       {orderTotals && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(orderTotals.totalOrders)}</div>
-              <p className="text-xs text-muted-foreground">
-                {orderTotals.pendingOrders} pending • {orderTotals.deliveredOrders} delivered
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(orderTotals.totalRevenue)}</div>
-              <p className="text-xs text-muted-foreground">
-                {orderTotals.cancelledOrders} cancelled
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(orderTotals.averageOrderValue)}</div>
-              <p className="text-xs text-muted-foreground">
-                Excluding cancelled orders
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Order Sources</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {sourceBreakdownData.length > 0 ? (
-                  sourceBreakdownData.slice(0, 2).map((source) => (
-                    <div key={source.source} className="flex items-center justify-between text-xs">
-                      <span className="capitalize text-muted-foreground">{source.source}</span>
-                      <span className="font-medium">
-                        {formatNumber(source.count)}{' '}
-                        <span className="text-muted-foreground">
-                          ({source.percentage.toFixed(0)}%)
-                        </span>
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground">No orders yet</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Top Payment</CardTitle>
-              <Tag className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {paymentBreakdownData.length > 0 ? (
-                <>
-                  <div className="text-base font-bold leading-tight">
-                    {getPaymentMethodLabel(paymentBreakdownData[0].method)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {formatNumber(paymentBreakdownData[0].count)} orders •{' '}
-                    {paymentBreakdownData[0].percentage.toFixed(0)}%
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">No payments yet</p>
-              )}
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <KpiCard
+            label="Total Orders"
+            value={fmtNum(orderTotals.totalOrders)}
+            sub={`${orderTotals.pendingOrders} pending · ${orderTotals.deliveredOrders} delivered`}
+            icon={<ShoppingCart className="h-4 w-4" />}
+            accent="from-sky-500 to-blue-600"
+          />
+          <KpiCard
+            label="Total Revenue"
+            value={fmt(orderTotals.totalRevenue)}
+            sub={`${orderTotals.cancelledOrders} cancelled orders`}
+            icon={<DollarSign className="h-4 w-4" />}
+            accent="from-green-500 to-emerald-600"
+          />
+          <KpiCard
+            label="Avg Order Value"
+            value={fmt(orderTotals.averageOrderValue)}
+            sub="Excluding cancelled orders"
+            icon={<TrendingUp className="h-4 w-4" />}
+            accent="from-pink-500 to-rose-600"
+          />
+          <KpiCard
+            label="Top Payment"
+            value={paymentBreakdownData.length > 0 ? getPaymentMethodLabel(paymentBreakdownData[0].method) : '—'}
+            sub={
+              paymentBreakdownData.length > 0
+                ? `${fmtNum(paymentBreakdownData[0].count)} orders · ${paymentBreakdownData[0].percentage.toFixed(0)}%`
+                : undefined
+            }
+            icon={<Tag className="h-4 w-4" />}
+            accent="from-purple-500 to-indigo-600"
+          />
         </div>
       )}
 
-      {/* Orders Charts Section */}
-      {orderInsights && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Orders Trend
-              </CardTitle>
-              <CardDescription>
-                Monthly order volume and revenue for the selected period
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {ordersTrendChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={ordersTrendChartData}>
-                    <defs>
-                      <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
-                      </linearGradient>
-                      <linearGradient id="colorOrdersRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0.1} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Area
-                      type="monotone"
-                      dataKey="orders"
-                      stroke="#3b82f6"
-                      fillOpacity={1}
-                      fill="url(#colorOrders)"
-                      name="Orders"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="#16a34a"
-                      fillOpacity={1}
-                      fill="url(#colorOrdersRevenue)"
-                      name="Revenue (in 000's)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-sm text-muted-foreground">
-                  No orders in the selected period
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Order Status Breakdown
-              </CardTitle>
-              <CardDescription>
-                Distribution of orders across fulfilment statuses
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {orderStatusChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={orderStatusChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {orderStatusChartData.map((entry, index) => (
-                        <Cell key={`status-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value, name) => [
-                        `${formatNumber(Number(value))} orders`,
-                        String(name),
-                      ]}
-                    />
-                    <Legend
-                      formatter={(value: string) => (
-                        <span className="capitalize text-xs">{value}</span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-sm text-muted-foreground">
-                  No order data yet
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Inventory Trends Chart */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Inventory Trends
-            </CardTitle>
-            <CardDescription>
-              Monthly inventory changes and value trends
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={areaChartData}>
+      {/* ── Chart row 1 – Orders & Inventory trends ──────────────────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <SectionCard
+          title="Orders Trend"
+          description="Monthly order volume and revenue"
+          icon={<TrendingUp className="h-4 w-4" />}
+        >
+          {ordersTrendData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={ordersTrendData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorProducts" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
+                  <linearGradient id="gOrders" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                  <linearGradient id="gRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Area type="monotone" dataKey="products" stroke="#3b82f6" fillOpacity={1} fill="url(#colorProducts)" name="Products Added" />
-                <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={1} fill="url(#colorValue)" name="Value (in 000's)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Area type="monotone" dataKey="Orders" stroke="#3b82f6" strokeWidth={2} fill="url(#gOrders)" dot={false} />
+                <Area type="monotone" dataKey="Revenue" stroke="#16a34a" strokeWidth={2} fill="url(#gRevenue)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          ) : (
+            <EmptyChart />
+          )}
+        </SectionCard>
 
-        {/* Price Range Distribution */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Tag className="h-5 w-5" />
-              Price Range Distribution
-            </CardTitle>
-            <CardDescription>
-              Product distribution across different price ranges
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [formatNumber(Number(value)), 'Products']} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Stock Level Distribution */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Stock Level Distribution
-            </CardTitle>
-            <CardDescription>
-              Percentage distribution across different stock levels
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <RadialBarChart innerRadius="20%" outerRadius="100%" barSize={20} data={radialData}>
-                <RadialBar
-                  dataKey="value"
-                  background
-                  forceCornerRadius
-                  cornerRadius={4}
-                />
-                <Legend />
-                <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
-              </RadialBarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Top Selling Products */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Top Selling Products
-            </CardTitle>
-            <CardDescription>
-              Best performing products by sales count and revenue
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip formatter={(value, name) => [name === 'revenue' ? formatCurrency(Number(value)) : formatNumber(Number(value)), name]} />
-                <Legend />
-                <Bar dataKey="sales" fill="#3b82f6" name="Sales Count" />
-                <Bar dataKey="revenue" fill="#10b981" name="Revenue" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <SectionCard
+          title="Inventory Trends"
+          description="Monthly products added and value changes"
+          icon={<BarChart3 className="h-4 w-4" />}
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={areaChartData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gProducts" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Area type="monotone" dataKey="Products" stroke="#6366f1" strokeWidth={2} fill="url(#gProducts)" dot={false} />
+              <Area type="monotone" dataKey="Value" stroke="#10b981" strokeWidth={2} fill="url(#gValue)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </SectionCard>
       </div>
 
-      {/* Detailed Analysis Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-        {/* Critical Stock Alerts */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Critical Stock Alerts
-            </CardTitle>
-            <CardDescription>
-              Products that need immediate attention
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {data.stockAnalysis.criticalProducts.slice(0, 5).map((product) => (
-                <div key={product._id} className="flex items-center justify-between p-3 border border-red-200 rounded-lg bg-red-50">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${product.quentity === 0 ? 'bg-red-500' : 'bg-orange-500'
-                      }`} />
-                    <div>
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">{product.category}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-bold text-sm ${product.quentity === 0 ? 'text-red-600' : 'text-orange-600'
-                      }`}>
-                      {product.quentity} in stock
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(product.stockValue)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── Chart row 2 – Top sellers bar + Order status donut ───────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <SectionCard
+          className="lg:col-span-3"
+          title="Top Selling Products"
+          description="By sales count"
+          icon={<ShoppingCart className="h-4 w-4" />}
+        >
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={barChartData} margin={{ top: 4, right: 4, left: -16, bottom: 60 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+              <XAxis dataKey="name" angle={-35} textAnchor="end" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+              <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Bar dataKey="Sales" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={36} />
+            </BarChart>
+          </ResponsiveContainer>
+        </SectionCard>
 
-        {/* Category Performance */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Category Performance
-            </CardTitle>
-            <CardDescription>
-              Sales performance across categories
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {salesCategoryData.slice(0, 5).map((category, index) => (
-                <div key={category.category} className="space-y-2">
-                  <div className="flex items-center justify-between">
+        <SectionCard
+          className="lg:col-span-2"
+          title="Order Status"
+          description="Fulfillment breakdown"
+          icon={<Target className="h-4 w-4" />}
+        >
+          {orderStatusPieData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={orderStatusPieData} cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={3} dataKey="value">
+                    {orderStatusPieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v, name) => [`${fmtNum(Number(v))} orders`, String(name)]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 space-y-2">
+                {orderStatusPieData.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }}
-                      />
-                      <span className="font-medium text-sm">{category.category}</span>
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
+                      <span className="capitalize text-muted-foreground">{d.name}</span>
                     </div>
-                    <div className="text-right">
-                      <span className="font-bold text-sm">{formatCurrency(category.revenue)}</span>
-                      <Badge variant="outline" className="ml-2">{category.salesCount}</Badge>
-                    </div>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${category.percentage}%`,
-                        backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length]
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity & Best Rated */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              Recent Activity & Top Rated
-            </CardTitle>
-            <CardDescription>
-              Latest updates and best performing products
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-sm mb-2">New Products</h4>
-                <div className="space-y-2">
-                  {data.recentActivity.newProducts.slice(0, 2).map((product, index) => (
-                    <div key={index} className="flex items-center gap-3 p-2 border rounded-lg">
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">{product.category}</p>
-                      </div>
-                      <Badge variant="outline">{formatCurrency(product.price)}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Best Rated Products</h4>
-                <div className="space-y-2">
-                  {bestRatedProducts.slice(0, 3).map((product, index) => (
-                    <div key={index} className="flex items-center gap-3 p-2 border rounded-lg">
-                      <div className="flex items-center gap-1 text-amber-500">
-                        <Star className="h-3 w-3 fill-current" />
-                        <span className="text-xs font-bold">{product.averageRating.toFixed(1)}</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">{product.category}</p>
-                      </div>
-                      <Badge variant="secondary">{product.reviewCount} reviews</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Orders */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Recent Orders
-            </CardTitle>
-            <CardDescription>
-              The latest orders placed across the storefront and landing pages
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentOrdersData.length > 0 ? (
-              <div className="space-y-3">
-                {recentOrdersData.map((order, index) => (
-                  <div
-                    key={`${order.orderId}-${order.createdAt}-${index}`}
-                    className="flex flex-col gap-2 p-3 border rounded-lg"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-mono text-xs font-semibold truncate">
-                        {order.orderId}
-                      </p>
-                      <span
-                        className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border ${getStatusBadgeClass(order.orderStatus)}`}
-                      >
-                        {order.orderStatus}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{order.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {order.number} • {getPaymentMethodLabel(order.paymentMethod)}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="font-bold text-sm">{formatCurrency(order.grandTotal)}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatDate(order.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border ${getPaymentBadgeClass(order.paymentStatus)}`}
-                      >
-                        {order.paymentStatus}
-                      </span>
-                    </div>
+                    <span className="font-semibold">{fmtNum(d.value)}</span>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                No orders yet.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            </>
+          ) : (
+            <EmptyChart />
+          )}
+        </SectionCard>
       </div>
 
-      {/* Stock Status Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Stock Status Overview</CardTitle>
-          <CardDescription>
-            Detailed breakdown of current stock levels across all products
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {stockLevelData.map((level) => (
-              <div key={level.level} className="text-center p-4 rounded-lg border">
-                <div
-                  className="w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center text-white text-sm font-bold"
-                  style={{ backgroundColor: STOCK_COLORS[level.level as keyof typeof STOCK_COLORS] }}
-                >
-                  {level.count}
-                </div>
-                <p className="font-semibold text-sm mb-1">{level.level}</p>
-                <p className="text-xs text-muted-foreground">{level.percentage.toFixed(1)}% of total</p>
-                <p className="text-sm font-medium mt-2">{formatCurrency(level.value)}</p>
+      {/* ── Row 3 – Price range pie + Stock levels ───────────────────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <SectionCard
+          title="Price Range Distribution"
+          description="Products across price tiers"
+          icon={<Tag className="h-4 w-4" />}
+        >
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={pieChartData}
+                cx="50%"
+                cy="50%"
+                outerRadius={75}
+                dataKey="value"
+              >
+                {pieChartData.map((_, i) => (
+                  <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v, name) => [fmtNum(Number(v)) + ' products', String(name)]} />
+            </PieChart>
+          </ResponsiveContainer>
+          {/* Legend list — no overlap risk */}
+          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+            {pieChartData.map((item, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
+                />
+                <span className="text-muted-foreground truncate">{item.name}</span>
+                <span className="ml-auto font-semibold">{fmtNum(item.value)}</span>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </SectionCard>
+
+        <SectionCard
+          title="Stock Level Breakdown"
+          description="Count and value by stock status"
+          icon={<Package className="h-4 w-4" />}
+        >
+          <div className="space-y-3">
+            {stockLevelData.map((level) => (
+              <div key={level.level}>
+                <div className="flex items-center justify-between mb-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: STOCK_COLORS[level.level] }}
+                    />
+                    <span className="font-medium">{level.level}</span>
+                    <span className="text-muted-foreground">({level.count})</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold">{level.percentage.toFixed(1)}%</span>
+                    <span className="text-muted-foreground ml-2">{fmt(level.value)}</span>
+                  </div>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${level.percentage}%`, backgroundColor: STOCK_COLORS[level.level] }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* ── Row 4 – Detail cards ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+
+        {/* Critical stock alerts */}
+        <SectionCard
+          title="Critical Stock"
+          description="Needs immediate attention"
+          icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
+        >
+          <div className="space-y-2">
+            {data.stockAnalysis.criticalProducts.slice(0, 5).map((p) => (
+              <div key={p._id} className="flex items-center justify-between rounded-lg border border-red-100 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${p.quentity === 0 ? 'bg-red-500' : 'bg-orange-500'}`} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">{p.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{p.category}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 ml-2">
+                  <p className={`text-xs font-bold ${p.quentity === 0 ? 'text-red-600' : 'text-orange-600'}`}>{p.quentity} left</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Category performance */}
+        <SectionCard
+          title="Category Performance"
+          description="Revenue by category"
+          icon={<Target className="h-4 w-4" />}
+        >
+          <div className="space-y-3.5">
+            {salesCategoryData.slice(0, 5).map((cat, i) => (
+              <div key={cat.category}>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }} />
+                    <span className="font-medium truncate max-w-[100px]">{cat.category}</span>
+                  </div>
+                  <span className="font-semibold">{fmt(cat.revenue)}</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${cat.percentage}%`, backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Best rated & new products */}
+        <SectionCard
+          title="Top Rated Products"
+          description="Highest rated by customers"
+          icon={<Zap className="h-4 w-4" />}
+        >
+          <div className="space-y-2">
+            {bestRatedProducts.slice(0, 4).map((p, i) => (
+              <div key={i} className="flex items-center gap-2.5 rounded-lg border border-border/50 p-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40 shrink-0">
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium truncate">{p.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{p.category}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs font-bold">{p.averageRating.toFixed(1)}</p>
+                  <p className="text-[10px] text-muted-foreground">{p.reviewCount} reviews</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Recent orders */}
+        <SectionCard
+          title="Recent Orders"
+          description="Latest across all channels"
+          icon={<ShoppingCart className="h-4 w-4" />}
+        >
+          {recentOrdersData.length > 0 ? (
+            <div className="space-y-2">
+              {recentOrdersData.map((order, i) => (
+                <div key={`${order.orderId}-${i}`} className="rounded-lg border border-border/50 p-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-mono text-[10px] font-semibold text-muted-foreground truncate">{order.orderId}</p>
+                    <StatusPill status={order.orderStatus} map={ORDER_STATUS_PILL} />
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{order.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{getPaymentMethodLabel(order.paymentMethod)}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-bold">{fmt(order.grandTotal)}</p>
+                      <StatusPill status={order.paymentStatus} map={PAYMENT_STATUS_PILL} />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">{fmtDate(order.createdAt)}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center py-8">No orders yet</p>
+          )}
+        </SectionCard>
+      </div>
+    </div>
+  )
+}
+
+function EmptyChart() {
+  return (
+    <div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
+      No data for the selected period
     </div>
   )
 }

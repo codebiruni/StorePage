@@ -61,5 +61,8 @@ export interface ISiteInfo {
     url: string;
   }[];
   marqueeText: string;
+  themeColor?: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
   courier?: ICourierCredentials;
 }

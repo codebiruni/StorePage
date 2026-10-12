@@ -73,6 +73,45 @@ export default function SiteConfigProvider({
     void refresh();
   }, [refresh]);
 
+  // Synchronize CSS custom properties on document root so buttons and primary
+  // accents across the frontend ecommerce respond instantly to branding edits.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (config.buttonColor) {
+      root.style.setProperty("--primary", config.buttonColor, "important");
+      root.style.setProperty("--color-primary", config.buttonColor, "important");
+      root.style.setProperty("--ring", config.buttonColor, "important");
+      root.style.setProperty("--theme-button-bg", config.buttonColor, "important");
+      root.style.setProperty("--lp-accent", config.buttonColor, "important");
+    }
+    if (config.buttonTextColor) {
+      root.style.setProperty("--primary-foreground", config.buttonTextColor, "important");
+      root.style.setProperty("--color-primary-foreground", config.buttonTextColor, "important");
+      root.style.setProperty("--theme-button-fg", config.buttonTextColor, "important");
+    }
+
+    // Also update the dynamic <style id="site-button-colors"> tag in <head>
+    let styleTag = document.getElementById("site-button-colors") as HTMLStyleElement | null;
+    if (!styleTag) {
+      styleTag = document.createElement("style");
+      styleTag.id = "site-button-colors";
+      document.head.appendChild(styleTag);
+    }
+    if (config.buttonColor) {
+      styleTag.textContent = `:root, .dark, [data-theme], body {
+  --primary: ${config.buttonColor} !important;
+  --color-primary: ${config.buttonColor} !important;
+  --theme-button-bg: ${config.buttonColor} !important;
+  --ring: ${config.buttonColor} !important;
+  --lp-accent: ${config.buttonColor} !important;
+  ${config.buttonTextColor ? `--primary-foreground: ${config.buttonTextColor} !important;
+  --color-primary-foreground: ${config.buttonTextColor} !important;
+  --theme-button-fg: ${config.buttonTextColor} !important;` : ""}
+}`;
+    }
+  }, [config.buttonColor, config.buttonTextColor]);
+
   const value = useMemo(
     () => ({ config, loading, refresh }),
     [config, loading, refresh],
@@ -104,7 +143,12 @@ function getClientEnvDefaults(): SiteConfig {
       "Quality products, fast delivery",
     ),
     logo: env("NEXT_PUBLIC_DEFAULT_LOGO", "/logo.png"),
-    themeColor: env("NEXT_PUBLIC_THEME_COLOR", "#000000"),
+    themeColor: env("NEXT_PUBLIC_THEME_COLOR", "#0f172a"),
+    buttonColor: env(
+      "NEXT_PUBLIC_BUTTON_COLOR",
+      env("NEXT_PUBLIC_THEME_COLOR", "#0f172a"),
+    ),
+    buttonTextColor: env("NEXT_PUBLIC_BUTTON_TEXT_COLOR", "#ffffff"),
     contact: {
       email: env("NEXT_PUBLIC_CONTACT_EMAIL"),
       phone: env("NEXT_PUBLIC_CONTACT_PHONE"),

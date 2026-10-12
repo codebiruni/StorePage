@@ -14,6 +14,8 @@ function bustLandingCache(id: string) {
   try {
     revalidateTag(productTag(id), "default");
     revalidatePath(`/step/${id}`);
+    revalidatePath("/dashboard/products");
+    revalidatePath("/");
     revalidateTag(HOME_PRODUCTS_TAG, "max");
   } catch (e) {
     console.warn("revalidate failed (non-fatal):", e);

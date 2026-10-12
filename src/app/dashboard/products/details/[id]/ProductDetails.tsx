@@ -117,6 +117,7 @@ export default function ProductDetails() {
   }, [id]);
 
   const handleDelete = async () => {
+    setDeleteDialogOpen(false);
     try {
       const response = await fetch(`/api/v1/product/status/${id}`, {
         method: "DELETE",
@@ -138,8 +139,6 @@ export default function ProductDetails() {
       toast.error(
         err instanceof Error ? err.message : "Error deleting product"
       );
-    } finally {
-      setDeleteDialogOpen(false);
     }
   };
 

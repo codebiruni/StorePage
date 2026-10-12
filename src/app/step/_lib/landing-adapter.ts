@@ -22,6 +22,13 @@ import {
 export type FlatLandingPage = ILandingPage & {
   primaryColor?: string;
   accentColor?: string;
+  backgroundColor?: string;
+  surfaceColor?: string;
+  textColor?: string;
+  headingColor?: string;
+  fontFamily?: string;
+  borderRadius?: string;
+  customCss?: string;
   sections?: LandingConfig["sections"];
   updatedAt?: string;
 };
@@ -54,6 +61,13 @@ export function flatToConfig(
         presetId,
         primaryColor: flat.primaryColor,
         accentColor: flat.accentColor,
+        backgroundColor: flat.backgroundColor,
+        surfaceColor: flat.surfaceColor,
+        textColor: flat.textColor,
+        headingColor: flat.headingColor,
+        fontFamily: flat.fontFamily,
+        borderRadius: flat.borderRadius,
+        customCss: flat.customCss,
       },
       sections: storedSections,
       updatedAt: flat.updatedAt,
@@ -66,7 +80,7 @@ export function flatToConfig(
  * Project a `LandingConfig` back to the flat shape the schema (and
  * downstream consumers) understand. The previously-stored flat fields are
  * carried through unchanged, and `sections[]`, `primaryColor`, and
- * `accentColor` are layered on top so the persisted JSON has both views
+ * styling overrides are layered on top so the persisted JSON has both views
  * available until callers move off the flat shape.
  */
 export function configToFlat(
@@ -78,5 +92,12 @@ export function configToFlat(
   base.updatedAt = new Date().toISOString();
   if (config.theme.primaryColor) base.primaryColor = config.theme.primaryColor;
   if (config.theme.accentColor) base.accentColor = config.theme.accentColor;
+  if (config.theme.backgroundColor) base.backgroundColor = config.theme.backgroundColor;
+  if (config.theme.surfaceColor) base.surfaceColor = config.theme.surfaceColor;
+  if (config.theme.textColor) base.textColor = config.theme.textColor;
+  if (config.theme.headingColor) base.headingColor = config.theme.headingColor;
+  if (config.theme.fontFamily) base.fontFamily = config.theme.fontFamily;
+  if (config.theme.borderRadius) base.borderRadius = config.theme.borderRadius;
+  if (config.theme.customCss) base.customCss = config.theme.customCss;
   return base;
 }

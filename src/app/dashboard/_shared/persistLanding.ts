@@ -56,6 +56,13 @@ export function buildLandingPagePayload(landingValue: LandingFormValue) {
   }
   if (lv.primaryColor) payload.primaryColor = lv.primaryColor;
   if (lv.accentColor) payload.accentColor = lv.accentColor;
+  if (lv.backgroundColor) payload.backgroundColor = lv.backgroundColor;
+  if (lv.surfaceColor) payload.surfaceColor = lv.surfaceColor;
+  if (lv.textColor) payload.textColor = lv.textColor;
+  if (lv.headingColor) payload.headingColor = lv.headingColor;
+  if (lv.fontFamily) payload.fontFamily = lv.fontFamily;
+  if (lv.borderRadius) payload.borderRadius = lv.borderRadius;
+  if (lv.customCss) payload.customCss = lv.customCss;
 
   return payload;
 }

@@ -20,7 +20,7 @@ export default function FaqSection({ data }: { data: FaqSectionData }) {
         >
           সচরাচর জিজ্ঞাসা
         </h2>
-        <div className="divide-y divide-black/10 rounded-xl border border-black/5 bg-white">
+        <div className="divide-y divide-black/10 rounded-xl border border-black/5 bg-white text-neutral-800">
           {items.map((it, i) => (
             <details key={i} className="group p-4 [&_summary]:cursor-pointer">
               <summary className="flex items-center justify-between gap-4 text-sm font-medium">

@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 // jsdom lacks matchMedia — several UI-adjacent modules touch it.
-if (!window.matchMedia) {
+if (typeof window !== "undefined" && !window.matchMedia) {
     Object.defineProperty(window, "matchMedia", {
         writable: true,
         value: vi.fn().mockImplementation((query: string) => ({

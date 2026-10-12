@@ -73,7 +73,7 @@ export default function TestimonialsSection({
                   key={i}
                   className="pl-2 sm:pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
                 >
-                  <figure className="flex h-full flex-col items-center rounded-xl border border-black/5 bg-white p-4 text-center">
+                  <figure className="flex h-full flex-col items-center rounded-xl border border-black/5 bg-white p-4 text-center text-neutral-800">
                     {it.image ? (
                       <div
                         className="mb-3 flex w-full justify-center overflow-hidden rounded-md border border-black/5"
