@@ -88,11 +88,19 @@ export const getLandingProduct = async (
 };
 
 export async function listAllProductIds(): Promise<string[]> {
-  await connectDB();
-  const docs = await Product.find({}, { _id: 1 }).lean();
-  return docs
-    .map((d) => pickId(d as { _id?: { toString(): string } | string }))
-    .filter(Boolean);
+  try {
+    await connectDB();
+    const docs = await Product.find({}, { _id: 1 }).lean();
+    return docs
+      .map((d) => pickId(d as { _id?: { toString(): string } | string }))
+      .filter(Boolean);
+  } catch (err) {
+    console.warn(
+      "[listAllProductIds] Skipping static pre-rendering at build time:",
+      err instanceof Error ? err.message : err
+    );
+    return [];
+  }
 }
 
 /**

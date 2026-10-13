@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findById, find } = vi.hoisted(() => ({
+const { findById, find, connectDb } = vi.hoisted(() => ({
     findById: vi.fn(),
     find: vi.fn(),
+    connectDb: vi.fn(async () => undefined),
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/connectdb", () => ({ default: vi.fn(async () => undefined) }));
+vi.mock("@/lib/connectdb", () => ({ default: connectDb }));
 vi.mock("@/models/product.model", () => ({ default: { findById, find } }));
 vi.mock("next/cache", () => ({
     unstable_cache: (fn: unknown) => fn,
@@ -24,6 +25,7 @@ import type { SerializedLandingProduct } from "@/app/step/_lib/landing-shared";
 beforeEach(() => {
     findById.mockReset();
     find.mockReset();
+    connectDb.mockReset().mockResolvedValue(undefined);
 });
 
 function product(
@@ -179,6 +181,16 @@ describe("app/step/_lib/landing-data › listAllProductIds", () => {
         find.mockReturnValue({ lean: async () => [] });
         await listAllProductIds();
         expect(find).toHaveBeenCalledWith({}, { _id: 1 });
+    });
+
+    it("returns an empty array when database connection fails without throwing", async () => {
+        connectDb.mockRejectedValueOnce(
+            new Error("❌ MongoDB URI is not defined in environment variables."),
+        );
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        await expect(listAllProductIds()).resolves.toEqual([]);
+        expect(warnSpy).toHaveBeenCalled();
+        warnSpy.mockRestore();
     });
 });
 
