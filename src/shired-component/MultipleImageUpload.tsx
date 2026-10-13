@@ -137,7 +137,7 @@ export default function MultipleImageUpload({
               )}
               <div className="text-sm text-gray-600">
                 {isUploading ? (
-                  <p>Compressing & uploading to R2…</p>
+                  <p>Optimizing & uploading images…</p>
                 ) : (
                   <>
                     <p className="font-medium text-gray-900">
@@ -249,7 +249,7 @@ export default function MultipleImageUpload({
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <CheckCircle2 className="w-4 h-4 text-green-500" />
           <span>
-            Successfully uploaded to R2!
+            Images uploaded successfully!
             {errorMessage ? ` ${errorMessage}` : ""}
           </span>
         </div>

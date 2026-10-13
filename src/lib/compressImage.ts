@@ -1,24 +1,25 @@
 "use client";
 
 /**
- * Client-side image compression + WebP conversion for the R2 upload pipeline.
+ * Client-side image compression + WebP conversion for the upload pipeline.
  *
  * Every selected image (PNG, JPEG, JPG, HEIC, WebP, …) is normalized to a
  * `.webp` File before it ever leaves the browser:
- *   - max bounding box: 1000×1000px (aspect preserved)
- *   - WebP quality: 0.80
+ *   - max bounding box: 1920×1920px (aspect preserved)
+ *   - WebP quality: 0.85
  *   - output File extension: strictly `.webp`
  *
- * This keeps bandwidth + R2 storage low and gives the storefront a single
- * modern format. `browser-image-compression` handles canvas encoding; for
- * browsers that can't encode WebP it falls back to JPEG, in which case we
- * still rename the extension to `.webp` so the object key stays consistent
- * — R2 serves by content-type, and we always PUT with `image/webp`.
+ * This keeps bandwidth + storage low while preserving crisp resolution for
+ * desktop banners, product showcases, and high-DPI (Retina) displays.
+ * `browser-image-compression` handles canvas encoding; for browsers that can't
+ * encode WebP it falls back to JPEG, in which case we still rename the extension
+ * to `.webp` so the object key stays consistent — storage serves by content-type,
+ * and we always PUT with `image/webp`.
  */
 import imageCompression from "browser-image-compression";
 
-const MAX_DIMENSION = 1000;
-const WEBP_QUALITY = 0.8;
+const MAX_DIMENSION = 1920;
+const WEBP_QUALITY = 0.85;
 
 /**
  * Convert a base file name (with or without extension) into a `.webp` name.
@@ -38,6 +39,7 @@ export async function compressImage(file: File): Promise<File> {
         maxWidthOrHeight: MAX_DIMENSION,
         useWebWorker: true,
         initialQuality: WEBP_QUALITY,
+        alwaysKeepResolution: true,
         fileType: "image/webp",
     };
 

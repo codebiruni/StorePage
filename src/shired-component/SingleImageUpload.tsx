@@ -55,11 +55,11 @@ export default function SingleImageUpload({ onUpload }: any) {
             )}
             <div className="text-sm text-gray-600">
               {isUploading ? (
-                <p>Compressing & uploading to R2…</p>
+                <p>Optimizing & uploading image…</p>
               ) : (
                 <>
-                  <p className="font-medium text-gray-900">upload or drag</p>
-                  <p>Auto-converted to WebP (max 1000×1000)</p>
+                  <p className="font-medium text-gray-900">Upload or drag</p>
+                  <p>Auto-optimized WebP (max 1920×1920)</p>
                 </>
               )}
             </div>
@@ -77,8 +77,8 @@ export default function SingleImageUpload({ onUpload }: any) {
 
       {uploadStatus === "success" && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Image uploaded to R2 successfully!</span>
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>Image uploaded successfully!</span>
         </div>
       )}
 

@@ -26,7 +26,7 @@ import { NextRequest, NextResponse } from "next/server";
  *
  * Auth: restricted to admin roles so anonymous callers can't write to the
  * bucket. Body size is not capped here, but callers already compress to a
- * ~1000×1000 WebP before posting, so payloads stay small.
+ * ~1920×1920 WebP before posting, so payloads stay small.
  */
 export async function POST(request: NextRequest) {
     try {

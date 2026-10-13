@@ -55,14 +55,15 @@ describe("lib/compressImage › compressImage", () => {
         expect(result.type).toBe("image/webp");
     });
 
-    it("caps dimensions at 1000px and uses quality 0.8", async () => {
+    it("caps dimensions at 1920px and uses quality 0.85", async () => {
         await compressImage(makeFile("photo.png"));
 
         const options = imageCompression.mock.calls[0][1];
-        expect(options.maxWidthOrHeight).toBe(1000);
-        expect(options.initialQuality).toBe(0.8);
+        expect(options.maxWidthOrHeight).toBe(1920);
+        expect(options.initialQuality).toBe(0.85);
         expect(options.fileType).toBe("image/webp");
         expect(options.useWebWorker).toBe(true);
+        expect(options.alwaysKeepResolution).toBe(true);
     });
 
     it("does not cap the output by byte size", async () => {

@@ -44,12 +44,12 @@ export default function HomeBanner() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <Skeleton className="w-full md:w-2/3 h-[400px]" />
-          <div className="w-full md:w-1/3 flex flex-col gap-4">
-            <Skeleton className="h-[192px] w-full" />
-            <Skeleton className="h-[192px] w-full" />
+      <div className="container mx-auto px-4 py-2 mt-1">
+        <div className="flex flex-col md:h-[400px] md:flex-row gap-2">
+          <Skeleton className="w-full md:w-2/3 h-[220px] sm:h-[320px] md:h-full rounded-xl" />
+          <div className="w-full md:w-1/3 flex flex-row md:flex-col gap-2 md:h-full">
+            <Skeleton className="flex-1 min-w-0 min-h-0 aspect-[16/10] sm:aspect-[16/9] md:aspect-auto md:h-full rounded-xl" />
+            <Skeleton className="flex-1 min-w-0 min-h-0 aspect-[16/10] sm:aspect-[16/9] md:aspect-auto md:h-full rounded-xl" />
           </div>
         </div>
       </div>
@@ -66,21 +66,30 @@ export default function HomeBanner() {
     );
   }
 
+  const firstPosterSrc = bannerData?.firstImage?.image || "/side.png";
+  const firstPosterLink = bannerData?.firstImage?.link || "#";
+  const secondPosterSrc = bannerData?.secondImage?.image || "/side.png";
+  const secondPosterLink = bannerData?.secondImage?.link || "#";
+
   return (
     <div className="container mx-auto px-4 py-2 mt-1">
       <div className="flex flex-col md:h-[400px] md:flex-row gap-2">
         {/* Carousel Section - 2/3 width on desktop */}
-        <div className="w-full md:w-2/3 relative group">
+        <div className="w-full md:w-2/3 md:h-full relative group">
           {bannerData.carousel.length > 0 ? (
             <>
-              <Card className="overflow-hidden md:h-[400px] h-auto min-h-[200px] sm:h-[320px] relative">
-                <a href={bannerData.carousel[currentSlide]?.link || "#"}>
+              <Card className="overflow-hidden md:h-full h-[220px] sm:h-[320px] relative p-0">
+                <a
+                  href={bannerData.carousel[currentSlide]?.link || "#"}
+                  className="relative block w-full h-full"
+                >
                   <Image
                     src={bannerData.carousel[currentSlide]?.image}
                     alt={`Banner Slide ${currentSlide + 1}`}
                     fill
                     className="object-cover"
                     priority
+                    sizes="(max-width: 768px) 100vw, 66vw"
                   />
                 </a>
 
@@ -136,7 +145,7 @@ export default function HomeBanner() {
               )}
             </>
           ) : (
-            <Card className="h-[500px] flex items-center justify-center bg-muted">
+            <Card className="h-[220px] sm:h-[320px] md:h-full flex items-center justify-center bg-muted">
               <p className="text-muted-foreground">
                 No carousel images available
               </p>
@@ -144,27 +153,33 @@ export default function HomeBanner() {
           )}
         </div>
 
-        {/* Side Banners - 1/3 width on desktop */}
-        <div className="w-full md:w-1/3 flex flex-row md:flex-col gap-2">
-          <Card className="flex-1 justify-center items-center p-0 overflow-hidden">
-            <a href={bannerData.firstImage.link}>
+        {/* Side Banners / Posters - 1/3 width on desktop */}
+        <div className="w-full md:w-1/3 flex flex-row md:flex-col gap-2 md:h-full">
+          <Card className="relative flex-1 min-w-0 min-h-0 aspect-[16/10] sm:aspect-[16/9] md:aspect-auto overflow-hidden p-0 group/poster rounded-xl border">
+            <a
+              href={firstPosterLink}
+              className="relative block w-full h-full"
+            >
               <Image
-                src={bannerData.firstImage.image || "/placeholder-banner.jpg"}
-                alt="First Banner"
-                width={600}
-                height={500}
-                className="object-cover w-full max-h-full min-h-full"
+                src={firstPosterSrc}
+                alt="First Poster"
+                fill
+                sizes="(max-width: 768px) 50vw, 33vw"
+                className="object-cover transition-transform duration-300 group-hover/poster:scale-105"
               />
             </a>
           </Card>
-          <Card className="flex-1 justify-center items-center  p-0 overflow-hidden">
-            <a href={bannerData.secondImage.link}>
+          <Card className="relative flex-1 min-w-0 min-h-0 aspect-[16/10] sm:aspect-[16/9] md:aspect-auto overflow-hidden p-0 group/poster rounded-xl border">
+            <a
+              href={secondPosterLink}
+              className="relative block w-full h-full"
+            >
               <Image
-                src={bannerData.secondImage.image || "/placeholder-banner.jpg"}
-                alt="Second Banner"
-                width={600}
-                height={500}
-                className="object-cover w-full max-h-[100%] min-h-[100%]"
+                src={secondPosterSrc}
+                alt="Second Poster"
+                fill
+                sizes="(max-width: 768px) 50vw, 33vw"
+                className="object-cover transition-transform duration-300 group-hover/poster:scale-105"
               />
             </a>
           </Card>
