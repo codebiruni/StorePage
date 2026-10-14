@@ -110,8 +110,9 @@ async function buildMetadata() {
     description,
     applicationName: cfg.name,
     icons: {
-      icon: logoUrl,
-      apple: logoUrl,
+      icon: "/favicon.ico",
+      shortcut: "/favicon.ico",
+      apple: logoUrl || "/favicon.ico",
     },
     openGraph: {
       type: "website",
@@ -244,21 +245,10 @@ export default async function RootLayout({
           href={logoUrl}
         />
 
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href={logoUrl}
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href={logoUrl}
-        />
-        <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="mask-icon" href={logoUrl} color={cfg.themeColor} />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="mask-icon" href={logoUrl || "/favicon.ico"} color={cfg.themeColor} />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"

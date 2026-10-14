@@ -44,8 +44,11 @@ export function resolveProductImage(
 
     let resolved = fallback;
 
-    // Array form: images: string[]
-    if (Array.isArray(source)) {
+    if (typeof source === "string") {
+        if (isValidImageSrc(source)) {
+            resolved = source;
+        }
+    } else if (Array.isArray(source)) {
         for (const candidate of source) {
             if (isValidImageSrc(candidate)) {
                 resolved = candidate;

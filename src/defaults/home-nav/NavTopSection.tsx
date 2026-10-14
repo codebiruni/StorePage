@@ -18,7 +18,7 @@ export default function NavTopSection() {
   const brandName = config?.name ?? "My Store";
 
   return (
-    <div className="w-full">
+    <div id="nav-top-section" className="w-full">
       {/* Main top bar — single row, mobile + desktop share it */}
       <div className="w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="container mx-auto flex h-14 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 md:h-16">

@@ -72,6 +72,13 @@ describe("resolveProductImage", () => {
         ).toBe(FALLBACK_PRODUCT_IMAGE);
     });
 
+    it("accepts a valid image URL directly as a string", () => {
+        expect(resolveProductImage("https://cdn.example.com/item.png")).toBe(
+            "https://cdn.example.com/item.png"
+        );
+        expect(resolveProductImage("/item.png")).toBe("/item.png");
+    });
+
     it("returns the fallback for missing or empty input", () => {
         expect(resolveProductImage(undefined)).toBe(FALLBACK_PRODUCT_IMAGE);
         expect(resolveProductImage(null)).toBe(FALLBACK_PRODUCT_IMAGE);

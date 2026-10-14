@@ -33,9 +33,17 @@ interface PaginationInfo {
 
 export default function SubCategoryProduct() {
   const params = useParams();
-  const id = params.subcategoryId as string;
+  const rawId =
+    params?.subcategoryId ??
+    (params as any)?.subCategoryId ??
+    (params as any)?.id ??
+    (params?.categoryId && params?.categoryId !== "sub-category"
+      ? params.categoryId
+      : undefined);
+  const id = Array.isArray(rawId) ? rawId[0] : (rawId as string);
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [subCategoryName, setSubCategoryName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
@@ -47,8 +55,18 @@ export default function SubCategoryProduct() {
   });
   const [page, setPage] = useState(1);
 
+  // Reset page when subcategory changes
+  useEffect(() => {
+    setPage(1);
+    setProducts([]);
+  }, [id]);
+
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         const res = await fetch(
@@ -58,10 +76,14 @@ export default function SubCategoryProduct() {
           }
         );
         const data = await res.json();
-        console.log(data);
         if (data.status === "success") {
-          setProducts(data.products);
-          setPagination(data.pagination);
+          setProducts(data.products || []);
+          if (data.subCategoryName) {
+            setSubCategoryName(data.subCategoryName);
+          }
+          if (data.pagination) {
+            setPagination(data.pagination);
+          }
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -70,9 +92,7 @@ export default function SubCategoryProduct() {
       }
     };
 
-    if (id) {
-      fetchProducts();
-    }
+    fetchProducts();
   }, [id, page]);
 
   const handleNextPage = () => {
@@ -106,7 +126,9 @@ export default function SubCategoryProduct() {
       <div className="container mx-auto flex justify-between items-center px-4 mb-6">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Package className="w-4 h-4 text-primary" />
-          <span>Sub Category Products</span>
+          <span className="font-medium text-base text-foreground">
+            {subCategoryName ? `${subCategoryName} Products` : "Sub Category Products"}
+          </span>
         </div>
 
         {/* Pagination Info */}

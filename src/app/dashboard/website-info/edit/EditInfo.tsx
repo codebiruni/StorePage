@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import {
   Form,
@@ -54,11 +54,38 @@ import {
   ShoppingBag,
   ShoppingCart,
   Eye,
+  CalendarClock,
+  ExternalLink,
+  Copy,
 } from "lucide-react";
 import SingleImageUpload from "@/shired-component/SingleImageUpload";
 import NextImage from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import WorkspaceHeader from "../../_shared/WorkspaceHeader";
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function isEmbeddableMapUrl(value: string): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value.startsWith("http") ? value : `https://${value}`);
+    const host = url.hostname.toLowerCase();
+    return (
+      (host === "www.google.com" || host === "google.com") &&
+      url.pathname.startsWith("/maps/embed")
+    );
+  } catch {
+    return false;
+  }
+}
 
 const BUTTON_COLOR_PRESETS = [
   { name: "Default Slate", bg: "#0f172a", fg: "#ffffff" },
@@ -183,6 +210,21 @@ export default function EditInfo() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(tabParam);
+  const [metaTimestamps, setMetaTimestamps] = useState<{ createdAt?: string; updatedAt?: string }>({});
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    router.replace(`/dashboard/website-info/edit?tab=${val}`, { scroll: false });
+  };
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -245,6 +287,45 @@ export default function EditInfo() {
     defaultValue: "#ffffff",
   });
   const [isSavingColors, setIsSavingColors] = useState(false);
+
+  const watchedAddresses = useWatch({ control: form.control, name: "addresses" }) || [];
+  const watchedFooterLinks = useWatch({ control: form.control, name: "footerLinks" }) || [];
+  const watchedSocial = useWatch({ control: form.control, name: "socialContact" }) || {};
+  const watchedFirstBanner = useWatch({ control: form.control, name: "banner.firstImage.image" });
+  const watchedSecondBanner = useWatch({ control: form.control, name: "banner.secondImage.image" });
+  const watchedCarousel = useWatch({ control: form.control, name: "banner.carousel" }) || [];
+  const watchedMapLink = useWatch({ control: form.control, name: "mapLink" }) || "";
+  const watchedMarqueeText = useWatch({ control: form.control, name: "marqueeText" }) || "";
+
+  const stats = useMemo(() => {
+    const socialCount = Object.values(watchedSocial).filter(Boolean).length;
+    const bannerCount =
+      (watchedFirstBanner ? 1 : 0) +
+      (watchedSecondBanner ? 1 : 0) +
+      (watchedCarousel?.length || 0);
+    return [
+      {
+        label: "Address",
+        value: watchedAddresses?.length ?? 0,
+        icon: MapPin,
+      },
+      {
+        label: "Banners",
+        value: bannerCount,
+        icon: ImageIcon,
+      },
+      {
+        label: "Footer links",
+        value: watchedFooterLinks?.length ?? 0,
+        icon: Link2,
+      },
+      {
+        label: "Social channels",
+        value: socialCount,
+        icon: Globe,
+      },
+    ];
+  }, [watchedAddresses, watchedFooterLinks, watchedSocial, watchedFirstBanner, watchedSecondBanner, watchedCarousel]);
 
   // Instantly repaint buttons across the screen in real time as the user picks colors
   useEffect(() => {
@@ -379,6 +460,10 @@ export default function EditInfo() {
           buttonColor: fetchedData.buttonColor || "#0f172a",
           buttonTextColor: fetchedData.buttonTextColor || "#ffffff",
         });
+        setMetaTimestamps({
+          createdAt: fetchedData.createdAt,
+          updatedAt: fetchedData.updatedAt,
+        });
       } catch (error) {
         console.error("Fetch error:", error);
         toast.error("Failed to load website info", {
@@ -498,7 +583,7 @@ export default function EditInfo() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/dashboard/website-info")}
+              onClick={() => router.push(`/dashboard/website-info?tab=${activeTab}`)}
               disabled={isSubmitting}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -520,14 +605,37 @@ export default function EditInfo() {
         }
       />
 
+      {/* Stats row */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stats.map((s) => (
+            <Card key={s.label} className="border-muted">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <s.icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold leading-none">{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       <Form {...form}>
         <form
           id="website-info-form"
           onSubmit={form.handleSubmit(handleSubmit)}
           className="space-y-6"
         >
-          <Tabs defaultValue="overview" className="space-y-6 w-full min-w-0">
-            <TabsList className="inline-flex h-auto p-1 flex-wrap">
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="space-y-6 w-full min-w-0 max-w-full overflow-hidden"
+          >
+            <TabsList className="grid h-auto p-1 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 w-full max-w-full gap-1">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="branding">Branding</TabsTrigger>
               <TabsTrigger value="banners">Banners</TabsTrigger>
@@ -539,83 +647,143 @@ export default function EditInfo() {
 
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6 min-w-0">
+              <div className="grid lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-primary" />
+                      Brand identity
+                    </CardTitle>
+                    <CardDescription>
+                      How the storefront identifies itself across the site.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Hash className="h-4 w-4" /> Website Name
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="Store name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Phone className="h-4 w-4" /> Phone Number
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="+8801…" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem className="sm:col-span-2">
+                          <FormLabel className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" /> Email
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="hello@store.com"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-primary" />
+                      Logo
+                    </CardTitle>
+                    <CardDescription>
+                      Used in the site header, emails and invoices.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="logo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-center">
+                                <div className="relative w-36 h-36 rounded-2xl overflow-hidden border bg-muted/40 shadow-inner flex items-center justify-center">
+                                  {field.value ? (
+                                    <NextImage
+                                      src={field.value}
+                                      alt="Logo preview"
+                                      fill
+                                      className="object-contain p-3"
+                                    />
+                                  ) : (
+                                    <div className="text-xs text-muted-foreground text-center p-2">
+                                      No logo uploaded
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <Input placeholder="https://…" {...field} />
+                              <SingleImageUpload
+                                onUpload={(url: string) => field.onChange(url)}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    Brand Identity
+                    <Newspaper className="h-5 w-5 text-primary" />
+                    Announcement marquee
                   </CardTitle>
                   <CardDescription>
-                    Core public details customers see first
+                    Scrolling text shown across the top of the storefront.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" /> Website Name
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Store name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" /> Phone Number
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="+8801…" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" /> Email
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="hello@store.com"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardContent className="space-y-3">
                   <FormField
                     control={form.control}
                     name="marqueeText"
                     render={({ field }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel className="flex items-center gap-2">
-                          <Newspaper className="h-4 w-4" /> Marquee Text
-                        </FormLabel>
+                      <FormItem>
                         <FormControl>
                           <Textarea
-                            rows={2}
+                            rows={3}
                             placeholder="Free shipping on orders over ৳2,000"
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Scrolling announcement shown across the site
+                          Scrolling announcement shown across the site ({field.value?.length || 0} characters)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -952,6 +1120,21 @@ export default function EditInfo() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="banner.firstImage.link"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1.5">
+                            <Link2 className="h-3.5 w-3.5 text-muted-foreground" /> Link URL (optional)
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="/categories/…" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                 </Card>
 
@@ -986,6 +1169,21 @@ export default function EditInfo() {
                                 </div>
                               )}
                             </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="banner.secondImage.link"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1.5">
+                            <Link2 className="h-3.5 w-3.5 text-muted-foreground" /> Link URL (optional)
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="/categories/…" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1101,7 +1299,7 @@ export default function EditInfo() {
                     Link the social accounts that appear in the footer
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {(Object.keys(SOCIAL_META) as SocialKey[]).map((key) => {
                     const meta = SOCIAL_META[key];
                     const Icon = meta.icon;
@@ -1258,7 +1456,7 @@ export default function EditInfo() {
                     Embedded map URL for the primary location
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <FormField
                     control={form.control}
                     name="mapLink"
@@ -1275,6 +1473,40 @@ export default function EditInfo() {
                       </FormItem>
                     )}
                   />
+
+                  {watchedMapLink && (
+                    <div className="pt-2">
+                      {isEmbeddableMapUrl(watchedMapLink) ? (
+                        <div className="rounded-xl overflow-hidden border bg-muted/20 max-w-3xl">
+                          <div className="aspect-video w-full">
+                            <iframe
+                              src={watchedMapLink}
+                              width="100%"
+                              height="100%"
+                              style={{ border: 0 }}
+                              allowFullScreen
+                              loading="lazy"
+                              referrerPolicy="no-referrer-when-downgrade"
+                              title="Store location"
+                              className="w-full h-full"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/30 px-4 py-8 text-center max-w-3xl">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <MapPin className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">Map preview unavailable for share links</p>
+                            <p className="text-xs text-muted-foreground max-w-sm">
+                              Only Google Maps embed URLs can be rendered inline.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1361,6 +1593,65 @@ export default function EditInfo() {
                   ))}
                 </CardContent>
               </Card>
+
+              {/* Marquee + Metadata side by side matching Info.tsx */}
+              <div className="grid gap-6 md:grid-cols-2 min-w-0">
+                <Card className="min-w-0">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Newspaper className="h-5 w-5 text-primary" />
+                      Marquee text
+                    </CardTitle>
+                    <CardDescription>
+                      Scrolling announcement rendered site-wide.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 min-w-0">
+                    <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm italic break-words overflow-wrap-anywhere whitespace-pre-wrap min-w-0">
+                      “{watchedMarqueeText || "No announcement text configured"}”
+                    </div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground truncate min-w-0">
+                      {(watchedMarqueeText || "").length} characters
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="min-w-0">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CalendarClock className="h-5 w-5 text-primary" />
+                      Metadata
+                    </CardTitle>
+                    <CardDescription>
+                      Audit timestamps for the current configuration.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 min-w-0">
+                    <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2 min-w-0">
+                      <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Created
+                        </p>
+                        <p className="text-sm font-medium truncate">
+                          {metaTimestamps.createdAt ? formatDate(metaTimestamps.createdAt) : "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2 min-w-0">
+                      <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Last updated
+                        </p>
+                        <p className="text-sm font-medium truncate">
+                          {metaTimestamps.updatedAt ? formatDate(metaTimestamps.updatedAt) : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* ANALYTICS */}

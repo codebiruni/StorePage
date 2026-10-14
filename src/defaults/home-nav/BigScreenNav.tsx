@@ -45,17 +45,18 @@ export default function BigScreenNav({ navItems }: { navItems: NavItem[] }) {
             const trigger = (
               <Button
                 variant="ghost"
-                asChild={!hasChildren}
+                asChild
                 className="flex items-center gap-1 pl-[0px] px-1 py-1"
               >
-                {hasChildren ? (
-                  <span className="flex items-center gap-1">
-                    {item.name}
+                <Link
+                  href={`/products/${item.id}`}
+                  className="flex items-center gap-1"
+                >
+                  <span>{item.name}</span>
+                  {hasChildren && (
                     <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                  </span>
-                ) : (
-                  <Link href={`/products/${item.id}`}>{item.name}</Link>
-                )}
+                  )}
+                </Link>
               </Button>
             );
 
@@ -83,9 +84,24 @@ export default function BigScreenNav({ navItems }: { navItems: NavItem[] }) {
                   // `z-[600]` keeps the dropdown above the fixed navbar
                   // (`z-[498]`) and the hero slider below it.
                   className={cn(
-                    "z-[600] max-h-[350px] w-max max-w-[min(90vw,600px)] overflow-y-auto rounded-md border bg-popover p-1 shadow-lg"
+                    "z-[600] max-h-[350px] w-max max-w-[min(90vw,600px)] overflow-y-auto rounded-md border bg-popover p-1.5 shadow-lg"
                   )}
                 >
+                  <div className="pb-1 mb-1 border-b border-border/60">
+                    <Button
+                      variant="ghost"
+                      asChild
+                      className="w-full justify-start text-left font-semibold text-primary text-xs"
+                    >
+                      <Link
+                        href={`/products/${item.id}`}
+                        className="hover:bg-accent hover:text-accent-foreground px-3 py-1.5 flex items-center justify-between"
+                      >
+                        <span>All {item.name}</span>
+                        <span className="text-xs">→</span>
+                      </Link>
+                    </Button>
+                  </div>
                   <div
                     className="grid gap-1"
                     style={{

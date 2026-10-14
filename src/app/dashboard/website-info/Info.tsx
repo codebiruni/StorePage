@@ -23,7 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
   Pencil,
@@ -53,6 +53,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   Eye,
+  BarChart3,
 } from "lucide-react";
 import WorkspaceHeader from "../_shared/WorkspaceHeader";
 
@@ -82,6 +83,8 @@ interface WebsiteInfo {
   themeColor?: string;
   buttonColor?: string;
   buttonTextColor?: string;
+  metaPixelId?: string;
+  gaMeasurementId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -186,6 +189,20 @@ export default function Info() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(tabParam);
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    router.replace(`/dashboard/website-info?tab=${val}`, { scroll: false });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -233,7 +250,9 @@ export default function Info() {
     }
   };
 
-  const handleEdit = () => router.push("/dashboard/website-info/edit");
+  const handleEdit = (tab?: string) => {
+    router.push(`/dashboard/website-info/edit?tab=${tab || activeTab}`);
+  };
 
   const copy = async (value: string, label: string) => {
     try {
@@ -333,7 +352,7 @@ export default function Info() {
         badges={["Site Config", "Admin View"]}
         action={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleEdit}>
+            <Button variant="outline" onClick={() => handleEdit()}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </Button>
@@ -402,14 +421,19 @@ export default function Info() {
         </div>
       )}
 
-      <Tabs defaultValue="overview" className="space-y-6 w-full min-w-0 max-w-full overflow-hidden">
-        <TabsList className="grid h-auto p-1 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 w-full max-w-full gap-1">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-6 w-full min-w-0 max-w-full overflow-hidden"
+      >
+        <TabsList className="grid h-auto p-1 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 w-full max-w-full gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="banners">Banners</TabsTrigger>
           <TabsTrigger value="social">Social</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="footer">Footer &amp; Misc</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         {/* ---------------- Overview ---------------- */}
@@ -514,7 +538,7 @@ export default function Info() {
                 <p className="text-xs text-muted-foreground">
                   Open the edit screen to replace the logo.
                 </p>
-                <Button variant="outline" onClick={handleEdit}>
+                <Button variant="outline" onClick={() => handleEdit("branding")}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Update logo
                 </Button>
@@ -621,7 +645,7 @@ export default function Info() {
               </div>
 
               <div className="pt-2">
-                <Button variant="outline" onClick={handleEdit}>
+                <Button variant="outline" onClick={() => handleEdit("branding")}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Change button colors
                 </Button>
@@ -1000,6 +1024,35 @@ export default function Info() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* ---------------- Analytics ---------------- */}
+        <TabsContent value="analytics" className="space-y-6 min-w-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Tracking & Analytics
+              </CardTitle>
+              <CardDescription>
+                Third-party tracking and analytics identifiers configured for your storefront.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-4">
+              <FieldTile
+                icon={BarChart3}
+                label="Meta Pixel ID"
+                value={data.metaPixelId || "Not configured"}
+                onCopy={data.metaPixelId ? () => copy(data.metaPixelId!, "Meta Pixel ID") : undefined}
+              />
+              <FieldTile
+                icon={BarChart3}
+                label="Google Analytics ID"
+                value={data.gaMeasurementId || "Not configured"}
+                onCopy={data.gaMeasurementId ? () => copy(data.gaMeasurementId!, "Google Analytics ID") : undefined}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

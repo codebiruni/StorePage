@@ -76,53 +76,36 @@ export default function SmallScreenNav({ navItems }: { navItems: NavItem[] }) {
                     {/* Category Item */}
                     <div
                       className={cn(
-                        "flex items-center rounded-lg transition-colors",
+                        "flex items-center justify-between rounded-lg transition-colors",
                         "hover:bg-gray-100 dark:hover:bg-gray-800",
                         expandedCategories[item.id] &&
                           "bg-gray-50 dark:bg-gray-800/50"
                       )}
                     >
-                      <Button
-                        asChild={item.children.length === 0}
-                        variant="ghost"
-                        className={cn(
-                          "max-w-full justify-start px-4 py-3 h-auto rounded-lg",
-                          "text-base font-medium",
-                          item.children.length > 0 && "pr-2"
-                        )}
-                        onClick={() => {
-                          if (item.children.length > 0) {
-                            toggleCategory(item.id);
-                          }
-                        }}
+                      <Link
+                        href={`/products/${item.id}`}
+                        className="flex-1 text-left flex items-center gap-3 px-4 py-3 text-base font-medium"
                       >
-                        {item.children.length === 0 ? (
-                          <Link
-                            href={`/products/${item.id}`}
-                            className="flex-1 text-left flex items-center gap-3"
-                          >
-                            <span className="w-5 h-5 flex items-center justify-center">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
-                            </span>
-                            {item.name}
-                          </Link>
-                        ) : (
-                          <div className="flex-1 flex items-center gap-3">
-                            <span className="w-5 h-5 flex items-center justify-center">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
-                            </span>
-                            {item.name}
-                          </div>
-                        )}
-                      </Button>
+                        <span className="w-5 h-5 flex items-center justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
+                        </span>
+                        {item.name}
+                      </Link>
 
                       {item.children.length > 0 && (
-                        <ChevronRight
-                          className={cn(
-                            "h-4 w-4 mr-2 text-muted-foreground transition-transform",
-                            expandedCategories[item.id] && "rotate-90"
-                          )}
-                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(item.id)}
+                          aria-label={`Toggle ${item.name} subcategories`}
+                          className="p-3 text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronRight
+                            className={cn(
+                              "h-4 w-4 transition-transform duration-200",
+                              expandedCategories[item.id] && "rotate-90"
+                            )}
+                          />
+                        </button>
                       )}
                     </div>
 
@@ -130,6 +113,18 @@ export default function SmallScreenNav({ navItems }: { navItems: NavItem[] }) {
                     {item.children.length > 0 &&
                       expandedCategories[item.id] && (
                         <div className="ml-8 pl-2 space-y-1 my-1 border-l-2 border-gray-200 dark:border-gray-700">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            className="w-full justify-start px-4 py-2 h-auto rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-primary font-medium"
+                          >
+                            <Link
+                              href={`/products/${item.id}`}
+                              className="flex items-center gap-3 text-sm"
+                            >
+                              <span>All {item.name}</span>
+                            </Link>
+                          </Button>
                           {item.children.map((child) => (
                             <Button
                               key={child.id}

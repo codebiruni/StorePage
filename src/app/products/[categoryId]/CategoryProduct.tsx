@@ -34,9 +34,9 @@ interface PaginationInfo {
 export default function CategoryProduct() {
   const params = useParams();
   const id = params.categoryId as string;
-  console.log(id, "id");
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [categoryName, setCategoryName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
@@ -48,8 +48,18 @@ export default function CategoryProduct() {
   });
   const [page, setPage] = useState(1);
 
+  // Reset page when category changes
+  useEffect(() => {
+    setPage(1);
+    setProducts([]);
+  }, [id]);
+
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!id || id === "sub-category") {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         const res = await fetch(
@@ -60,8 +70,13 @@ export default function CategoryProduct() {
         );
         const data = await res.json();
         if (data.status === "success") {
-          setProducts(data.products);
-          setPagination(data.pagination);
+          setProducts(data.products || []);
+          if (data.categoryName) {
+            setCategoryName(data.categoryName);
+          }
+          if (data.pagination) {
+            setPagination(data.pagination);
+          }
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -70,9 +85,7 @@ export default function CategoryProduct() {
       }
     };
 
-    if (id) {
-      fetchProducts();
-    }
+    fetchProducts();
   }, [id, page]);
 
   const handleNextPage = () => {
@@ -106,7 +119,9 @@ export default function CategoryProduct() {
       <div className="container mx-auto flex justify-between items-center px-4 mb-6">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Package className="w-4 h-4 text-primary" />
-          <span>Category Products</span>
+          <span className="font-medium text-base text-foreground">
+            {categoryName ? `${categoryName} Products` : "Category Products"}
+          </span>
         </div>
 
         {/* Pagination Info */}
@@ -133,7 +148,7 @@ export default function CategoryProduct() {
           <div className="col-span-full text-center py-12">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">
-              No products found in this category hello
+              No products found in this category
             </p>
             <Link href="/products">
               <Button variant="outline" className="mt-4">

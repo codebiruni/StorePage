@@ -1,10 +1,10 @@
-import React from "react";
+import React, { Suspense } from "react";
 import Info from "./Info";
 
 export default function page() {
   return (
-    <div>
+    <Suspense fallback={null}>
       <Info />
-    </div>
+    </Suspense>
   );
 }
