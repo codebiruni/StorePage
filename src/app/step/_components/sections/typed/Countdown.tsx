@@ -39,9 +39,11 @@ export default function CountdownSection({
   style?: SectionStyle;
 }) {
   const target = new Date(data.endsAt).getTime();
+  const [mounted, setMounted] = useState(false);
   const [state, setState] = useState(() => diff(target));
 
   useEffect(() => {
+    setMounted(true);
     setState(diff(target));
     const id = setInterval(() => setState(diff(target)), 1000);
     return () => clearInterval(id);
@@ -69,17 +71,18 @@ export default function CountdownSection({
           </p>
         ) : null}
         {state.expired ? (
-          <p className="text-lg font-semibold" style={{ color: textColor }}>
+          <p className="text-lg font-semibold" style={{ color: textColor }} suppressHydrationWarning>
             অফার শেষ
           </p>
         ) : (
           <div
             className="flex items-center justify-center gap-3 text-2xl font-bold tabular-nums sm:text-3xl"
             style={{ color: textColor }}
+            suppressHydrationWarning
           >
-            <span>{state.d} দিন</span>
+            <span suppressHydrationWarning>{state.d} দিন</span>
             <span>·</span>
-            <span>
+            <span suppressHydrationWarning>
               {pad(state.h)}:{pad(state.m)}:{pad(state.s)}
             </span>
           </div>

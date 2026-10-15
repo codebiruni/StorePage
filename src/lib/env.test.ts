@@ -71,7 +71,7 @@ describe("lib/env › required secrets", () => {
 describe("lib/env › optional values and defaults", () => {
     it("applies documented fallbacks for unset optional keys", async () => {
         const { env } = await importEnv();
-        expect(env.JWT_ACCESS_EXPIRES_IN).toBe("5h");
+        expect(env.JWT_ACCESS_EXPIRES_IN).toBe("7d");
         expect(env.JWT_REFRESH_EXPIRES_IN).toBe("90d");
         expect(env.EMAIL_HOST).toBe("smtp.gmail.com");
         expect(env.EMAIL_PORT).toBe("587");

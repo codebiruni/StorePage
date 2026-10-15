@@ -8,9 +8,20 @@ export async function GET(request: NextRequest) {
   try {
     await connectDb();
 
-    // Fetch 20 random products that have offers
+    const now = new Date();
+    // Fetch 20 random products that have active offers (not expired)
     const products = await Product.aggregate([
-      { $match: { isDeleted: false, hasOffer: true } },
+      {
+        $match: {
+          isDeleted: false,
+          hasOffer: true,
+          $or: [
+            { offerEndDate: null },
+            { offerEndDate: { $exists: false } },
+            { offerEndDate: { $gt: now } },
+          ],
+        },
+      },
       { $sample: { size: 20 } }, // Randomly select 20 docs
       {
         $project: {

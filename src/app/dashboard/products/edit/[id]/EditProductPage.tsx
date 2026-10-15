@@ -50,10 +50,24 @@ export default function EditProductPage() {
           },
           stock: product.stock ?? product.quentity ?? 0,
           priceVariants: Array.isArray(product.priceVariants)
-            ? product.priceVariants.map((v: ProductFormData["priceVariants"][number]) => ({
-                ...v,
-                stock: (v as { quentity?: number }).quentity ?? v.stock ?? 0,
-              }))
+            ? product.priceVariants.map((v: any) => {
+                const qty =
+                  Number(
+                    v.stock !== undefined
+                      ? v.stock
+                      : v.quentity !== undefined
+                      ? v.quentity
+                      : 0
+                  ) || 0;
+                return {
+                  ...v,
+                  stock: qty,
+                  quentity: qty,
+                  regularPrice: Number(v.regularPrice) || 0,
+                  salePrice: Number(v.salePrice) || 0,
+                  sku: String(v.sku || ""),
+                };
+              })
             : [],
           quickOverview: Array.isArray(product.quickOverview)
             ? product.quickOverview
@@ -113,7 +127,16 @@ export default function EditProductPage() {
         Record<string, unknown>;
       const payload: Record<string, unknown> = {
         ...rest,
-        quentity: values.stock,
+        quentity: Number(values.stock) || 0,
+        stock: Number(values.stock) || 0,
+        priceVariants: values.priceVariants?.map((v) => {
+          const qty = Number(v.stock !== undefined ? v.stock : (v as { quentity?: unknown }).quentity) || 0;
+          return {
+            ...v,
+            stock: qty,
+            quentity: qty,
+          };
+        }),
         offerEndDate: values.offerEndDate
           ? new Date(values.offerEndDate).toISOString()
           : null,
@@ -172,13 +195,24 @@ export default function EditProductPage() {
               },
               stock: fresh.stock ?? fresh.quentity ?? 0,
               priceVariants: Array.isArray(fresh.priceVariants)
-                ? fresh.priceVariants.map(
-                    (v: ProductFormData["priceVariants"][number]) => ({
+                ? fresh.priceVariants.map((v: any) => {
+                    const qty =
+                      Number(
+                        v.stock !== undefined
+                          ? v.stock
+                          : v.quentity !== undefined
+                          ? v.quentity
+                          : 0
+                      ) || 0;
+                    return {
                       ...v,
-                      stock:
-                        (v as { quentity?: number }).quentity ?? v.stock ?? 0,
-                    }),
-                  )
+                      stock: qty,
+                      quentity: qty,
+                      regularPrice: Number(v.regularPrice) || 0,
+                      salePrice: Number(v.salePrice) || 0,
+                      sku: String(v.sku || ""),
+                    };
+                  })
                 : [],
               quickOverview: Array.isArray(fresh.quickOverview)
                 ? fresh.quickOverview

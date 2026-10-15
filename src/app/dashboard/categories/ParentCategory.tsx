@@ -34,7 +34,10 @@ export default function ParentCategory() {
               <DialogHeader>
                 <DialogTitle>Create New Category</DialogTitle>
               </DialogHeader>
-              <AddCategoryForm />
+              <AddCategoryForm
+                onSuccess={() => setIsDialogOpen(false)}
+                onCancel={() => setIsDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         }

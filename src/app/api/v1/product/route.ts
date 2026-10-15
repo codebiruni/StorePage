@@ -49,13 +49,43 @@ export async function POST(request: NextRequest) {
     const doc: Record<string, unknown> = {};
     if (name !== undefined) doc.name = name;
     if (images !== undefined) doc.images = images;
-    if (priceVariants !== undefined) doc.priceVariants = priceVariants;
+    if (priceVariants !== undefined) {
+      doc.priceVariants = Array.isArray(priceVariants)
+        ? priceVariants.map((v: any) => {
+            const qty =
+              Number(
+                v.stock !== undefined
+                  ? v.stock
+                  : v.quentity !== undefined
+                  ? v.quentity
+                  : 0
+              ) || 0;
+            return {
+              ...v,
+              stock: qty,
+              quentity: qty,
+              regularPrice: Number(v.regularPrice) || 0,
+              salePrice: Number(v.salePrice) || 0,
+              sku: String(v.sku || ""),
+            };
+          })
+        : [];
+    }
     if (quickOverview !== undefined) doc.quickOverview = quickOverview;
     if (specifications !== undefined) doc.specifications = specifications;
     if (details !== undefined) doc.details = details;
     if (questionsAndAnswers !== undefined)
       doc.questionsAndAnswers = questionsAndAnswers;
-    if (quentity !== undefined) doc.quentity = quentity;
+    const topStock =
+      Number(
+        quentity !== undefined
+          ? quentity
+          : payload.stock !== undefined
+          ? payload.stock
+          : 0
+      ) || 0;
+    doc.quentity = topStock;
+    doc.stock = topStock;
     if (reviews !== undefined) doc.reviews = reviews;
     if (totalReviewCount !== undefined)
       doc.totalReviewCount = totalReviewCount;

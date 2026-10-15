@@ -234,7 +234,7 @@ export async function PATCH(request: NextRequest) {
       secure: isProduction,
       path: "/",
       sameSite: "lax",
-      maxAge: 60 * 60 * 5,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
     response.cookies.set("refreshToken", refreshToken, {

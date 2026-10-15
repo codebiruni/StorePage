@@ -14,7 +14,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, RotateCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Filter,
+  RotateCw,
+  SlidersHorizontal,
+  ArrowUpDown,
+  X,
+  Tag,
+} from "lucide-react";
 
 interface Product {
   _id: string;
@@ -67,10 +76,11 @@ export default function MenageOfferProducts() {
     searchTerm: "",
     sortBy: "createdAt",
     sortOrder: "desc",
-    minPrice: 0,
-    maxPrice: 9999999999,
+    minPrice: "" as string | number,
+    maxPrice: "" as string | number,
     brand: "",
   });
+  const [showFilters, setShowFilters] = useState<boolean>(false);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const observer = useRef<IntersectionObserver | null>(null);
   const lastProductElementRef = useRef<HTMLDivElement | null>(null);
@@ -91,14 +101,20 @@ export default function MenageOfferProducts() {
           setInitialLoading(true);
         }
 
+        const minVal = Number(currentFilters.minPrice) || 0;
+        const maxVal =
+          currentFilters.maxPrice !== "" && Number(currentFilters.maxPrice) > 0
+            ? Number(currentFilters.maxPrice)
+            : 9999999999;
+
         const params = new URLSearchParams({
           page: page.toString(),
           limit: "20",
           search: currentFilters.searchTerm,
           sort: currentFilters.sortBy,
           order: currentFilters.sortOrder,
-          minPrice: currentFilters.minPrice.toString(),
-          maxPrice: currentFilters.maxPrice.toString(),
+          minPrice: minVal.toString(),
+          maxPrice: maxVal.toString(),
           brand: currentFilters.brand,
         });
 
@@ -191,16 +207,62 @@ export default function MenageOfferProducts() {
   };
 
   // Reset filters
+  const handleSortChange = (combinedKey: string) => {
+    switch (combinedKey) {
+      case "newest":
+        setFilters((prev) => ({ ...prev, sortBy: "createdAt", sortOrder: "desc" }));
+        break;
+      case "price_asc":
+        setFilters((prev) => ({ ...prev, sortBy: "price", sortOrder: "asc" }));
+        break;
+      case "price_desc":
+        setFilters((prev) => ({ ...prev, sortBy: "price", sortOrder: "desc" }));
+        break;
+      case "name_asc":
+        setFilters((prev) => ({ ...prev, sortBy: "name", sortOrder: "asc" }));
+        break;
+      case "rating_desc":
+        setFilters((prev) => ({ ...prev, sortBy: "rating", sortOrder: "desc" }));
+        break;
+      default:
+        setFilters((prev) => ({ ...prev, sortBy: "createdAt", sortOrder: "desc" }));
+    }
+  };
+
+  // Reset filters
   const resetFilters = () => {
     setFilters({
       searchTerm: "",
       sortBy: "createdAt",
       sortOrder: "desc",
-      minPrice: 0,
-      maxPrice: 9999999999,
+      minPrice: "",
+      maxPrice: "",
       brand: "",
     });
   };
+
+  const isFilterActive = Boolean(
+    filters.searchTerm ||
+    (filters.minPrice !== "" && Number(filters.minPrice) > 0) ||
+    (filters.maxPrice !== "" && Number(filters.maxPrice) > 0) ||
+    filters.brand ||
+    filters.sortBy !== "createdAt" ||
+    filters.sortOrder !== "desc"
+  );
+
+  const activeFilterCount = [
+    Boolean(filters.searchTerm),
+    Boolean(filters.minPrice !== "" && Number(filters.minPrice) > 0),
+    Boolean(filters.maxPrice !== "" && Number(filters.maxPrice) > 0),
+    Boolean(filters.brand),
+  ].filter(Boolean).length;
+
+  const pricePresets = [
+    { label: "Under ৳500", min: 0, max: 500 },
+    { label: "৳500 - ৳1,500", min: 500, max: 1500 },
+    { label: "৳1,500 - ৳5,000", min: 1500, max: 5000 },
+    { label: "৳5,000+", min: 5000, max: "" },
+  ];
 
   // Skeleton loader component
   const ProductSkeleton = () => (
@@ -216,95 +278,252 @@ export default function MenageOfferProducts() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Offers Products</h1>
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
+        <div>
+          <div className="flex items-center gap-2.5 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              Special Offers
+            </h1>
+            {pagination?.totalCount !== undefined && (
+              <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                {pagination.totalCount} Offers
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Explore our limited-time special deals and exclusive discounted products
+          </p>
+        </div>
+      </div>
 
-      {/* Filters Section */}
-      <div className="bg-muted p-6 rounded-lg mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={filters.searchTerm}
-                onChange={(e) =>
-                  handleFilterChange("searchTerm", e.target.value)
-                }
-                className="pl-10"
-              />
+      {/* Modern Filter Toolbar */}
+      <div className="bg-card border border-border/80 rounded-2xl p-3 sm:p-4 shadow-xs mb-8 space-y-3">
+        {/* Primary Row: Search, Sort & Filter Toggle */}
+        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+          {/* Search Box */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search offer products..."
+              value={filters.searchTerm}
+              onChange={(e) => handleFilterChange("searchTerm", e.target.value)}
+              className="pl-9.5 pr-8 h-10 rounded-xl bg-muted/40 border-border/70 focus-visible:bg-background text-sm"
+            />
+            {filters.searchTerm && (
+              <button
+                type="button"
+                onClick={() => handleFilterChange("searchTerm", "")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="w-full sm:w-[220px]">
+            <Select
+              value={
+                filters.sortBy === "createdAt" && filters.sortOrder === "desc"
+                  ? "newest"
+                  : filters.sortBy === "price" && filters.sortOrder === "asc"
+                  ? "price_asc"
+                  : filters.sortBy === "price" && filters.sortOrder === "desc"
+                  ? "price_desc"
+                  : filters.sortBy === "name"
+                  ? "name_asc"
+                  : filters.sortBy === "rating"
+                  ? "rating_desc"
+                  : "newest"
+              }
+              onValueChange={handleSortChange}
+            >
+              <SelectTrigger className="h-10 rounded-xl bg-muted/40 border-border/70 text-sm font-medium">
+                <div className="flex items-center gap-1.5 truncate">
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Sort by" />
+                </div>
+              </SelectTrigger>
+              <SelectContent align="end" className="rounded-xl">
+                <SelectItem value="newest">Newest Arrivals</SelectItem>
+                <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                <SelectItem value="rating_desc">Top Rated</SelectItem>
+                <SelectItem value="name_asc">Name: A to Z</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filter Toggle Button */}
+          <Button
+            type="button"
+            variant={showFilters || activeFilterCount > 0 ? "default" : "outline"}
+            onClick={() => setShowFilters(!showFilters)}
+            className="h-10 px-3.5 rounded-xl font-medium text-sm flex items-center gap-2 shrink-0 cursor-pointer"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="h-5 w-5 rounded-full bg-background text-foreground text-[11px] font-bold flex items-center justify-center ml-0.5">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+
+          {/* Reset Button (visible when filters are applied) */}
+          {isFilterActive && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="h-10 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+            >
+              <RotateCw className="h-3.5 w-3.5 mr-1" />
+              Reset
+            </Button>
+          )}
+        </div>
+
+        {/* Expandable Filter Details (Price & Brand) */}
+        {showFilters && (
+          <div className="pt-3 border-t border-border/60 space-y-3.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              {/* Min & Max Price Inputs */}
+              <div className="sm:col-span-7 space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  <span>Price Range (৳)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">৳</span>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      placeholder="Min (0)"
+                      value={filters.minPrice}
+                      onChange={(e) => handleFilterChange("minPrice", e.target.value)}
+                      className="pl-7 h-9 rounded-lg bg-muted/30 border-border/70 text-xs sm:text-sm font-mono"
+                    />
+                  </div>
+                  <span className="text-muted-foreground text-xs font-bold">-</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">৳</span>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      placeholder="Max"
+                      value={filters.maxPrice}
+                      onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
+                      className="pl-7 h-9 rounded-lg bg-muted/30 border-border/70 text-xs sm:text-sm font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Brand Filter */}
+              <div className="sm:col-span-5 space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  <span>Brand</span>
+                </label>
+                <div className="relative">
+                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Enter brand name..."
+                    value={filters.brand}
+                    onChange={(e) => handleFilterChange("brand", e.target.value)}
+                    className="pl-8.5 h-9 rounded-lg bg-muted/30 border-border/70 text-xs sm:text-sm"
+                  />
+                  {filters.brand && (
+                    <button
+                      type="button"
+                      onClick={() => handleFilterChange("brand", "")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Price Range Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[11px] font-medium text-muted-foreground mr-1">Quick Ranges:</span>
+              {pricePresets.map((preset, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      minPrice: preset.min,
+                      maxPrice: preset.max,
+                    }));
+                  }}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                    Number(filters.minPrice) === preset.min &&
+                    (preset.max === "" ? filters.maxPrice === "" : Number(filters.maxPrice) === preset.max)
+                      ? "bg-primary text-primary-foreground border-primary font-semibold shadow-xs"
+                      : "bg-muted/40 border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
           </div>
+        )}
 
-          <Select
-            value={filters.sortBy}
-            onValueChange={(value) => handleFilterChange("sortBy", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="createdAt">Newest</SelectItem>
-              <SelectItem value="price">Price</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="rating">Rating</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.sortOrder}
-            onValueChange={(value) => handleFilterChange("sortOrder", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Order" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="desc">Descending</SelectItem>
-              <SelectItem value="asc">Ascending</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            onClick={resetFilters}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RotateCw className="h-4 w-4" />
-            Reset
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Min Price</label>
-            <Input
-              type="number"
-              value={filters.minPrice}
-              onChange={(e) =>
-                handleFilterChange("minPrice", Number(e.target.value))
-              }
-            />
+        {/* Active Filter Badges */}
+        {activeFilterCount > 0 && !showFilters && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border/50 text-xs">
+            <span className="text-muted-foreground text-[11px] font-medium">Active Filters:</span>
+            {filters.searchTerm && (
+              <Badge variant="secondary" className="gap-1 pr-1 font-normal text-xs">
+                Search: &quot;{filters.searchTerm}&quot;
+                <button
+                  type="button"
+                  onClick={() => handleFilterChange("searchTerm", "")}
+                  className="hover:bg-muted rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {(filters.minPrice !== "" && Number(filters.minPrice) > 0) ||
+            (filters.maxPrice !== "" && Number(filters.maxPrice) > 0) ? (
+              <Badge variant="secondary" className="gap-1 pr-1 font-normal text-xs font-mono">
+                ৳{filters.minPrice || 0} - ৳{filters.maxPrice || "∞"}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFilterChange("minPrice", "");
+                    handleFilterChange("maxPrice", "");
+                  }}
+                  className="hover:bg-muted rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ) : null}
+            {filters.brand && (
+              <Badge variant="secondary" className="gap-1 pr-1 font-normal text-xs">
+                Brand: {filters.brand}
+                <button
+                  type="button"
+                  onClick={() => handleFilterChange("brand", "")}
+                  className="hover:bg-muted rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
           </div>
-
-          <div>
-            <label className="text-sm font-medium mb-1 block">Max Price</label>
-            <Input
-              type="number"
-              value={filters.maxPrice}
-              onChange={(e) =>
-                handleFilterChange("maxPrice", Number(e.target.value))
-              }
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-1 block">Brand</label>
-            <Input
-              value={filters.brand}
-              onChange={(e) => handleFilterChange("brand", e.target.value)}
-              placeholder="Filter by brand"
-            />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Error Message */}

@@ -41,10 +41,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const page = Number(searchParams.get("page") || 1);
     const limit = Number(searchParams.get("limit") || 50);
+    const category = searchParams.get("category");
 
     const query: any = {};
     if (search) {
       query.name = { $regex: search, $options: "i" };
+    }
+    if (category) {
+      query.category = category;
     }
 
     const total = await SubCategory.countDocuments(query);

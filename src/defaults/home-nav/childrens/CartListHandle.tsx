@@ -23,6 +23,7 @@ interface Product {
   image2?: string;
   images?: string[];
   price: number;
+  quantity?: number;
 }
 
 export default function CartListHandle({ products, closeSheet }: { products: Product[], closeSheet: any }) {
@@ -53,7 +54,7 @@ export default function CartListHandle({ products, closeSheet }: { products: Pro
   const calculateTotal = () => {
     return selectedProducts.reduce((total, productId) => {
       const item = products.find((item) => item.id === productId);
-      return total + (item ? item.price : 0);
+      return total + (item ? item.price * (item.quantity || 1) : 0);
     }, 0);
   };
 

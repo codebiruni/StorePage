@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useFieldArray, useWatch } from "react-hook-form";
-import { Plus, Trash2, Wand2 } from "lucide-react";
+import { Plus, Trash2, Wand2, Clock, Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -87,7 +87,11 @@ export default function PricingStep({ form }: Props) {
         shouldDirty: false,
       });
     }
-  }, [cpWatch, ppWatch, form]);
+    if (useOffers) {
+      const pct = prev > 0 && current > 0 && current < prev ? Math.round(((prev - current) / prev) * 100) : 0;
+      form.setValue("offerPercentage", pct, { shouldDirty: false });
+    }
+  }, [cpWatch, ppWatch, form, useOffers]);
 
   return (
     <div className="space-y-6">
@@ -208,7 +212,12 @@ export default function PricingStep({ form }: Props) {
                       step={1}
                       {...field}
                       value={field.value ?? 0}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? 0 : Number(e.target.value);
+                        const num = Number.isFinite(val) ? val : 0;
+                        field.onChange(num);
+                        form.setValue("quentity", num, { shouldDirty: true });
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -345,7 +354,10 @@ export default function PricingStep({ form }: Props) {
                             step="0.01"
                             {...field}
                             value={field.value ?? 0}
-                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? 0 : Number(e.target.value);
+                              field.onChange(Number.isFinite(v) ? v : 0);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -367,7 +379,10 @@ export default function PricingStep({ form }: Props) {
                             step="0.01"
                             {...field}
                             value={field.value ?? 0}
-                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? 0 : Number(e.target.value);
+                              field.onChange(Number.isFinite(v) ? v : 0);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -380,7 +395,6 @@ export default function PricingStep({ form }: Props) {
                     rules={{
                       required: "Stock is required",
                       min: 0,
-                      
                     }}
                     render={({ field }) => (
                       <FormItem>
@@ -393,7 +407,12 @@ export default function PricingStep({ form }: Props) {
                             step={1}
                             {...field}
                             value={field.value ?? 0}
-                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                            onChange={(e) => {
+                              const val = e.target.value === "" ? 0 : Number(e.target.value);
+                              const num = Number.isFinite(val) ? val : 0;
+                              field.onChange(num);
+                              form.setValue(`priceVariants.${i}.quentity`, num, { shouldDirty: true });
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -586,6 +605,11 @@ export default function PricingStep({ form }: Props) {
                           form.setValue("offerEndDate", undefined, {
                             shouldDirty: true,
                           });
+                        } else {
+                          const pct = form.getValues("generalPrice.discountPercentage") || 0;
+                          form.setValue("offerPercentage", pct, {
+                            shouldDirty: true,
+                          });
                         }
                       }}
                     />
@@ -598,38 +622,33 @@ export default function PricingStep({ form }: Props) {
 
         {useOffers && (
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="offerPercentage"
-              rules={{
-                min: { value: 0, message: "Must be positive" },
-                max: { value: 100, message: "Max 100%" },
-                
-              }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Offer %</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      max={100}
-                      {...field}
-                      value={field.value ?? 0}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="rounded-xl border border-border/80 bg-muted/40 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Tag className="h-3.5 w-3.5 text-primary" />
+                <span>Campaign Discount</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold font-mono text-primary">
+                  {form.watch("generalPrice.discountPercentage") || 0}% OFF
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  (Unified with regular discount)
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                The campaign discount is automatically unified with the product&apos;s regular price discount to prevent conflicting offer percentages.
+              </p>
+            </div>
+
             <FormField
               control={form.control}
               name="offerEndDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ends on</FormLabel>
+                  <FormLabel className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>Campaign Ends On (Optional)</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="date"
@@ -646,6 +665,9 @@ export default function PricingStep({ form }: Props) {
                       }
                     />
                   </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Optional expiry date for storefront countdown timer and special offers list.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

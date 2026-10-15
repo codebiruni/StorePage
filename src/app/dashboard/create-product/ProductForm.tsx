@@ -3,6 +3,7 @@
 import ProductWizard, {
   type ProductWizardProps,
 } from "@/app/dashboard/_shared/product-form/ProductWizard";
+import type { ProductFormData } from "@/app/dashboard/_shared/product-form/types";
 import { buildLandingPagePayload } from "@/app/dashboard/_shared/persistLanding";
 
 /**
@@ -17,8 +18,26 @@ export default function ProductForm() {
     landingValue,
   }) => {
     try {
+      const { category, subCategory, ...rest } = values as ProductFormData &
+        Record<string, unknown>;
       const payload = {
-        ...values,
+        ...rest,
+        quentity: Number(values.stock) || 0,
+        stock: Number(values.stock) || 0,
+        priceVariants: values.priceVariants?.map((v) => {
+          const qty = Number(v.stock !== undefined ? v.stock : (v as { quentity?: unknown }).quentity) || 0;
+          return {
+            ...v,
+            stock: qty,
+            quentity: qty,
+          };
+        }),
+        ...(typeof category === "string" && category.trim()
+          ? { category }
+          : {}),
+        ...(typeof subCategory === "string" && subCategory.trim()
+          ? { subCategory }
+          : {}),
         offerEndDate: values.offerEndDate
           ? new Date(values.offerEndDate).toISOString()
           : undefined,

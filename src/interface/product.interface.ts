@@ -80,12 +80,16 @@ export interface IProduct {
   images: string[];
 
   priceVariants: {
+    _id?: string;
     regularPrice: number;
     salePrice?: number;
-    quantity: number;
+    quentity?: number;
+    quantity?: number;
+    stock?: number;
     sku?: string;
   }[];
   quentity: number;
+  stock?: number;
   quickOverview: string[];
 
   specifications: {

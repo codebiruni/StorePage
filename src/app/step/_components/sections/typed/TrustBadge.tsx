@@ -15,7 +15,7 @@ export default function TrustBadgeSection({
   if (!data.image) return null;
   return (
     <section className="lp-section" data-tone="canvas">
-      <div className="lp-container" data-width="narrow">
+      <div className="lp-container">
         <div className="flex flex-col items-center gap-4 text-center">
           <div
             className="overflow-hidden rounded-lg border border-dashed border-black/10"

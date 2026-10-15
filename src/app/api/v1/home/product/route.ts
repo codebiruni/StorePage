@@ -9,15 +9,14 @@ import { NextRequest, NextResponse } from "next/server";
 // (create/update/delete in /api/v1/product/* and /api/v1/product/[id]).
 export const HOME_PRODUCTS_TAG = "home-products";
 
-// Wrapped aggregator: 12 random non-deleted products. Cached for 10 minutes
-// so the home page hits MongoDB at most once per cache window per region,
-// and invalidated instantly on any product mutation.
+// Wrapped aggregator: random non-deleted products up to requested limit.
+// Cached so home page hits MongoDB minimally, invalidated instantly on mutation.
 const fetchHomeProducts = unstable_cache(
-  async () => {
+  async (limit: number = 36) => {
     await connectDb();
     return Product.aggregate([
       { $match: { isDeleted: false } },
-      { $sample: { size: 12 } },
+      { $sample: { size: limit } },
       {
         $project: {
           name: 1,
@@ -33,24 +32,29 @@ const fetchHomeProducts = unstable_cache(
       },
     ]);
   },
-  ["home-products-v1"],
-  { revalidate: 600, tags: [HOME_PRODUCTS_TAG] },
+  ["home-products-v2"],
+  { revalidate: 300, tags: [HOME_PRODUCTS_TAG] },
 );
 
 export async function GET(request: NextRequest) {
   try {
-    const products = await fetchHomeProducts();
+    const { searchParams } = new URL(request.url);
+    const limitParam = Number(searchParams.get("limit"));
+    const limit = Number.isFinite(limitParam) && limitParam > 0
+      ? Math.min(limitParam, 100)
+      : 36;
+
+    const products = await fetchHomeProducts(limit);
 
     return NextResponse.json(
       {
         status: "success",
         products,
+        total: products.length,
       },
       {
         status: 200,
         headers: {
-          // CDN-friendly: edge (Cloudflare/Vercel) and browser can cache for 60s,
-          // then serve stale for up to 5 min while revalidating in background.
           "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
         },
       },

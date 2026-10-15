@@ -84,6 +84,7 @@ const ProductSchema: Schema = new Schema<IProduct>(
         regularPrice: { type: Number, default: 0 },
         salePrice: { type: Number, default: 0 },
         quentity: { type: Number, default: 0 },
+        stock: { type: Number, default: 0 },
         sku: { type: String, default: "" },
       },
     ],
@@ -107,6 +108,7 @@ const ProductSchema: Schema = new Schema<IProduct>(
     ],
 
     quentity: { type: Number, default: 0 },
+    stock: { type: Number, default: 0 },
     reviews: [
       {
         type: Schema.Types.ObjectId,

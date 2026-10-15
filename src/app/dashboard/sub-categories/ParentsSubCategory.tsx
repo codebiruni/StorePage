@@ -34,7 +34,10 @@ export default function ParentsSubCategory() {
               <DialogHeader>
                 <DialogTitle>Create New Sub Category</DialogTitle>
               </DialogHeader>
-              <AddSubCategoryForm />
+              <AddSubCategoryForm
+                onSuccess={() => setIsSubDialogOpen(false)}
+                onCancel={() => setIsSubDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         }

@@ -71,13 +71,45 @@ export async function PUT(
       const $set: Record<string, unknown> = {};
       if (name !== undefined) $set.name = name;
       if (images !== undefined) $set.images = images;
-      if (priceVariants !== undefined) $set.priceVariants = priceVariants;
+      if (priceVariants !== undefined) {
+        $set.priceVariants = Array.isArray(priceVariants)
+          ? priceVariants.map((v: any) => {
+              const qty =
+                Number(
+                  v.stock !== undefined
+                    ? v.stock
+                    : v.quentity !== undefined
+                    ? v.quentity
+                    : 0
+                ) || 0;
+              return {
+                ...v,
+                stock: qty,
+                quentity: qty,
+                regularPrice: Number(v.regularPrice) || 0,
+                salePrice: Number(v.salePrice) || 0,
+                sku: String(v.sku || ""),
+              };
+            })
+          : [];
+      }
       if (quickOverview !== undefined) $set.quickOverview = quickOverview;
       if (specifications !== undefined) $set.specifications = specifications;
       if (details !== undefined) $set.details = details;
       if (questionsAndAnswers !== undefined)
         $set.questionsAndAnswers = questionsAndAnswers;
-      if (quentity !== undefined) $set.quentity = quentity;
+      if (quentity !== undefined || payload?.stock !== undefined) {
+        const topStock =
+          Number(
+            quentity !== undefined
+              ? quentity
+              : payload.stock !== undefined
+              ? payload.stock
+              : 0
+          ) || 0;
+        $set.quentity = topStock;
+        $set.stock = topStock;
+      }
       if (reviews !== undefined) $set.reviews = reviews;
       if (totalReviewCount !== undefined)
         $set.totalReviewCount = totalReviewCount;

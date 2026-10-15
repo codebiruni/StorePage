@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Edit, Trash2, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Trash2, Star, Clock, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -229,8 +229,20 @@ export default function ProductDetails() {
               </>
             )}
             {product.hasOffer && (
-              <div className="absolute top-2 left-2 bg-destructive text-destructive-foreground px-2 py-1 rounded-md text-sm font-medium">
-                {product.offerPercentage}% OFF
+              <div
+                className={`absolute top-2 left-2 ${
+                  product.offerEndDate && new Date(product.offerEndDate).getTime() < Date.now()
+                    ? "bg-muted-foreground text-background"
+                    : "bg-primary text-primary-foreground"
+                } px-2.5 py-1 rounded-md text-xs font-semibold shadow-xs flex items-center gap-1.5`}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                Special Offer{" "}
+                {product.offerEndDate && new Date(product.offerEndDate).getTime() < Date.now()
+                  ? "(Expired)"
+                  : product.generalPrice?.discountPercentage
+                  ? `(-${product.generalPrice.discountPercentage}%)`
+                  : ""}
               </div>
             )}
           </div>
@@ -318,10 +330,16 @@ export default function ProductDetails() {
               )}
             </div>
 
-            {product.hasOffer && (
-              <div className="text-sm text-muted-foreground">
-                Special offer ends{" "}
-                {new Date(product.offerEndDate).toLocaleDateString()}
+            {product.hasOffer && product.offerEndDate && (
+              <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                <span>
+                  Special offer ends{" "}
+                  {new Date(product.offerEndDate).toLocaleDateString()}
+                  {new Date(product.offerEndDate).getTime() < Date.now() && (
+                    <span className="ml-1.5 text-destructive font-semibold">(Expired)</span>
+                  )}
+                </span>
               </div>
             )}
           </div>

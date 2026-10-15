@@ -20,6 +20,11 @@ export default function ListProductCard({ product }: { product: any }) {
           <h3 className="font-medium text-sm line-clamp-2">{product.name}</h3>
           <p className="text-primary font-semibold mt-1">
             ৳{(product.price ?? 0).toLocaleString()}
+            {product.quantity && product.quantity > 1 ? (
+              <span className="text-xs text-muted-foreground ml-1.5 font-normal">
+                × {product.quantity}
+              </span>
+            ) : null}
           </p>
         </div>
       </div>

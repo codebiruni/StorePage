@@ -133,7 +133,7 @@ export const env: EnvShape = {
   get JWT_REFRESH_SECRET() {
     return requireString("JWT_REFRESH_SECRET");
   },
-  JWT_ACCESS_EXPIRES_IN: readString("JWT_ACCESS_EXPIRES_IN", "5h"),
+  JWT_ACCESS_EXPIRES_IN: readString("JWT_ACCESS_EXPIRES_IN", "7d"),
   JWT_REFRESH_EXPIRES_IN: readString("JWT_REFRESH_EXPIRES_IN", "90d"),
 
   // Email

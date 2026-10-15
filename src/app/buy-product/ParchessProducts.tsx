@@ -10,6 +10,7 @@ import EmptyCart from './EmptyCart'
 import OrderSummary from './OrderSummery'
 import ShippingForm from './ShippingForm'
 import { useOrderDraft } from '@/hooks/useOrderDraft'
+import { ShieldCheck, Banknote } from 'lucide-react'
 
 interface OrderFormData {
   name: string
@@ -49,11 +50,15 @@ export default function PurchaseProducts() {
   const [loading, setLoading] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const router = useRouter()
+  const { config: siteConfig } = useSiteConfig()
+  const insideCharge = siteConfig?.deliveryCharge?.insideDhaka ?? 70
+  const outsideCharge = siteConfig?.deliveryCharge?.outsideDhaka ?? 90
+
   const [formData, setFormData] = useState<OrderFormData>({
     name: '',
     number: '',
-    district: '',
-    upazilla: '',
+    district: 'বাহিরে',
+    upazilla: 'বাহিরে',
     union: '', // Used for Village / Ward / Area Address
     note: '',
     paymentMethod: 'cash-on-delivery'
@@ -90,12 +95,11 @@ export default function PurchaseProducts() {
   const subtotal = itemsWithQuantity.reduce((sum: number, item: PurchaseItem) =>
     sum + (item.price * item.quantity), 0)
 
-  const { config: siteConfig } = useSiteConfig()
   const deliveryCharge = formData.district
     ? (/dhaka|ঢাকা/i.test(formData.district)
-      ? siteConfig?.deliveryCharge?.insideDhaka ?? 70
-      : siteConfig?.deliveryCharge?.outsideDhaka ?? 90)
-    : 0
+      ? insideCharge
+      : outsideCharge)
+    : outsideCharge
   const discount = 0
   const grandTotal = subtotal + deliveryCharge - discount
 
@@ -218,7 +222,7 @@ export default function PurchaseProducts() {
             quantity: item.quantity
           }))
         }
-        console.log('🔥 PURCHASE PAYLOAD:', JSON.stringify(payload))
+        console.log('[PURCHASE PAYLOAD]:', JSON.stringify(payload))
         window.fbq('track', 'Purchase', payload, { eventID: eventId })
         return
       }
@@ -360,33 +364,65 @@ export default function PurchaseProducts() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <OrderSummary
-          itemsWithQuantity={itemsWithQuantity}
-          subtotal={subtotal}
-          deliveryCharge={deliveryCharge}
-          discount={discount}
-          grandTotal={grandTotal}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-        />
+    <div className="container mx-auto px-4 py-6 max-w-6xl">
+      {/* Checkout Page Header */}
+      <div className="mb-6 pb-4 border-b border-border/60">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+              চেকআউট
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              অর্ডারটি সম্পন্ন করতে নিচের তথ্যগুলো পূরণ করুন
+            </p>
+          </div>
 
-        <ShippingForm
-          formData={formData}
-          onInputChange={handleInputChange}
-          deliveryCharge={deliveryCharge}
-          grandTotal={grandTotal}
-          loading={loading}
-          onSubmitOrder={handleSubmitOrder}
-          isFormValid={
-            !!formData.name &&
-            !!formData.number &&
-            !!formData.union &&
-            !!formData.district &&
-            !!formData.upazilla
-          }
-        />
+          {/* Trust badges row */}
+          <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary font-medium">
+              <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+              নিরাপদ চেকআউট
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-foreground font-medium">
+              <Banknote className="h-4 w-4 text-muted-foreground shrink-0" />
+              ক্যাশ অন ডেলিভারি
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* Shipping details (7 cols on desktop) */}
+        <div className="lg:col-span-7 order-2 lg:order-1">
+          <ShippingForm
+            formData={formData}
+            onInputChange={handleInputChange}
+            deliveryCharge={deliveryCharge}
+            grandTotal={grandTotal}
+            loading={loading}
+            onSubmitOrder={handleSubmitOrder}
+            isFormValid={
+              !!formData.name.trim() &&
+              !!formData.number.trim() &&
+              !!formData.union.trim()
+            }
+            insideCharge={insideCharge}
+            outsideCharge={outsideCharge}
+          />
+        </div>
+
+        {/* Order summary (5 cols on desktop, sticky) */}
+        <div className="lg:col-span-5 order-1 lg:order-2 lg:sticky lg:top-28">
+          <OrderSummary
+            itemsWithQuantity={itemsWithQuantity}
+            subtotal={subtotal}
+            deliveryCharge={deliveryCharge}
+            discount={discount}
+            grandTotal={grandTotal}
+            onQuantityChange={handleQuantityChange}
+            onRemoveItem={handleRemoveItem}
+          />
+        </div>
       </div>
     </div>
   )

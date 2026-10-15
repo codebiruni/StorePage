@@ -20,6 +20,7 @@ export interface PriceVariant {
   regularPrice: number;
   salePrice?: number;
   stock: number; // mirrors the API field "quentity" but renamed in the UI
+  quentity?: number;
   sku: string;
 }
 
@@ -55,6 +56,7 @@ export interface ProductFormData {
 
   /** Top-level stock for the single product (used when no variants). */
   stock: number;
+  quentity?: number;
 
   /** Optional variant rows; hidden behind a toggle in the UI. */
   priceVariants: PriceVariant[];

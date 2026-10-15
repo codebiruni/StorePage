@@ -341,8 +341,35 @@ export default function ProductWizard(props: ProductWizardProps) {
         ...values
       } = raw as ProductFormData & Record<string, unknown>;
 
+      const sanitizedValues: ProductFormData = {
+        ...(values as ProductFormData),
+        stock: Number(values.stock) || 0,
+        quentity: Number(values.stock) || 0,
+        priceVariants: ((values as ProductFormData).priceVariants || []).map((v) => {
+          const rawQty = (v as { stock?: unknown; quentity?: unknown }).stock !== undefined
+            ? (v as { stock?: unknown }).stock
+            : (v as { quentity?: unknown }).quentity;
+          const num = typeof rawQty === "number" ? rawQty : Number(rawQty);
+          const qty = Number.isFinite(num) ? num : 0;
+          return {
+            ...v,
+            stock: qty,
+            quentity: qty,
+            regularPrice: Number(v.regularPrice) || 0,
+            salePrice: Number(v.salePrice) || 0,
+            sku: String(v.sku || ""),
+          };
+        }),
+        specifications: ((values as ProductFormData).specifications || []).filter(
+          (s) => s && s.key?.trim() && s.value?.trim(),
+        ),
+        quickOverview: ((values as ProductFormData).quickOverview || []).filter(
+          (q) => typeof q === "string" && q.trim().length > 0,
+        ),
+      };
+
       const result = await onSave({
-        values: values as ProductFormData,
+        values: sanitizedValues,
         landingValue,
         mode,
         productId,

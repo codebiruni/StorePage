@@ -18,7 +18,7 @@ export default function FormTitleSection({
 }) {
   return (
     <section className="lp-section py-8 text-center" data-tone="canvas">
-      <div className="lp-container lp-container--narrow">
+      <div className="lp-container">
         <h2
           className="lp-headline"
           data-size="xl"

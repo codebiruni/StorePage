@@ -16,7 +16,7 @@ function fmt(n: number): string {
 export default function PricingSection({ data }: { data: PricingSectionData }) {
   return (
     <section className="lp-section" data-tone="sunken">
-      <div className="lp-container" data-width="narrow">
+      <div className="lp-container">
         <div className="rounded-2xl border border-black/5 bg-white p-8 text-center shadow-sm text-neutral-800">
           <p
             className="text-sm font-medium uppercase tracking-wide"

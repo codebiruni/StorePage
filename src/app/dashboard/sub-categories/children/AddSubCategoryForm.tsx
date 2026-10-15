@@ -38,10 +38,22 @@ interface ApiResponse<T> {
   };
 }
 
-export default function AddSubCategoryForm() {
+export interface AddSubCategoryFormProps {
+  initialName?: string;
+  initialCategoryId?: string;
+  onSuccess?: (createdSubCategory: any) => void;
+  onCancel?: () => void;
+}
+
+export default function AddSubCategoryForm({
+  initialName = "",
+  initialCategoryId = "",
+  onSuccess,
+  onCancel,
+}: AddSubCategoryFormProps = {}) {
   const [formData, setFormData] = useState<Omit<ISubCategory, "id">>({
-    name: "",
-    category: "",
+    name: initialName,
+    category: initialCategoryId,
     note: "",
     isDeleted: false,
   });
@@ -138,11 +150,15 @@ export default function AddSubCategoryForm() {
 
       setFormData({
         name: "",
-        category: "",
+        category: initialCategoryId || "",
         note: "",
         isDeleted: false,
       });
       setCategorySearch("");
+
+      if (onSuccess && data.data) {
+        onSuccess(data.data);
+      }
     } catch (error: unknown) {
       console.error("Error creating sub-category:", error);
       toast.error("Failed to create sub-category", {
@@ -155,7 +171,7 @@ export default function AddSubCategoryForm() {
   };
 
   return (
-    <Card className="w-full border-0 shadow-none mb-0 pb-0 max-w-2xl mx-auto">
+    <Card className="w-full border-0 shadow-none mb-0 pb-0 mx-auto">
       <CardContent className="border-0 shadow-none p-0">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Sub-category Name */}
@@ -252,21 +268,34 @@ export default function AddSubCategoryForm() {
             />
           </div>
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            disabled={isSubmitting || isLoadingCategories}
-            className="w-full"
-          >
-            {isSubmitting ? (
-              <span className="flex items-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adding Sub-category...
-              </span>
-            ) : (
-              "Add Sub-category"
+          {/* Action Buttons */}
+          <div className="space-y-2 pt-2">
+            <Button
+              type="submit"
+              disabled={isSubmitting || isLoadingCategories}
+              className="w-full"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding Sub-category...
+                </span>
+              ) : (
+                "Add Sub-category"
+              )}
+            </Button>
+            {onCancel && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                onClick={onCancel}
+                className="w-full"
+              >
+                Cancel
+              </Button>
             )}
-          </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

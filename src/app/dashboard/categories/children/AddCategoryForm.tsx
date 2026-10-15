@@ -18,9 +18,19 @@ interface ApiResponse {
   error?: string;
 }
 
-export default function AddCategoryForm() {
+export interface AddCategoryFormProps {
+  initialName?: string;
+  onSuccess?: (createdCategory: any) => void;
+  onCancel?: () => void;
+}
+
+export default function AddCategoryForm({
+  initialName = "",
+  onSuccess,
+  onCancel,
+}: AddCategoryFormProps = {}) {
   const [formData, setFormData] = useState<Omit<ICategory, "id">>({
-    name: "",
+    name: initialName,
     image: "",
     note: "",
     isDeleted: false,
@@ -75,6 +85,10 @@ export default function AddCategoryForm() {
         note: "",
         isDeleted: false,
       });
+
+      if (onSuccess && data.data) {
+        onSuccess(data.data);
+      }
     } catch (error: unknown) {
       console.error("Error creating category:", error);
       toast.error("Failed to create category", {
@@ -87,7 +101,7 @@ export default function AddCategoryForm() {
   };
 
   return (
-    <Card className="w-full border-0 shadow-none mb-0 pb-0 max-w-2xl mx-auto">
+    <Card className="w-full border-0 shadow-none mb-0 pb-0 mx-auto">
       <CardContent className="border-0 shadow-none p-0">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -137,14 +151,28 @@ export default function AddCategoryForm() {
             />
           </div>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full"
-            aria-disabled={isSubmitting}
-          >
-            {isSubmitting ? "Adding Category..." : "Add Category"}
-          </Button>
+          {/* Action Buttons */}
+          <div className="space-y-2 pt-2">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full"
+              aria-disabled={isSubmitting}
+            >
+              {isSubmitting ? "Adding Category..." : "Add Category"}
+            </Button>
+            {onCancel && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                onClick={onCancel}
+                className="w-full"
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>

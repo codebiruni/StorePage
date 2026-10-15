@@ -12,7 +12,7 @@ export default function FaqSection({ data }: { data: FaqSectionData }) {
   if (items.length === 0) return null;
   return (
     <section className="lp-section" data-tone="canvas">
-      <div className="lp-container" data-width="narrow">
+      <div className="lp-container">
         <h2
           className="lp-headline mb-6"
           data-size="xl"

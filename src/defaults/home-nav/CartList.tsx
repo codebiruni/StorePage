@@ -14,7 +14,10 @@ import CartListHandle from "./childrens/CartListHandle";
 
 export default function CartList() {
   const { cartData } = useContextData();
-  const products = cartData.map((item) => item.product);
+  const products = cartData.map((item) => ({
+    ...item.product,
+    quantity: item.quantity,
+  }));
   const [open, setOpen] = useState(false); // 👈 control sheet open/close
 
   return (

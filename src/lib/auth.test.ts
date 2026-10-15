@@ -174,6 +174,20 @@ describe("lib/auth › auth", () => {
         );
     });
 
+    it("silently refreshes accessToken when refreshToken is present and valid", async () => {
+        get.mockImplementation((name: string) => {
+            if (name === "accessToken") return undefined;
+            if (name === "refreshToken") return { value: "valid-refresh-token" };
+            return undefined;
+        });
+        process.env.JWT_REFRESH_SECRET = "test-refresh-secret";
+        verify.mockReturnValue({ email: "a@b.c", role: USER_ROLE.ADMIN });
+        findOne.mockResolvedValue(activeUser);
+
+        const result = await auth();
+        expect(result.user).toBe(activeUser);
+    });
+
     it("exposes every role the app can gate on", () => {
         expect(USER_ROLE).toEqual({
             ADMIN: "admin",

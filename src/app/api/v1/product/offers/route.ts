@@ -21,17 +21,32 @@ export async function GET(request: NextRequest) {
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;
 
-    // Build search query
-    const searchQuery: any = { isDeleted: false, hasOffer: true };
+    // Build search query - only include active offers (not expired)
+    const now = new Date();
+    const searchQuery: any = {
+      isDeleted: false,
+      hasOffer: true,
+      $and: [
+        {
+          $or: [
+            { offerEndDate: null },
+            { offerEndDate: { $exists: false } },
+            { offerEndDate: { $gt: now } },
+          ],
+        },
+      ],
+    };
 
     // Add search term filter
     if (searchTerm) {
-      searchQuery.$or = [
-        { name: { $regex: searchTerm, $options: "i" } },
-        { tags: { $regex: searchTerm, $options: "i" } },
-        { brand: { $regex: searchTerm, $options: "i" } },
-        { "specifications.value": { $regex: searchTerm, $options: "i" } },
-      ];
+      searchQuery.$and.push({
+        $or: [
+          { name: { $regex: searchTerm, $options: "i" } },
+          { tags: { $regex: searchTerm, $options: "i" } },
+          { brand: { $regex: searchTerm, $options: "i" } },
+          { "specifications.value": { $regex: searchTerm, $options: "i" } },
+        ],
+      });
     }
 
     // Add price range filter
