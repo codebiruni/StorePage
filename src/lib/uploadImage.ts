@@ -28,16 +28,38 @@ export interface UploadResult {
  * Throws on any failure so callers can handle per-file errors.
  */
 export async function uploadImageToR2(file: File): Promise<UploadResult> {
-    const webp = await compressImage(file);
+    let fileToUpload: File;
+    try {
+        fileToUpload = await compressImage(file);
+    } catch (err) {
+        console.warn("[uploadImageToR2] Compression failed, falling back to original file:", err);
+        fileToUpload = file;
+    }
 
     const formData = new FormData();
-    formData.append("file", webp, webp.name);
+    formData.append("file", fileToUpload, fileToUpload.name);
 
-    const res = await fetch("/api/upload-image", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-    });
+    async function sendRequest(): Promise<Response> {
+        return fetch("/api/upload-image", {
+            method: "POST",
+            credentials: "include",
+            body: formData,
+        });
+    }
+
+    let res: Response;
+    try {
+        res = await sendRequest();
+    } catch (networkErr) {
+        // Retry once on network failure
+        console.warn("[uploadImageToR2] First upload attempt encountered network error, retrying...", networkErr);
+        try {
+            res = await sendRequest();
+        } catch (retryErr) {
+            throw new Error("Network connection error while uploading image. Please check your connection.");
+        }
+    }
+
     if (!res.ok) {
         let msg = `Failed to upload image (${res.status})`;
         try {
@@ -55,7 +77,7 @@ export async function uploadImageToR2(file: File): Promise<UploadResult> {
         throw new Error("Upload response was missing fields");
     }
 
-    return { publicUrl, key, fileName: webp.name };
+    return { publicUrl, key, fileName: fileToUpload.name };
 }
 
 /**

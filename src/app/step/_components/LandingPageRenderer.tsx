@@ -89,11 +89,13 @@ export default function LandingPageRenderer({ config, product }: Props) {
             anchor target so the typed Hero / Header CTAs can scroll to it. */}
         <span id="order" />
         {formTitleSection ? <SectionSwitch section={formTitleSection} /> : null}
-        <OrderFormSection
-          product={product}
-          headingText={formTitleSection ? "" : formHeading}
-          note={formTitleSection ? "" : (formSubheading || product.landingPage?.checkoutNote)}
-        />
+        <div id="section-order" data-section-id="order">
+          <OrderFormSection
+            product={product}
+            headingText={formTitleSection ? "" : formHeading}
+            note={formTitleSection ? "" : (formSubheading || product.landingPage?.checkoutNote)}
+          />
+        </div>
         {footerSection ? <SectionSwitch section={footerSection} /> : null}
       </div>
     </ThemeProvider>
@@ -173,12 +175,25 @@ function SectionSwitch({
         wrapperStyle.paddingBottom = "6rem";
       }
       return (
-        <div style={wrapperStyle} className="lp-section-wrapper">
+        <div
+          id={`section-${section.id}`}
+          data-section-id={section.id}
+          style={wrapperStyle}
+          className="lp-section-wrapper"
+        >
           {content}
         </div>
       );
     }
   }
 
-  return content;
+  return (
+    <div
+      id={`section-${section.id}`}
+      data-section-id={section.id}
+      className="lp-section-wrapper"
+    >
+      {content}
+    </div>
+  );
 }

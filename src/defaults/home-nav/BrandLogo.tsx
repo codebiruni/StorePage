@@ -117,7 +117,7 @@ export default function BrandLogo({
       <span className="text-[15px] sm:text-base font-extrabold tracking-tight text-foreground">
         {brandName}
       </span>
-      <span className="mt-0.5 text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+      <span className="hidden sm:inline-block mt-0.5 text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
         Shop with confidence
       </span>
     </span>

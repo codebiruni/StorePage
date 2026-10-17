@@ -171,16 +171,16 @@ export default function CategoryTable() {
         <Button variant="secondary">Total Data {totalCategories}</Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableCaption>A list of your product categories.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="min-w-[180px]">Name</TableHead>
+              <TableHead className="min-w-[200px]">Description</TableHead>
+              <TableHead className="min-w-[120px]">Created At</TableHead>
+              <TableHead className="min-w-[100px]">Status</TableHead>
+              <TableHead className="text-right min-w-[80px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -196,19 +196,21 @@ export default function CategoryTable() {
               filteredCategories.map((category) => (
                 <TableRow key={category._id}>
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <Image
                         src={category.image || "/placeholder-image.jpg"}
                         alt={category.name}
                         width={40}
                         height={40}
-                        className="rounded-md object-cover"
+                        className="rounded-md object-cover shrink-0"
                       />
-                      {category.name}
+                      <span className="font-semibold text-foreground line-clamp-1">{category.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-gray-600 line-clamp-1">
-                    {category.note || "No description"}
+                  <TableCell className="text-muted-foreground">
+                    <span className="line-clamp-2 max-w-xs block text-xs sm:text-sm">
+                      {category.note || "No description"}
+                    </span>
                   </TableCell>
                   <TableCell>
                     {new Date(category.createdAt).toLocaleDateString()}
@@ -223,21 +225,21 @@ export default function CategoryTable() {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
                           <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="z-[1000]">
                         <DropdownMenuItem
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 cursor-pointer"
                           onClick={() => handleEdit(category._id)}
                         >
                           <Edit className="h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="flex items-center gap-2 text-red-600"
+                          className="flex items-center gap-2 text-red-600 cursor-pointer"
                           onClick={() =>
                             handleDeleteClick(category._id, category.isDeleted)
                           }
@@ -262,8 +264,8 @@ export default function CategoryTable() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+        <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
           Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
           {Math.min(currentPage * itemsPerPage, totalCategories)} of{" "}
           {totalCategories} categories

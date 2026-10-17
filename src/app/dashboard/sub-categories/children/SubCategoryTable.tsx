@@ -182,17 +182,17 @@ export default function SubCategoryTable() {
         <Button variant="secondary">Total Data {totalSubCategories}</Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableCaption>A list of your product sub-categories.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="min-w-[180px]">Name</TableHead>
+              <TableHead className="min-w-[150px]">Category</TableHead>
+              <TableHead className="min-w-[200px]">Description</TableHead>
+              <TableHead className="min-w-[120px]">Created At</TableHead>
+              <TableHead className="min-w-[100px]">Status</TableHead>
+              <TableHead className="text-right min-w-[80px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -208,11 +208,15 @@ export default function SubCategoryTable() {
               filteredSubCategories.map((subCategory) => (
                 <TableRow key={subCategory._id}>
                   <TableCell className="font-medium">
-                    {subCategory.name}
+                    <span className="font-semibold text-foreground line-clamp-1">{subCategory.name}</span>
                   </TableCell>
-                  <TableCell>{subCategory.category.name}</TableCell>
-                  <TableCell className="text-gray-600 line-clamp-1">
-                    {subCategory.note || "No description"}
+                  <TableCell>
+                    <span className="text-xs sm:text-sm font-medium">{subCategory.category.name}</span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <span className="line-clamp-2 max-w-xs block text-xs sm:text-sm">
+                      {subCategory.note || "No description"}
+                    </span>
                   </TableCell>
                   <TableCell>
                     {new Date(subCategory.createdAt).toLocaleDateString()}
@@ -229,21 +233,21 @@ export default function SubCategoryTable() {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
                           <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="z-[1000]">
                         <DropdownMenuItem
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 cursor-pointer"
                           onClick={() => handleEdit(subCategory._id)}
                         >
                           <Edit className="h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="flex items-center gap-2 text-red-600"
+                          className="flex items-center gap-2 text-red-600 cursor-pointer"
                           onClick={() =>
                             handleDeleteClick(
                               subCategory._id,
@@ -271,8 +275,8 @@ export default function SubCategoryTable() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+        <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
           Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
           {Math.min(currentPage * itemsPerPage, totalSubCategories)} of{" "}
           {totalSubCategories} sub-categories

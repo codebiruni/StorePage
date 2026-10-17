@@ -17,10 +17,11 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Copy, ExternalLink, Loader2 } from "lucide-react";
+import { Copy, ExternalLink, Link2, Link2Off, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -246,6 +247,14 @@ export default function LandingPageEditor({
     }
   }, [productId, value]);
 
+  // Active section tracked across Builder and Preview for synchronized navigation
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+  const [isSyncScrollEnabled, setIsSyncScrollEnabled] = useState(true);
+
+  const builderScrollRef = useRef<HTMLDivElement | null>(null);
+  const ignoreScrollUntilRef = useRef<number>(0);
+
   // Live preview iframe — mirrors the actual public page at /step/[id].
   // We hold a ref to its contentWindow so we can postMessage the current
   // draft on every edit. The iframe's StepPreviewBridge listens and
@@ -267,14 +276,74 @@ export default function LandingPageEditor({
     if (typeof window === "undefined") return;
     function onMessage(event: MessageEvent<unknown>) {
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
-      const data = event.data as { type?: unknown } | null;
-      if (data?.type === "landing-preview-ready") {
+      const data = event.data as { type?: unknown; sectionId?: unknown } | null;
+      if (!data) return;
+
+      if (data.type === "landing-preview-ready") {
         flushDraft();
+        return;
+      }
+
+      // Synchronize scroll: When the user scrolls in the preview, scroll the builder to match
+      // Note: Disabled on mobile view (< 1024px) to prevent back-and-forth viewport jumping
+      if (data.type === "preview-section-in-view" && typeof data.sectionId === "string") {
+        if (!isSyncScrollEnabled) return;
+        if (typeof window !== "undefined" && window.innerWidth < 1024) return;
+        if (Date.now() < ignoreScrollUntilRef.current) return;
+
+        const targetSectionId = data.sectionId;
+        setActiveSectionId(targetSectionId);
+
+        const container = builderScrollRef.current;
+        const el = document.getElementById(
+          targetSectionId === "theme"
+            ? "builder-section-theme"
+            : `builder-section-${targetSectionId}`
+        );
+        if (el && container) {
+          ignoreScrollUntilRef.current = Date.now() + 600;
+          const containerRect = container.getBoundingClientRect();
+          const elRect = el.getBoundingClientRect();
+          const relativeTop = elRect.top - containerRect.top + container.scrollTop;
+          container.scrollTo({
+            top: Math.max(0, relativeTop - 16),
+            behavior: "smooth",
+          });
+        }
+        return;
+      }
+
+      // When the user clicks on a section in the preview, scroll and open it in the builder
+      // Note: Disabled on mobile view (< 1024px)
+      if (data.type === "preview-section-clicked" && typeof data.sectionId === "string") {
+        if (typeof window !== "undefined" && window.innerWidth < 1024) return;
+
+        const targetSectionId = data.sectionId;
+        setActiveSectionId(targetSectionId);
+        setOpenSectionId(targetSectionId);
+
+        const container = builderScrollRef.current;
+        const el = document.getElementById(
+          targetSectionId === "theme"
+            ? "builder-section-theme"
+            : `builder-section-${targetSectionId}`
+        );
+        if (el && container) {
+          ignoreScrollUntilRef.current = Date.now() + 600;
+          const containerRect = container.getBoundingClientRect();
+          const elRect = el.getBoundingClientRect();
+          const relativeTop = elRect.top - containerRect.top + container.scrollTop;
+          container.scrollTo({
+            top: Math.max(0, relativeTop - 16),
+            behavior: "smooth",
+          });
+        }
+        return;
       }
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [productId]);
+  }, [productId, isSyncScrollEnabled]);
 
   function flushDraft(directFlat?: FlatLandingPage) {
     const win = iframeRef.current?.contentWindow;
@@ -305,6 +374,68 @@ export default function LandingPageEditor({
     flushDraft(flat as unknown as FlatLandingPage);
   }
 
+  // Scroll preview to a specific section when selected in the builder (desktop only)
+  function scrollToPreview(sectionId: string) {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
+    setActiveSectionId(sectionId);
+    if (!iframeRef.current?.contentWindow) return;
+    ignoreScrollUntilRef.current = Date.now() + 800;
+    try {
+      iframeRef.current.contentWindow.postMessage(
+        { type: "scroll-to-preview-section", sectionId },
+        "*"
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Handle builder container scroll to sync preview position (desktop only)
+  function handleBuilderScroll() {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
+    if (!isSyncScrollEnabled) return;
+    if (Date.now() < ignoreScrollUntilRef.current) return;
+    const container = builderScrollRef.current;
+    if (!container || !iframeRef.current?.contentWindow) return;
+
+    const sections = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-builder-section-id]")
+    );
+    if (sections.length === 0) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const anchorY = containerRect.top + containerRect.height * 0.3;
+
+    let closestId: string | null = null;
+    let minDistance = Infinity;
+
+    for (const el of sections) {
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= anchorY && rect.bottom >= anchorY) {
+        closestId = el.getAttribute("data-builder-section-id");
+        break;
+      }
+      const dist = Math.abs(rect.top - anchorY);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestId = el.getAttribute("data-builder-section-id");
+      }
+    }
+
+    if (closestId && closestId !== activeSectionId) {
+      setActiveSectionId(closestId);
+      ignoreScrollUntilRef.current = Date.now() + 600;
+      try {
+        iframeRef.current.contentWindow.postMessage(
+          { type: "scroll-to-preview-section", sectionId: closestId },
+          "*"
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
   const landingUrl = productId ? `${origin}/step/${productId}` : "";
@@ -326,15 +457,14 @@ export default function LandingPageEditor({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card className="border shadow-sm">
+      <CardHeader className="pb-3 border-b border-black/5 bg-neutral-50/50">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle>Landing Page Builder</CardTitle>
-            <CardDescription>
-              Edit sections on the left, the public page previews live on
-              the right. Saved at{" "}
-              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+            <CardTitle className="text-base sm:text-lg">Landing Page Builder</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Edit sections on the left, preview live on the right. Both sides scroll and sync together. Saved at{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
                 /step/{productId ?? "{productId}"}
               </code>
             </CardDescription>
@@ -362,44 +492,97 @@ export default function LandingPageEditor({
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {/* Editor pane */}
-          <div className="rounded-lg bg-white p-3">
-            <SectionEditorPanel value={config} onChange={handleConfigChange} />
+      <CardContent className="p-3 sm:p-5">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:h-[calc(100vh-14rem)] lg:min-h-[680px] items-stretch">
+          {/* Builder / Editor pane: scrollable */}
+          <div className="flex flex-col rounded-xl border border-black/10 bg-white shadow-sm overflow-hidden lg:h-full">
+            <div className="flex items-center justify-between border-b border-black/5 bg-neutral-50/80 px-3.5 py-2.5 text-xs font-medium text-black/70 flex-none">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-neutral-800">Builder Sections</span>
+                <span className="text-black/40">|</span>
+                <span className="text-black/50 text-[11px]">
+                  {config.sections.length} sections
+                </span>
+              </div>
+              <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                Scroll or select a section to preview
+              </span>
+            </div>
+
+            <div
+              ref={builderScrollRef}
+              onScroll={handleBuilderScroll}
+              className="flex-1 overflow-y-auto p-4 custom-scrollbar scroll-smooth space-y-6"
+            >
+              <SectionEditorPanel
+                value={config}
+                onChange={handleConfigChange}
+                activeSectionId={activeSectionId}
+                onSectionSelect={scrollToPreview}
+                openId={openSectionId}
+                onOpenIdChange={setOpenSectionId}
+              />
+            </div>
           </div>
 
-          {/* Live preview pane — iframed mirror of the actual public
-              landing page. Updates on every edit via postMessage. Until
-              the product has been saved at least once there's no URL to
-              load, so we show a hint instead. */}
-          <div className="flex flex-col rounded-lg border border-black/10 bg-white overflow-hidden">
-            <div className="flex items-center justify-between border-b border-black/5 px-3 py-2 text-xs font-medium text-black/60">
-              <span>Live preview — mirrors /step/{productId ?? "{productId}"}</span>
-              {iframeSrc && (
+          {/* Live preview pane — iframed mirror of the actual public landing page */}
+          <div className="flex flex-col rounded-xl border border-black/10 bg-white shadow-sm overflow-hidden lg:h-full">
+            <div className="flex items-center justify-between border-b border-black/5 bg-neutral-50/80 px-3.5 py-2.5 text-xs font-medium text-black/70 flex-none">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="font-semibold text-neutral-800">Live Preview</span>
+                <span className="hidden sm:inline text-black/40">|</span>
+                <span className="hidden sm:inline text-black/50 text-[11px]">
+                  /step/{productId ?? "{productId}"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-xs"
-                  onClick={openPreview}
+                  className={cn(
+                    "h-7 px-2.5 text-xs gap-1.5 transition-colors font-normal rounded-md hidden lg:inline-flex",
+                    isSyncScrollEnabled
+                      ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                      : "text-muted-foreground hover:text-black border border-transparent"
+                  )}
+                  onClick={() => setIsSyncScrollEnabled((v) => !v)}
+                  title="Toggle synchronized scrolling between Builder and Preview"
                 >
-                  Open in new tab
+                  {isSyncScrollEnabled ? (
+                    <Link2 className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : (
+                    <Link2Off className="h-3.5 w-3.5 opacity-50" />
+                  )}
+                  <span>Sync {isSyncScrollEnabled ? "On" : "Off"}</span>
                 </Button>
-              )}
+                {iframeSrc && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1 text-black/60 hover:text-black"
+                    onClick={openPreview}
+                    title="Open live landing page in new tab"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">New tab</span>
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="relative flex-1 min-h-[640px] overflow-hidden bg-white">
+
+            <div className="relative flex-1 h-full min-h-[480px] overflow-hidden bg-white">
               {iframeSrc ? (
                 <iframe
                   ref={iframeRef}
                   src={iframeSrc}
                   title={`Landing page preview for ${productId}`}
                   className="h-full w-full flex-1 border-0"
-                  // Allow the iframe to be scripted into the same-origin
-                  // /step/[id] route we control. `sandbox` would help
-                  // harden against injected foreign HTML, but the URL is
-                  // hardcoded to our own /step route so it's a no-op
-                  // defence-in-depth knob here — left off intentionally.
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">

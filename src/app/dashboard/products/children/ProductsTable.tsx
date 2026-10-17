@@ -216,33 +216,34 @@ export default function ProductsTable() {
   };
 
   return (
-    <div className="w-full mt-4 scrollHidden space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="w-full mt-4 space-y-4 min-w-0">
+      <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center sm:justify-between">
         <Input
           placeholder="Search products..."
           value={searchTerm}
           onChange={handleSearch}
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 cursor-pointer"
           >
             <Filter className="h-4 w-4" />
             Filters
           </Button>
-          <Button variant="secondary">Total Data {totalProducts}</Button>
+          <Button variant="secondary" size="sm">Total Data {totalProducts}</Button>
         </div>
       </div>
 
       {showFilters && (
-        <div className="flex gap-4 p-4 border rounded-md">
-          <div className="space-y-2">
-            <Label htmlFor="status-filter">Status</Label>
+        <div className="flex flex-col sm:flex-row gap-3 p-3.5 sm:p-4 border rounded-xl bg-card">
+          <div className="space-y-1.5 flex-1 min-w-0">
+            <Label htmlFor="status-filter" className="text-xs">Status</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger id="status-filter" className="w-[180px]">
+              <SelectTrigger id="status-filter" className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -253,10 +254,10 @@ export default function ProductsTable() {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="offer-filter">Offer</Label>
+          <div className="space-y-1.5 flex-1 min-w-0">
+            <Label htmlFor="offer-filter" className="text-xs">Offer</Label>
             <Select value={offerFilter} onValueChange={setOfferFilter}>
-              <SelectTrigger id="offer-filter" className="w-[180px]">
+              <SelectTrigger id="offer-filter" className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by offer" />
               </SelectTrigger>
               <SelectContent>
@@ -269,7 +270,7 @@ export default function ProductsTable() {
         </div>
       )}
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableCaption>A list of your products.</TableCaption>
           <TableHeader>

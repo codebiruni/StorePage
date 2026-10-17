@@ -234,20 +234,23 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, sub, icon, accent, danger }: KpiCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-card border border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+    <div className="relative overflow-hidden rounded-2xl bg-card border border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300 min-w-0">
       {/* subtle top accent bar */}
       <div className={`h-1 w-full bg-gradient-to-r ${accent}`} />
-      <div className="p-5">
-        <div className="flex items-start justify-between">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
-          <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white shadow`}>
+      <div className="p-3.5 sm:p-5 min-w-0">
+        <div className="flex items-start justify-between gap-1.5 min-w-0">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate" title={label}>{label}</p>
+          <span className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br ${accent} text-white shadow-xs`}>
             {icon}
           </span>
         </div>
-        <p className={`mt-3 text-2xl font-bold tracking-tight ${danger ? 'text-red-500' : 'text-foreground'}`}>
+        <p
+          className={`mt-2 sm:mt-3 text-lg sm:text-2xl font-bold tracking-tight truncate ${danger ? 'text-red-500' : 'text-foreground'}`}
+          title={value}
+        >
           {value}
         </p>
-        {sub && <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{sub}</p>}
+        {sub && <p className="mt-1 text-[11px] sm:text-xs text-muted-foreground leading-relaxed line-clamp-1" title={sub}>{sub}</p>}
       </div>
     </div>
   )
@@ -519,7 +522,7 @@ export default function DashboardInventory() {
       </div>
 
       {/* ── Inventory KPI row ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-4">
         <KpiCard
           label="Total Products"
           value={fmtNum(data.overview.totalProducts)}
@@ -553,7 +556,7 @@ export default function DashboardInventory() {
 
       {/* ── Orders KPI row ────────────────────────────────────────────────────── */}
       {orderTotals && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-4">
           <KpiCard
             label="Total Orders"
             value={fmtNum(orderTotals.totalOrders)}

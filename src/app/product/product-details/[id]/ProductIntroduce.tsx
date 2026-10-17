@@ -2,17 +2,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tag,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  Layers,
-  Check,
-  Clock,
-} from "lucide-react";
+import { Clock, Check } from "lucide-react";
 import ActionsButtonComponent from "./ActionsButtonComponent";
 
 interface PriceVariant {
@@ -156,36 +147,39 @@ export default function ProductIntroduce({
 
   return (
     <div className="w-full flex flex-col justify-between space-y-6">
-      <div className="space-y-4">
-        {/* Brand & Category Meta Badges */}
+      <div className="space-y-5">
+        {/* Category & Brand Micro-Header */}
         <div className="flex flex-wrap items-center gap-2">
-          {brand && (
-            <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 border-primary/30 text-primary bg-primary/5">
-              {brand}
-            </Badge>
-          )}
           {categoryName && (
-            <Badge variant="secondary" className="text-xs text-muted-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {categoryName}
-            </Badge>
+            </span>
+          )}
+          {categoryName && brand && (
+            <span className="text-muted-foreground/40 text-xs">•</span>
+          )}
+          {brand && (
+            <span className="text-xs font-semibold uppercase tracking-wider text-foreground/80">
+              {brand}
+            </span>
           )}
           {isOfferActive && (
-            <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 flex items-center gap-1.5 shadow-xs">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
               <Clock className="h-3 w-3" />
-              লিমিটেড টাইম অফার
-            </Badge>
+              লিমিটেড অফার
+            </span>
           )}
         </div>
 
         {/* Product Title */}
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-snug">
+        <h1 className="text-2xl sm:text-3xl lg:text-3xl font-bold tracking-tight text-foreground leading-snug">
           {name}
         </h1>
 
-        {/* Price Showcase Block */}
-        <div className="rounded-2xl border border-border/80 bg-muted/20 p-4 space-y-1.5">
+        {/* Typographic Price Display (No heavy card boxes) */}
+        <div className="space-y-1">
           <div className="flex flex-wrap items-baseline gap-3">
-            <span className="text-3xl sm:text-4xl font-extrabold text-primary font-mono tracking-tight">
+            <span className="text-3xl sm:text-4xl font-extrabold text-foreground font-mono tracking-tight">
               ৳{displayedPrice.toLocaleString()}
             </span>
 
@@ -196,79 +190,64 @@ export default function ProductIntroduce({
             )}
 
             {displayedDiscount > 0 && (
-              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-2.5 py-1">
+              <span className="inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 {displayedDiscount}% ছাড়
-              </Badge>
+              </span>
             )}
           </div>
 
           {displayedPrevPrice > displayedPrice && (
-            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-              আপনি সাশ্রয় করছেন: ৳{(displayedPrevPrice - displayedPrice).toLocaleString()}
+            <p className="text-xs text-muted-foreground">
+              সাশ্রয়: ৳{(displayedPrevPrice - displayedPrice).toLocaleString()}
             </p>
           )}
 
           {isOfferActive && offerEndDate && (
-            <div className="pt-1 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium">
-              <Clock className="h-3.5 w-3.5 shrink-0" />
-              <span>
-                অফারটির মেয়াদ:{" "}
-                <span className="font-semibold">
-                  {new Date(offerEndDate).toLocaleDateString("bn-BD", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-                {" "}পর্যন্ত
-              </span>
-            </div>
+            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium pt-0.5">
+              অফারের মেয়াদ:{" "}
+              {new Date(offerEndDate).toLocaleDateString("bn-BD", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })} পর্যন্ত
+            </p>
           )}
         </div>
 
-        {/* Quick Overview Highlights (if available) */}
+        {/* Quick Highlights / Bullet points */}
         {quickOverview && quickOverview.length > 0 && (
-          <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              মূল আকর্ষণ ও বৈশিষ্ট্য
-            </p>
-            <ul className="grid grid-cols-1 gap-1.5 text-sm text-foreground">
+          <div className="py-1">
+            <ul className="space-y-1.5">
               {quickOverview.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-foreground/90 leading-tight">
-                    {item}
-                  </span>
+                <li key={idx} className="flex items-start gap-2.5 text-sm text-foreground/85">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0 mt-2" />
+                  <span className="leading-relaxed">{item}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Variant Selection (if product has variants) */}
+        {/* Variant Selection Box Grid */}
         {variants.length > 0 && (
-          <div className="space-y-2.5 pt-1">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <Layers className="h-4 w-4 text-primary" />
-                অপশন বা সাইজ বেছে নিন:
-              </label>
+          <div id="variant-selection" className="space-y-2.5 pt-1">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="font-semibold text-foreground">
+                অপশন বা ভ্যারিয়েন্ট বেছে নিন:
+              </span>
               {active && (
-                <span className="text-xs text-muted-foreground">
-                  সিলেক্টেড: <span className="font-semibold text-foreground">{active.sku}</span>
+                <span className="text-muted-foreground text-xs">
+                  সিলেক্টেড: <span className="font-bold text-foreground">{active.sku}</span>
                 </span>
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               {variants.map((v, idx) => {
                 const isSelected = selectedIndex === idx;
                 const outStock = (v.quentity || 0) <= 0;
-                const vPrice =
-                  v.salePrice > 0 && v.salePrice < v.regularPrice
-                    ? v.salePrice
-                    : v.regularPrice;
+                const hasDiscount = v.salePrice > 0 && v.salePrice < v.regularPrice;
+                const vPrice = hasDiscount ? v.salePrice : v.regularPrice;
 
                 return (
                   <button
@@ -276,36 +255,57 @@ export default function ProductIntroduce({
                     type="button"
                     disabled={outStock}
                     onClick={() => setSelectedIndex(idx)}
-                    className={`relative flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
+                    className={`relative flex flex-col justify-between p-3 rounded-xl border text-left transition-all ${
                       isSelected
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/30 shadow-xs"
-                        : "border-border bg-card hover:border-primary/50 hover:bg-muted/40"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/25 shadow-xs"
+                        : "border-border bg-card hover:border-foreground/30 hover:bg-muted/40"
                     } ${
                       outStock
                         ? "opacity-50 cursor-not-allowed bg-muted/20"
                         : "cursor-pointer"
                     }`}
                   >
-                    <div className="w-full flex items-center justify-between gap-1">
-                      <span className="font-bold text-xs sm:text-sm text-foreground truncate">
+                    {/* Header: SKU / Title & Selection Indicator */}
+                    <div className="w-full flex items-start justify-between gap-1.5">
+                      <span className="font-bold text-xs sm:text-sm text-foreground leading-tight line-clamp-2">
                         {v.sku}
                       </span>
-                      {isSelected && (
-                        <div className="h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                          <Check className="h-2.5 w-2.5" />
+                      {isSelected ? (
+                        <div className="h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 mt-0.5">
+                          <Check className="h-2.5 w-2.5 stroke-[3]" />
                         </div>
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border border-border shrink-0 mt-0.5" />
                       )}
                     </div>
-                    <span className="text-xs font-mono font-semibold text-primary mt-1">
-                      ৳{vPrice.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground mt-0.5">
-                      {outStock ? "স্টক শেষ" : `স্টক: ${v.quentity}`}
-                    </span>
+
+                    {/* Footer: Price & Stock Information */}
+                    <div className="mt-2.5 pt-2 border-t border-border/50 w-full flex flex-col gap-0.5">
+                      <div className="flex items-baseline gap-1.5 flex-wrap">
+                        <span className="text-sm font-bold font-mono text-primary">
+                          ৳{vPrice.toLocaleString()}
+                        </span>
+                        {hasDiscount && (
+                          <span className="text-[11px] text-muted-foreground line-through font-mono">
+                            ৳{v.regularPrice.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[10px] font-medium ${
+                          outStock
+                            ? "text-rose-600 dark:text-rose-400 font-semibold"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {outStock ? "স্টক শেষ" : `স্টক: ${v.quentity} টি`}
+                      </span>
+                    </div>
                   </button>
                 );
               })}
             </div>
+
             {selectedIndex === null && (
               <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                 * অনুগ্রহ করে যেকোনো একটি অপশন নির্বাচন করুন
@@ -314,9 +314,9 @@ export default function ProductIntroduce({
           </div>
         )}
 
-        <Separator />
+        <Separator className="my-2" />
 
-        {/* Action Button Controls & Trust Badges */}
+        {/* Action Button Controls */}
         <ActionsButtonComponent
           product={{ ...infoData, priceInfo }}
           handleBuyData={handleBuyData}

@@ -10,11 +10,6 @@ import {
   Check,
   Plus,
   Minus,
-  Truck,
-  Banknote,
-  ShieldCheck,
-  RotateCcw,
-  Headphones,
 } from "lucide-react";
 import useContextData from "@/defaults/custom-component/useContextData";
 
@@ -207,31 +202,29 @@ export default function ActionsButtonComponent({
   };
 
   return (
-    <div className="space-y-5">
-      {/* Quantity & Stock Indicator */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold text-foreground">পরিমাণ (Quantity):</span>
+    <div className="space-y-4 pt-2">
+      {/* Quantity Selector */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-foreground">পরিমাণ</span>
+        <div className="flex items-center gap-3">
           {stock > 0 && stock <= 10 && (
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-              মাত্র {stock} টি বাকি আছে!
+            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+              মাত্র {stock} টি বাকি
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="inline-flex items-center rounded-xl border border-border bg-card p-1 shadow-xs">
+          <div className="inline-flex items-center rounded-lg border border-border bg-background">
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={decrementQuantity}
               disabled={quantity <= 1 || outOfStock}
-              className="h-9 w-9 rounded-lg hover:bg-muted"
+              className="h-8 w-8 rounded-l-lg hover:bg-muted"
               aria-label="Decrease quantity"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-3.5 w-3.5" />
             </Button>
-            <span className="w-12 text-center text-sm font-bold text-foreground">
+            <span className="w-10 text-center text-sm font-semibold text-foreground select-none">
               {quantity}
             </span>
             <Button
@@ -240,67 +233,63 @@ export default function ActionsButtonComponent({
               size="icon"
               onClick={incrementQuantity}
               disabled={outOfStock || (stock > 0 && quantity >= stock)}
-              className="h-9 w-9 rounded-lg hover:bg-muted"
+              className="h-8 w-8 rounded-r-lg hover:bg-muted"
               aria-label="Increase quantity"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <span className="text-xs text-muted-foreground">
-            {outOfStock ? "স্টক শেষ" : `স্টক: ${stock} টি`}
-          </span>
         </div>
       </div>
 
       {/* Primary Action CTAs */}
-      <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-          {/* High-Converting 1-Click Order Button */}
-          <Button
-            type="button"
-            size="lg"
-            onClick={guardedBuyNow}
-            disabled={outOfStock}
-            className="sm:col-span-7 h-13 text-base font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.99] bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 rounded-xl cursor-pointer"
-          >
-            <Zap className="h-5 w-5 fill-current" />
-            {outOfStock ? "স্টক শেষ" : "অর্ডার করুন (ক্যাশ অন ডেলিভারি)"}
-          </Button>
+      <div className="space-y-2.5 pt-1">
+        {/* High-Converting 1-Click Order Button */}
+        <Button
+          type="button"
+          size="lg"
+          onClick={guardedBuyNow}
+          disabled={outOfStock}
+          className="w-full h-12 sm:h-13 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <Zap className="h-4.5 w-4.5 fill-current shrink-0" />
+          <span>{outOfStock ? "স্টক শেষ" : "অর্ডার করুন"}</span>
+        </Button>
 
-          {/* Add to Cart Button */}
+        {/* Secondary Action Row: Add to Cart & Wishlist */}
+        <div className="flex items-center gap-2.5">
           <Button
             type="button"
             size="lg"
             variant={isInCart ? "secondary" : "outline"}
             onClick={handleAddCartData}
             disabled={outOfStock}
-            className="sm:col-span-4 h-13 text-sm font-semibold rounded-xl border-border hover:bg-accent transition-colors flex items-center justify-center gap-2"
+            className="flex-1 h-11 sm:h-12 text-sm font-semibold rounded-xl border-border hover:bg-muted transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             {isInCart ? (
               <>
                 <Check className="h-4 w-4 text-emerald-600" />
-                কার্টে যুক্ত আছে
+                <span>কার্টে যুক্ত আছে</span>
               </>
             ) : (
               <>
                 <ShoppingCart className="h-4 w-4" />
-                কার্টে যোগ করুন
+                <span>কার্টে যোগ করুন</span>
               </>
             )}
           </Button>
 
-          {/* Wishlist Button */}
           <Button
             type="button"
             size="icon"
             variant="outline"
             onClick={handleAddWishlistData}
-            className="sm:col-span-1 h-13 w-full rounded-xl border-border hover:bg-accent transition-colors"
+            className="h-11 sm:h-12 w-11 sm:w-12 shrink-0 rounded-xl border-border hover:bg-muted transition-colors cursor-pointer"
             title={isInWishlist ? "উইশলিস্টে আছে" : "উইশলিস্টে যোগ করুন"}
             aria-label="Wishlist"
           >
             <Heart
-              className={`h-5 w-5 ${
+              className={`h-4.5 w-4.5 ${
                 isInWishlist
                   ? "fill-rose-500 text-rose-500"
                   : "text-muted-foreground"
@@ -308,58 +297,6 @@ export default function ActionsButtonComponent({
             />
           </Button>
         </div>
-      </div>
-
-      {/* 4 Pillars Trust Reassurance Cards (Strictly SVG icons, NO EMOJIS!) */}
-      <div className="grid grid-cols-2 gap-2.5 pt-2">
-        <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/30 p-2.5 transition-colors">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Truck className="h-4.5 w-4.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-foreground">হোম ডেলিভারি</p>
-            <p className="text-[11px] text-muted-foreground truncate">সারাদেশে দ্রুত পৌঁছে দেওয়া হয়</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/30 p-2.5 transition-colors">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <Banknote className="h-4.5 w-4.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-foreground">ক্যাশ অন ডেলিভারি</p>
-            <p className="text-[11px] text-muted-foreground truncate">পণ্য দেখে মূল্য পরিশোধ</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/30 p-2.5 transition-colors">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <ShieldCheck className="h-4.5 w-4.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-foreground">১০০% আসল পণ্য</p>
-            <p className="text-[11px] text-muted-foreground truncate">সরাসরি অথেনটিক কোয়ালিটি</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/30 p-2.5 transition-colors">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <RotateCcw className="h-4.5 w-4.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-foreground">সহজ রিটার্ন</p>
-            <p className="text-[11px] text-muted-foreground truncate">কোনো সমস্যায় দ্রুত সমাধান</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Support hotline assistance */}
-      <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card p-3 text-xs">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Headphones className="h-4 w-4 text-primary" />
-          <span>অর্ডার করতে সমস্যা হলে বা তথ্যের জন্য কল করুন:</span>
-        </div>
-        <span className="font-bold text-primary font-mono">+8801700-000000</span>
       </div>
     </div>
   );

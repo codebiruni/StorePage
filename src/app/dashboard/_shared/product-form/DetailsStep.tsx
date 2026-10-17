@@ -251,6 +251,7 @@ export default function DetailsStep({ form }: Props) {
               <FormItem>
                 <FormControl>
                   <MultipleImageUpload
+                    value={field.value ?? []}
                     initialImages={field.value ?? []}
                     onUpload={(urls) => field.onChange(urls)}
                   />

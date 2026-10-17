@@ -22,7 +22,8 @@ export default function AddCart({
 }) {
   const { handleAddCart } = useContextData();
 
-  const handleAddCartData = () => {
+  const handleAddCartData = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!product) return;
     const existing = localStorage.getItem("cartProducts");
     const cartProducts: CartProduct[] = existing ? JSON.parse(existing) : [];
@@ -54,12 +55,14 @@ export default function AddCart({
 
   return (
     <Button
+      type="button"
       onClick={handleAddCartData}
       variant="outline"
       size="icon"
-      className={`rounded-full cursor-pointer shadow-md bg-white hover:bg-green-50 hover:text-green-600 transition-colors ${className}`}
+      aria-label="Add to cart"
+      className={`h-8 w-8 sm:h-9 sm:w-9 rounded-full cursor-pointer shadow-md bg-white dark:bg-card hover:bg-green-50 dark:hover:bg-green-950/40 hover:text-green-600 transition-colors ${className || ""}`}
     >
-      <ShoppingCart className="w-4 h-4" />
+      <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
     </Button>
   );
 }

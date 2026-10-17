@@ -34,6 +34,16 @@ export function toWebpFileName(originalName: string): string {
  * `.webp` and whose MIME type is `image/webp` (or the browser's best effort).
  */
 export async function compressImage(file: File): Promise<File> {
+    // SVGs and GIFs are vectors / animations that shouldn't be rasterized or converted to static WebP
+    if (
+        file.type === "image/svg+xml" ||
+        file.name.toLowerCase().endsWith(".svg") ||
+        file.type === "image/gif" ||
+        file.name.toLowerCase().endsWith(".gif")
+    ) {
+        return file;
+    }
+
     const options = {
         maxSizeMB: Number.POSITIVE_INFINITY, // we cap by dimension, not bytes
         maxWidthOrHeight: MAX_DIMENSION,
@@ -47,12 +57,13 @@ export async function compressImage(file: File): Promise<File> {
     try {
         compressed = await imageCompression(file, options);
     } catch (err) {
-        // Some Safari versions can't encode WebP via canvas. Fall back to the
-        // library's default (JPEG) so the upload still succeeds; we still rename
-        // to .webp and PUT with image/webp so the key/content-type are consistent.
+        // Some Safari versions can't encode WebP via canvas or web worker fails.
+        // Fall back to main thread (useWebWorker: false) and library default (JPEG)
+        // so the upload still succeeds without hanging the browser.
         console.warn("[compressImage] WebP encode failed, falling back:", err);
         compressed = await imageCompression(file, {
             ...options,
+            useWebWorker: false,
             fileType: undefined,
         });
     }

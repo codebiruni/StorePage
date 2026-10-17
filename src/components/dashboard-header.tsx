@@ -1,3 +1,5 @@
+"use client";
+
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Breadcrumb,
@@ -8,11 +10,25 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 export default function DashboardHeader() {
+  const pathname = usePathname();
+  const segments = pathname.split("/").filter(Boolean);
+  const currentSegment = segments[segments.length - 1];
+
+  const formatSegment = (s: string) => {
+    if (!s || s === "dashboard") return "Overview";
+    return s
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  };
+
   return (
-    <header className="flex fixed top-0 w-full h-12 bg-gray-50 dark:bg-zinc-900 shrink-0 border-b items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex items-center gap-2 px-4">
+    <header className="flex fixed top-0 w-full h-12 bg-background/95 backdrop-blur border-b items-center gap-2 z-40 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <div className="flex items-center gap-2 px-4 min-w-0">
         <SidebarTrigger className="-ml-1" />
         <Separator
           orientation="vertical"
@@ -20,15 +36,21 @@ export default function DashboardHeader() {
         />
         <Breadcrumb>
           <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">
-                Building Your Application
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard" className="text-xs sm:text-sm font-medium">Dashboard</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-            </BreadcrumbItem>
+            {segments.length > 1 && currentSegment !== "dashboard" && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-xs sm:text-sm font-semibold truncate max-w-[150px] sm:max-w-xs">
+                    {formatSegment(currentSegment)}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
       </div>

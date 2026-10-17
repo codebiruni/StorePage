@@ -47,8 +47,8 @@ export default function ProductCard({ product }: { product: any }) {
   return (
     <>
       <Card className="relative group flex flex-col justify-between cursor-pointer p-0 overflow-hidden border border-border/80 rounded-2xl shadow-xs hover:shadow-md transition-all bg-card">
-        {/* Wishlist & Cart hover overlay */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Wishlist & Cart overlay (visible on mobile, hover reveal on desktop) */}
+        <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           <AddWishlist product={compaireData} />
           <AddCart product={compaireData} />
         </div>

@@ -21,7 +21,8 @@ export default function AddWishlist({
 }) {
   const { handleAddWishlist } = useContextData();
 
-  const handleAddWishlistData = () => {
+  const handleAddWishlistData = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!product) return;
     const existing = localStorage.getItem("WishlistProducts");
     const wishlistProducts: WishlistProduct[] = existing
@@ -65,12 +66,14 @@ export default function AddWishlist({
 
   return (
     <Button
+      type="button"
       onClick={handleAddWishlistData}
       variant="outline"
       size="icon"
-      className={`rounded-full cursor-pointer shadow-md bg-white hover:bg-red-50 hover:text-red-500 transition-colors ${className}`}
+      aria-label="Add to wishlist"
+      className={`h-8 w-8 sm:h-9 sm:w-9 rounded-full cursor-pointer shadow-md bg-white dark:bg-card hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-500 transition-colors ${className || ""}`}
     >
-      <Heart className="w-4 h-4" />
+      <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
     </Button>
   );
 }

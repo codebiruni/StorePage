@@ -12,6 +12,7 @@ import BasicInfo from "./BasicInfo";
 import useContextData from "@/defaults/custom-component/useContextData";
 import { resolveProductImage } from "@/lib/productImage";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function ProductDetailsClient({ product }: { product: any }) {
   const { handlePurchasedData } = useContextData();
@@ -56,6 +57,33 @@ export default function ProductDetailsClient({ product }: { product: any }) {
     router.push("/buy-product");
   };
 
+  const handleStickyOrder = () => {
+    const requiresVariant =
+      Array.isArray(product?.priceVariants) && product.priceVariants.length > 0;
+    const variantSelected = !requiresVariant || !!priceInfo?.variantId;
+
+    if (requiresVariant && !variantSelected) {
+      toast.error("অনুগ্রহ করে একটি অপশন বেছে নিন।");
+      const el = document.getElementById("variant-selection");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+
+    const stock =
+      typeof priceInfo?.variantStock === "number"
+        ? priceInfo.variantStock
+        : product?.quentity ?? 0;
+
+    if (stock <= 0) {
+      toast.error("দুঃখিত, এই পণ্যটির স্টক শেষ।");
+      return;
+    }
+
+    handleBuyData(1);
+  };
+
   // Track scroll position to show sticky mobile CTA bar
   useEffect(() => {
     const handleScroll = () => {
@@ -73,7 +101,7 @@ export default function ProductDetailsClient({ product }: { product: any }) {
   const subCategoryName = product?.subCategory?.name;
 
   return (
-    <div className="top-padding min-h-screen bg-background pb-16">
+    <div className="top-padding min-h-screen bg-background pb-28 lg:pb-16">
       {/* ── Main Product Section ───────────────────────────────────── */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -127,7 +155,7 @@ export default function ProductDetailsClient({ product }: { product: any }) {
 
       {/* ── Floating Sticky CTA Bar on Mobile ──────────────────────── */}
       {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border p-3 shadow-2xl lg:hidden animate-in slide-in-from-bottom-2 duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] shadow-2xl lg:hidden animate-in slide-in-from-bottom-2 duration-200">
           <div className="container mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative h-11 w-11 rounded-lg overflow-hidden border border-border shrink-0 bg-muted">
@@ -159,11 +187,11 @@ export default function ProductDetailsClient({ product }: { product: any }) {
             <Button
               type="button"
               size="sm"
-              onClick={() => handleBuyData(1)}
-              className="h-10 px-4 font-bold text-xs shrink-0 rounded-xl bg-primary text-primary-foreground shadow-md hover:bg-primary/90 flex items-center gap-1.5 cursor-pointer"
+              onClick={handleStickyOrder}
+              className="h-11 px-4 sm:px-5 font-bold text-xs sm:text-sm shrink-0 rounded-xl bg-primary text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <Zap className="h-3.5 w-3.5 fill-current" />
-              অর্ডার করুন
+              <Zap className="h-4 w-4 fill-current shrink-0" />
+              <span>অর্ডার করুন</span>
             </Button>
           </div>
         </div>

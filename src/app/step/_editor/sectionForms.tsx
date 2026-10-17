@@ -94,6 +94,7 @@ export function HeaderForm({
         label="Logo"
         hint="Brand mark shown top-left. Transparent PNG looks best."
         aspectRatio={4 / 1}
+        recommendedSize="400 × 100 px (4:1 Logo)"
         value={section.data.logoUrl}
         onChange={(logoUrl) => onChange(patchSectionData(section, { logoUrl }))}
       />
@@ -160,6 +161,7 @@ export function HeroForm({
         label="Hero image"
         hint="Background image — landscape, ~1200×675. Used when no video is set."
         aspectRatio={16 / 9}
+        recommendedSize="1200 × 675 px (16:9 Banner)"
         value={section.data.heroImage}
         onChange={(heroImage) =>
           onChange(patchSectionData(section, { heroImage }))
@@ -222,6 +224,7 @@ export function TrustBadgeForm({
         label="Badge image"
         hint="Certification / lab report — portrait, ~4:5."
         aspectRatio={4 / 5}
+        recommendedSize="400 × 500 px (4:5 Certificate)"
         value={section.data.image}
         onChange={(image) => onChange(patchSectionData(section, { image }))}
       />
@@ -266,6 +269,7 @@ export function ProductShowcaseForm({
           <ImageUploadField
             label="Image"
             aspectRatio={1}
+            recommendedSize="800 × 800 px (1:1 Square)"
             value={url}
             onChange={(u) => updateRow(u)}
           />
@@ -404,6 +408,7 @@ export function TestimonialsForm({
             <ImageUploadField
               label="Screenshot"
               aspectRatio={3 / 4}
+              recommendedSize="600 × 800 px (3:4 Portrait)"
               value={row.image}
               onChange={(image) => update({ ...row, image })}
             />

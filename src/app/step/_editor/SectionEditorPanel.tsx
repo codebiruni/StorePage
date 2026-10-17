@@ -36,6 +36,7 @@ import {
 } from "./sectionForms";
 import {
   THEME_PRESETS,
+  resolveThemeTokens,
   defaultSectionData,
   makeSection,
   newSectionId,
@@ -49,6 +50,10 @@ import {
 interface Props {
   value: LandingConfig;
   onChange: (next: LandingConfig) => void;
+  activeSectionId?: string | null;
+  onSectionSelect?: (id: string) => void;
+  openId?: string | null;
+  onOpenIdChange?: (id: string | null) => void;
 }
 
 /**
@@ -63,8 +68,33 @@ const PRESET_LABELS: Record<ThemePresetId, string> = {
   default: "Default — Slate & Blue",
 };
 
-export default function SectionEditorPanel({ value, onChange }: Props) {
-  const [openId, setOpenId] = useState<string | null>(null);
+export default function SectionEditorPanel({
+  value,
+  onChange,
+  activeSectionId,
+  onSectionSelect,
+  openId: openIdProp,
+  onOpenIdChange,
+}: Props) {
+  const [internalOpenId, setInternalOpenId] = useState<string | null>(null);
+  const isControlledOpen = openIdProp !== undefined;
+  const openId = isControlledOpen ? openIdProp : internalOpenId;
+
+  function setOpenId(next: string | null) {
+    if (!isControlledOpen) {
+      setInternalOpenId(next);
+    }
+    onOpenIdChange?.(next);
+  }
+
+  function handleToggleSection(id: string) {
+    const next = openId === id ? null : id;
+    setOpenId(next);
+    if (next) {
+      onSectionSelect?.(next);
+    }
+  }
+
   /**
    * Section currently being dragged. When null, no drag is in progress.
    * We use plain HTML5 DnD (no extra dep) — set during `dragstart`,
@@ -72,6 +102,9 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
    */
   const [dragId, setDragId] = useState<string | null>(null);
   const [showCss, setShowCss] = useState(false);
+
+  const tokens = useMemo(() => resolveThemeTokens(value.theme), [value.theme]);
+  const preset = THEME_PRESETS[value.theme.presetId] ?? THEME_PRESETS.default;
 
   function patchTheme(patch: Partial<LandingTheme>) {
     onChange({ ...value, theme: { ...value.theme, ...patch } });
@@ -145,7 +178,16 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
   return (
     <div className="space-y-6">
       {/* ── Theme ───────────────────────────────────────────────────── */}
-      <section className="space-y-4 rounded-lg border border-black/10 bg-white p-4">
+      <section
+        id="builder-section-theme"
+        data-builder-section-id="theme"
+        className={cn(
+          "space-y-4 rounded-lg border bg-white p-4 transition-all duration-200",
+          activeSectionId === "theme"
+            ? "border-emerald-500 ring-2 ring-emerald-500/30 shadow-sm"
+            : "border-black/10"
+        )}
+      >
         <header>
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <Paintbrush className="h-4 w-4" />
@@ -221,36 +263,42 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
               label="Primary"
               hint="Headings &amp; badges."
               value={value.theme.primaryColor ?? ""}
+              defaultColor={preset.primary}
               onChange={(primaryColor) => patchTheme({ primaryColor })}
             />
             <ColorPickerField
               label="Accent / CTA"
               hint="Buttons &amp; prices."
               value={value.theme.accentColor ?? ""}
+              defaultColor={preset.accent}
               onChange={(accentColor) => patchTheme({ accentColor })}
             />
             <ColorPickerField
               label="Page Background"
               hint="Overall page bg."
               value={value.theme.backgroundColor ?? ""}
+              defaultColor={preset.background}
               onChange={(backgroundColor) => patchTheme({ backgroundColor })}
             />
             <ColorPickerField
               label="Surface / Card Bg"
               hint="Cards &amp; panels."
               value={value.theme.surfaceColor ?? ""}
+              defaultColor={preset.surface}
               onChange={(surfaceColor) => patchTheme({ surfaceColor })}
             />
             <ColorPickerField
               label="Body Text"
               hint="Paragraphs &amp; list text."
               value={value.theme.textColor ?? ""}
+              defaultColor={preset.text}
               onChange={(textColor) => patchTheme({ textColor })}
             />
             <ColorPickerField
               label="Heading Text"
               hint="Headline color."
               value={value.theme.headingColor ?? ""}
+              defaultColor={preset.heading ?? preset.primary}
               onChange={(headingColor) => patchTheme({ headingColor })}
             />
           </div>
@@ -313,6 +361,8 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
             {value.sections.map((section, idx) => (
               <li
                 key={section.id}
+                id={`builder-section-${section.id}`}
+                data-builder-section-id={section.id}
                 draggable={openId !== section.id}
                 onDragStart={(e) => {
                   // The drag image is the whole row by default — fine.
@@ -333,7 +383,10 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                 }}
                 onDragEnd={() => setDragId(null)}
                 className={cn(
-                  "rounded-lg border border-black/10 bg-white transition-opacity",
+                  "rounded-lg border bg-white transition-all duration-200",
+                  activeSectionId === section.id
+                    ? "border-emerald-500 ring-2 ring-emerald-500/30 shadow-sm"
+                    : "border-black/10 hover:border-black/20",
                   dragId === section.id && "opacity-50",
                 )}
               >
@@ -341,9 +394,7 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                   <button
                     type="button"
                     className="flex flex-1 cursor-pointer items-center gap-2 text-left bg-transparent border-0 p-0"
-                    onClick={() =>
-                      setOpenId((cur) => (cur === section.id ? null : section.id))
-                    }
+                    onClick={() => handleToggleSection(section.id)}
                   >
                     <span
                       // Drag handle — separate from the row click target so
@@ -361,6 +412,11 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                     <span className="text-sm font-medium">
                       {sectionTypeLabel(section.type)}
                     </span>
+                    {activeSectionId === section.id && (
+                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+                        in preview
+                      </span>
+                    )}
                     {section.type === "footer" ? (
                       <span
                         className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800"
@@ -397,6 +453,11 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                           label="Section Background"
                           hint="Override this section's bg"
                           value={section.style?.backgroundColor ?? ""}
+                          defaultColor={
+                            section.type === "footer"
+                              ? tokens.ink
+                              : tokens.background
+                          }
                           onChange={(backgroundColor) =>
                             updateSectionStyle(section, { backgroundColor })
                           }
@@ -405,6 +466,11 @@ export default function SectionEditorPanel({ value, onChange }: Props) {
                           label="Section Text Color"
                           hint="Override text in this section"
                           value={section.style?.textColor ?? ""}
+                          defaultColor={
+                            section.type === "footer"
+                              ? tokens.textOnInk
+                              : tokens.text
+                          }
                           onChange={(textColor) =>
                             updateSectionStyle(section, { textColor })
                           }

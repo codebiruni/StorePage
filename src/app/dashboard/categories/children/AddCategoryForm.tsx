@@ -120,22 +120,13 @@ export default function AddCategoryForm({
           <div className="space-y-2">
             <Label htmlFor="image">Category Image</Label>
             <SingleImageUpload
+              value={formData.image}
               onUpload={handleImageUpload}
+              onRemove={() => setFormData((prev) => ({ ...prev, image: "" }))}
+              aspectRatio={1}
+              recommendedSize="600 × 600 px (1:1 Square)"
               disabled={isSubmitting}
             />
-            {formData.image && (
-              <div className="mt-2">
-                <p className="text-sm text-gray-600 mb-1">Preview:</p>
-                <div className="w-20 h-20 relative">
-                  <Image
-                    fill
-                    src={formData.image}
-                    alt="Category preview"
-                    className="object-cover rounded-md border"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">

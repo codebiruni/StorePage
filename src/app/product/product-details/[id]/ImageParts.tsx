@@ -6,9 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Tag,
-  AlertCircle,
-  ZoomIn,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,7 +145,7 @@ export default function ImageParts({
                 }`}
               >
                 {discountPercentage > 0 && (
-                  <span className="inline-flex items-center text-[11px] font-extrabold px-2.5 py-1 rounded-md bg-foreground/90 text-background backdrop-blur-md shadow-xs tracking-tight">
+                  <span className="inline-flex items-center text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-foreground/90 text-background backdrop-blur-md shadow-xs tracking-tight">
                     -{discountPercentage}%
                   </span>
                 )}
@@ -158,16 +155,6 @@ export default function ImageParts({
                     Featured
                   </Badge>
                 )}
-              </div>
-
-              {/* Hover Zoom Hint Pill (Desktop only) */}
-              <div
-                className={`absolute top-3 right-3 z-10 pointer-events-none transition-opacity duration-200 hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-foreground/80 bg-background/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-border/60 shadow-xs ${
-                  isHovered ? "opacity-0" : "opacity-100"
-                }`}
-              >
-                <ZoomIn className="h-3.5 w-3.5 text-primary" />
-                <span>মাউস রেখে জুম করে দেখুন</span>
               </div>
 
               {/* Navigation Arrows for Multiple Images */}
@@ -199,28 +186,6 @@ export default function ImageParts({
                   </Button>
                 </>
               )}
-
-              {/* Stock status indicator at bottom right */}
-              <div
-                className={`absolute bottom-3 right-3 z-10 pointer-events-none transition-opacity duration-200 ${
-                  isHovered ? "opacity-0" : "opacity-100"
-                }`}
-              >
-                {inStock ? (
-                  <div className="inline-flex items-center gap-1.5 bg-background/90 backdrop-blur-md text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-500/20 shadow-xs">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    ইন স্টক
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 bg-background/90 backdrop-blur-md text-rose-700 dark:text-rose-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-rose-500/20 shadow-xs">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    স্টক আউট
-                  </div>
-                )}
-              </div>
             </div>
           </CardContent>
         </Card>

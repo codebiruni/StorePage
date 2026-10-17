@@ -200,20 +200,20 @@ export default function QuickOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100%-1.5rem)] sm:max-w-lg max-h-[92vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
-        <DialogHeader className="text-left pb-2 border-b">
-          <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary">
-            <Zap className="w-5 h-5 fill-primary text-primary" />
-            দ্রুত অর্ডার করুন (Cash on Delivery)
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-lg max-h-[92vh] overflow-x-hidden overflow-y-auto min-w-0 p-3.5 sm:p-6 rounded-2xl">
+        <DialogHeader className="text-left pb-2 border-b pr-8 min-w-0">
+          <DialogTitle className="text-base sm:text-lg font-bold flex items-center gap-2 text-primary flex-wrap">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 fill-primary text-primary shrink-0" />
+            <span>দ্রুত অর্ডার করুন (Cash on Delivery)</span>
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
+          <DialogDescription className="text-xs text-muted-foreground break-words">
             পণ্য হাতে পেয়ে টাকা পরিশোধ করুন। কোনো অগ্রিম পেমেন্ট লাগবে না।
           </DialogDescription>
         </DialogHeader>
 
         {/* Product mini summary */}
-        <div className="flex gap-3 py-2 items-center bg-muted/40 p-3 rounded-xl border">
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 border bg-background">
+        <div className="flex gap-2.5 sm:gap-3 py-2 items-center bg-muted/40 p-2.5 sm:p-3 rounded-xl border w-full min-w-0 max-w-full overflow-hidden">
+          <div className="relative w-14 h-14 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 border bg-background">
             <Image
               src={firstImage}
               alt={product?.name || "Product"}
@@ -222,11 +222,11 @@ export default function QuickOrderModal({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-semibold truncate text-foreground">
+            <h4 className="text-xs sm:text-sm font-semibold line-clamp-2 break-words text-foreground">
               {product?.name}
             </h4>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-base font-bold text-primary">
+              <span className="text-sm sm:text-base font-bold text-primary">
                 ৳{unitPrice.toLocaleString()}
               </span>
               {originalPrice ? (
@@ -237,7 +237,7 @@ export default function QuickOrderModal({
             </div>
 
             {/* Quantity Controls in header */}
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-1.5 sm:mt-2">
               <span className="text-xs font-medium text-muted-foreground">পরিমাণ:</span>
               <div className="inline-flex items-center border rounded-md bg-background">
                 <button
@@ -266,11 +266,11 @@ export default function QuickOrderModal({
 
         {/* Variants selector (if any) */}
         {variants.length > 0 && (
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 w-full min-w-0">
             <label className="text-xs font-medium text-foreground">
               ভ্যারিয়েন্ট সিলেক্ট করুন:
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {variants.map((v: any, idx: number) => {
                 const isSelected = selectedVariantIndex === idx;
                 return (
@@ -278,7 +278,7 @@ export default function QuickOrderModal({
                     key={v._id || idx}
                     type="button"
                     onClick={() => setSelectedVariantIndex(idx)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                    className={`max-w-full px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer break-all ${
                       isSelected
                         ? "border-primary bg-primary text-primary-foreground shadow-xs"
                         : "border-border bg-background hover:bg-muted text-foreground"
@@ -293,7 +293,7 @@ export default function QuickOrderModal({
         )}
 
         {/* Checkout Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5 pt-1">
+        <form onSubmit={handleSubmit} className="space-y-3 pt-1 w-full min-w-0">
           {/* Name */}
           <div className="space-y-1">
             <label className="text-xs font-semibold text-foreground">
@@ -353,11 +353,11 @@ export default function QuickOrderModal({
           </div>
 
           {/* Shipping Zone Radio Options */}
-          <div className="space-y-1 pt-1">
+          <div className="space-y-1 pt-1 w-full min-w-0">
             <label className="text-xs font-semibold text-foreground">
               ডেলিভারি লোকেশন:
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
               {/* Outside Dhaka */}
               <label
                 className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
@@ -366,17 +366,17 @@ export default function QuickOrderModal({
                     : "border-border hover:bg-muted/40"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <input
                     type="radio"
                     name="modalShippingZone"
                     checked={shippingZone === "outside"}
                     onChange={() => setShippingZone("outside")}
-                    className="accent-primary cursor-pointer"
+                    className="accent-primary cursor-pointer shrink-0"
                   />
-                  <span className="text-xs font-medium">ঢাকার বাহিরে</span>
+                  <span className="text-xs font-medium truncate">ঢাকার বাহিরে</span>
                 </div>
-                <span className="text-xs font-bold">৳{outsideCharge}</span>
+                <span className="text-xs font-bold shrink-0 ml-1">৳{outsideCharge}</span>
               </label>
 
               {/* Inside Dhaka */}
@@ -387,23 +387,23 @@ export default function QuickOrderModal({
                     : "border-border hover:bg-muted/40"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <input
                     type="radio"
                     name="modalShippingZone"
                     checked={shippingZone === "inside"}
                     onChange={() => setShippingZone("inside")}
-                    className="accent-primary cursor-pointer"
+                    className="accent-primary cursor-pointer shrink-0"
                   />
-                  <span className="text-xs font-medium">ঢাকার ভিতরে</span>
+                  <span className="text-xs font-medium truncate">ঢাকার ভিতরে</span>
                 </div>
-                <span className="text-xs font-bold">৳{insideCharge}</span>
+                <span className="text-xs font-bold shrink-0 ml-1">৳{insideCharge}</span>
               </label>
             </div>
           </div>
 
           {/* Pricing summary breakdown */}
-          <div className="bg-muted/50 p-3 rounded-lg border space-y-1 text-xs">
+          <div className="bg-muted/50 p-2.5 sm:p-3 rounded-lg border space-y-1 text-xs w-full min-w-0">
             <div className="flex justify-between text-muted-foreground">
               <span>সাবটোটাল ({quantity} টি পণ্য):</span>
               <span className="font-semibold text-foreground">৳{subtotal.toLocaleString()}</span>
@@ -422,18 +422,18 @@ export default function QuickOrderModal({
           <Button
             type="submit"
             disabled={loading}
-            className="w-full h-11 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md cursor-pointer transition-all"
+            className="w-full h-auto min-h-11 py-2 px-3 text-xs sm:text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md cursor-pointer transition-all whitespace-normal"
           >
             {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                অর্ডার প্রক্রিয়া হচ্ছে...
-              </>
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                <span>অর্ডার প্রক্রিয়া হচ্ছে...</span>
+              </span>
             ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                অর্ডার কনফার্ম করুন — ৳{grandTotal.toLocaleString()}
-              </>
+              <span className="flex items-center justify-center gap-2 text-center">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>অর্ডার কনফার্ম করুন — ৳{grandTotal.toLocaleString()}</span>
+              </span>
             )}
           </Button>
 

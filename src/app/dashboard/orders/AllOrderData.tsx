@@ -57,7 +57,8 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Trash2
+  Trash2,
+  Phone
 } from 'lucide-react'
 import { toast } from "sonner"
 import Image from 'next/image'
@@ -157,6 +158,7 @@ export default function AllOrderData() {
   const [paymentMethod, setPaymentMethod] = useState<string>('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(50)
+  const [showFilters, setShowFilters] = useState(false)
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
@@ -620,34 +622,66 @@ export default function AllOrderData() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Search orders..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
+      {/* Search and Filters Bar (like product page) */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="search"
+              placeholder="Search orders, customers, phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-10 w-full"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant={showFilters || ((orderStatus && orderStatus !== 'all') || (paymentStatus && paymentStatus !== 'all') || (paymentMethod && paymentMethod !== 'all')) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="h-9 flex items-center gap-2 cursor-pointer"
+            >
+              <Filter className="h-4 w-4" />
+              <span>Filters</span>
+              {(Boolean(orderStatus && orderStatus !== 'all') || Boolean(paymentStatus && paymentStatus !== 'all') || Boolean(paymentMethod && paymentMethod !== 'all')) && (
+                <span className="h-5 w-5 rounded-full bg-background text-foreground text-[11px] font-bold flex items-center justify-center">
+                  {(orderStatus && orderStatus !== 'all' ? 1 : 0) +
+                   (paymentStatus && paymentStatus !== 'all' ? 1 : 0) +
+                   (paymentMethod && paymentMethod !== 'all' ? 1 : 0)}
+                </span>
+              )}
+            </Button>
 
-            <div className="space-y-2">
-              <Label htmlFor="orderStatus">Order Status</Label>
+            {(Boolean(orderStatus && orderStatus !== 'all') || Boolean(paymentStatus && paymentStatus !== 'all') || Boolean(paymentMethod && paymentMethod !== 'all') || search) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setOrderStatus('');
+                  setPaymentStatus('');
+                  setPaymentMethod('');
+                  setSearch('');
+                }}
+                className="h-9 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Reset
+              </Button>
+            )}
+
+            <Button variant="secondary" size="sm" className="h-9">
+              Total: {orders.length}
+            </Button>
+          </div>
+        </div>
+
+        {/* Expandable Filters (two in a row or 1 takes whole width) */}
+        {showFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-3.5 sm:p-4 border rounded-xl bg-card shadow-xs animate-in fade-in-50 duration-200">
+            <div className="space-y-1.5 w-full min-w-0">
+              <Label htmlFor="orderStatus" className="text-xs font-semibold">Order Status</Label>
               <Select value={orderStatus} onValueChange={setOrderStatus}>
-                <SelectTrigger>
+                <SelectTrigger id="orderStatus" className="w-full h-9 text-xs sm:text-sm">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -662,10 +696,10 @@ export default function AllOrderData() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="paymentStatus">Payment Status</Label>
+            <div className="space-y-1.5 w-full min-w-0">
+              <Label htmlFor="paymentStatus" className="text-xs font-semibold">Payment Status</Label>
               <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                <SelectTrigger>
+                <SelectTrigger id="paymentStatus" className="w-full h-9 text-xs sm:text-sm">
                   <SelectValue placeholder="All payments" />
                 </SelectTrigger>
                 <SelectContent>
@@ -678,10 +712,10 @@ export default function AllOrderData() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Payment Method</Label>
+            <div className="space-y-1.5 w-full min-w-0 sm:col-span-2">
+              <Label htmlFor="paymentMethod" className="text-xs font-semibold">Payment Method</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger>
+                <SelectTrigger id="paymentMethod" className="w-full h-9 text-xs sm:text-sm">
                   <SelectValue placeholder="All methods" />
                 </SelectTrigger>
                 <SelectContent>
@@ -695,8 +729,8 @@ export default function AllOrderData() {
               </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       {/* Orders Table */}
       <Card>
@@ -717,196 +751,199 @@ export default function AllOrderData() {
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  Select
-                </TableHead>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order) => {
-                const statusBadge = getStatusBadge(order.orderStatus)
-                const paymentBadge = getPaymentStatusBadge(order.paymentStatus)
-                const isSelected = selectedOrders.includes(order._id)
+        <CardContent className="p-0 sm:p-6">
+          {/* Orders Table */}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12 min-w-[48px]">
+                    Select
+                  </TableHead>
+                  <TableHead className="min-w-[130px]">Order ID</TableHead>
+                  <TableHead className="min-w-[150px]">Customer</TableHead>
+                  <TableHead className="min-w-[160px]">Products</TableHead>
+                  <TableHead className="min-w-[110px]">Amount</TableHead>
+                  <TableHead className="min-w-[110px]">Status</TableHead>
+                  <TableHead className="min-w-[120px]">Payment</TableHead>
+                  <TableHead className="min-w-[110px]">Date</TableHead>
+                  <TableHead className="min-w-[80px] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => {
+                  const statusBadge = getStatusBadge(order.orderStatus)
+                  const paymentBadge = getPaymentStatusBadge(order.paymentStatus)
+                  const isSelected = selectedOrders.includes(order._id)
 
-                return (
-                  <TableRow key={order._id} className={isSelected ? 'bg-blue-50 transition-colors duration-150' : 'transition-colors duration-150'}>
-                    <TableCell>
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleOrderSelection(order._id)}
-                        aria-label={`Select order ${order.orderId}`}
-                        className="cursor-pointer"
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col">
-                        <span className="font-semibold">{order.orderId}</span>
-                        {order.trackingId && (
-                          <span className="text-xs text-muted-foreground">
-                            Track: {order.trackingId}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{order.name}</span>
-                        <span className="text-sm text-muted-foreground">{order.number}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                          {(Array.isArray(order.products) ? order.products : [])
-                            .filter(Boolean)
-                            .slice(0, 3)
-                            .map((product, index) => (
-                            <div key={product?._id || index} className="relative">
-                              <Image
-                                src={resolveProductImage(product?.images)}
-                                alt={product?.name || "Product"}
-                                width={32}
-                                height={32}
-                                className="rounded-full border-2 border-background object-cover"
-                              />
-                              {index === 2 && (Array.isArray(order.products) ? order.products : []).filter(Boolean).length > 3 && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full text-white text-xs">
-                                  +{(Array.isArray(order.products) ? order.products : []).filter(Boolean).length - 3}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {(Array.isArray(order.products) ? order.products : []).filter(Boolean).length} items
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {formatCurrency(order.grandTotal)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusBadge.variant}>
-                        {statusBadge.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={paymentBadge.variant}>
-                          {paymentBadge.label}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {(order.paymentMethod || 'N/A').replace(/-/g, ' ')}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm">
-                          {formatDate(order.createdAt)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <Link href={`/dashboard/orders/details/${order._id}`}>
-                            <DropdownMenuItem>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                          </Link>
-                          <Link href={`/dashboard/orders/edit/${order._id}`}>
-                            <DropdownMenuItem>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Order
-                            </DropdownMenuItem>
-                          </Link>
-                          <DropdownMenuItem onClick={() => handlePrintOrder(order)}>
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print Receipt
-                          </DropdownMenuItem>
-                          {!order.trackingId && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => handleCreateSteadfastOrder(order)}
-                                disabled={creatingSteadfast}
-                              >
-                                {creatingSteadfast ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <Truck className="h-4 w-4 mr-2" />
-                                )}
-                                Create Steadfast
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleCreatePathaoOrder(order)}
-                                disabled={creatingPathao}
-                              >
-                                {creatingPathao ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <Truck className="h-4 w-4 mr-2" />
-                                )}
-                                Create Pathao
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleCreateRedxOrder(order)}
-                                disabled={creatingRedx}
-                              >
-                                {creatingRedx ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <Truck className="h-4 w-4 mr-2" />
-                                )}
-                                Create RedX
-                              </DropdownMenuItem>
-                            </>
-                          )}
+                  return (
+                    <TableRow key={order._id} className={isSelected ? 'bg-blue-50 transition-colors duration-150' : 'transition-colors duration-150'}>
+                      <TableCell>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleOrderSelection(order._id)}
+                          aria-label={`Select order ${order.orderId}`}
+                          className="cursor-pointer"
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="font-semibold">{order.orderId}</span>
                           {order.trackingId && (
-                            <DropdownMenuItem className="text-green-600">
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Courier Created
-                            </DropdownMenuItem>
+                            <span className="text-xs text-muted-foreground">
+                              Track: {order.trackingId}
+                            </span>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-red-600 focus:text-red-600"
-                            onClick={() => {
-                              setSelectedOrder(order)
-                              setDeleteDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Order
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{order.name}</span>
+                          <span className="text-sm text-muted-foreground">{order.number}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="flex -space-x-2">
+                            {(Array.isArray(order.products) ? order.products : [])
+                              .filter(Boolean)
+                              .slice(0, 3)
+                              .map((product, index) => (
+                              <div key={product?._id || index} className="relative">
+                                <Image
+                                  src={resolveProductImage(product?.images)}
+                                  alt={product?.name || "Product"}
+                                  width={32}
+                                  height={32}
+                                  className="rounded-full border-2 border-background object-cover"
+                                />
+                                {index === 2 && (Array.isArray(order.products) ? order.products : []).filter(Boolean).length > 3 && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full text-white text-xs">
+                                    +{(Array.isArray(order.products) ? order.products : []).filter(Boolean).length - 3}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {(Array.isArray(order.products) ? order.products : []).filter(Boolean).length} items
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold whitespace-nowrap">
+                        {formatCurrency(order.grandTotal)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Badge variant={statusBadge.variant}>
+                          {statusBadge.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={paymentBadge.variant}>
+                            {paymentBadge.label}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground capitalize">
+                            {(order.paymentMethod || 'N/A').replace(/-/g, ' ')}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-sm">
+                            {formatDate(order.createdAt)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <Link href={`/dashboard/orders/details/${order._id}`}>
+                              <DropdownMenuItem>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                            </Link>
+                            <Link href={`/dashboard/orders/edit/${order._id}`}>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Order
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuItem onClick={() => handlePrintOrder(order)}>
+                              <Printer className="h-4 w-4 mr-2" />
+                              Print Receipt
+                            </DropdownMenuItem>
+                            {!order.trackingId && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => handleCreateSteadfastOrder(order)}
+                                  disabled={creatingSteadfast}
+                                >
+                                  {creatingSteadfast ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Truck className="h-4 w-4 mr-2" />
+                                  )}
+                                  Create Steadfast
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleCreatePathaoOrder(order)}
+                                  disabled={creatingPathao}
+                                >
+                                  {creatingPathao ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Truck className="h-4 w-4 mr-2" />
+                                  )}
+                                  Create Pathao
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleCreateRedxOrder(order)}
+                                  disabled={creatingRedx}
+                                >
+                                  {creatingRedx ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Truck className="h-4 w-4 mr-2" />
+                                  )}
+                                  Create RedX
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {order.trackingId && (
+                              <DropdownMenuItem className="text-green-600">
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Courier Created
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600"
+                              onClick={() => {
+                                setSelectedOrder(order)
+                                setDeleteDialogOpen(true)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Order
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
 
           {orders.length === 0 && !loading && (
             <div className="text-center py-12">
