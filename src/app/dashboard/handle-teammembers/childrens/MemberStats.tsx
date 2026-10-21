@@ -37,16 +37,25 @@ export default function MemberStats() {
         });
         const data = await res.json();
         if (!cancelled && data?.success) {
-          const list: any[] = data.data || [];
-          const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          setKpis({
-            total: data.pagination?.total ?? list.length,
-            withUser: list.filter((m) => !!m.user).length,
-            deleted: list.filter((m) => m.isDeleted).length,
-            thisWeek: list.filter(
-              (m) => new Date(m.createdAt).getTime() >= oneWeekAgo,
-            ).length,
-          });
+          if (data.stats) {
+            setKpis({
+              total: data.stats.total ?? 0,
+              withUser: data.stats.withUser ?? 0,
+              deleted: data.stats.deleted ?? 0,
+              thisWeek: data.stats.thisWeek ?? 0,
+            });
+          } else {
+            const list: any[] = data.data || [];
+            const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            setKpis({
+              total: data.pagination?.total ?? list.length,
+              withUser: list.filter((m) => !!m.user).length,
+              deleted: list.filter((m) => m.isDeleted).length,
+              thisWeek: list.filter(
+                (m) => new Date(m.createdAt).getTime() >= oneWeekAgo,
+              ).length,
+            });
+          }
         }
       } catch {
         /* ignore */

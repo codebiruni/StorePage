@@ -64,15 +64,12 @@ export default function ParentNav() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Mirror ParentFooter's suppression: the public /step/[id] landing pages
-  // are full-bleed funnels and must not show site chrome (top nav, promo
-  // strip, search bar, etc.). Render nothing when we're inside that route
-  // tree so the funnel owns the entire viewport.
-  // Hooks must be called unconditionally before any early return.
-  if (pathname?.startsWith("/step")) return null;
+  // Suppress public storefront chrome on full-bleed landing funnels (/step)
+  // and inside the administrative dashboard (/dashboard).
+  if (pathname?.startsWith("/step") || pathname?.startsWith("/dashboard")) return null;
 
   const navContainerClass = cn(
-    "fixed top-0 left-0 right-0 z-[498] flex w-full flex-col bg-background/95 shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/80 transition-transform duration-300 ease-in-out will-change-transform",
+    "fixed top-0 left-0 right-0 z-[1000] flex w-full flex-col bg-background/95 shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/80 transition-transform duration-300 ease-in-out will-change-transform",
     isScrolledDown
       ? "-translate-y-14 md:-translate-y-16"
       : "translate-y-0"
@@ -81,7 +78,9 @@ export default function ParentNav() {
   if (loading) {
     return (
       <div className={navContainerClass}>
-        <NavTopSection />
+        <div className="relative z-20 w-full">
+          <NavTopSection />
+        </div>
         <div className="container mx-auto px-2 py-4">
           <div className="flex animate-pulse justify-center">
             <div className="h-6 w-32 rounded bg-muted" />
@@ -94,7 +93,9 @@ export default function ParentNav() {
   if (error) {
     return (
       <div className={navContainerClass}>
-        <NavTopSection />
+        <div className="relative z-20 w-full">
+          <NavTopSection />
+        </div>
         <div className="container mx-auto px-2 py-4 text-center text-destructive">
           Failed to load navigation: {error}
         </div>
@@ -104,8 +105,10 @@ export default function ParentNav() {
 
   return (
     <div className={navContainerClass}>
-      <NavTopSection />
-      <div className="hidden w-full border-b border-border/60 md:block">
+      <div className="relative z-20 w-full">
+        <NavTopSection />
+      </div>
+      <div className="relative z-10 hidden w-full border-b border-border/60 md:block">
         <BigScreenNav navItems={navItems as unknown as NavItem[]} />
       </div>
     </div>

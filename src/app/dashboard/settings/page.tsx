@@ -1,19 +1,19 @@
-import React from "react";
-import ChangePasswordForm from "./ChangePasswordForm";
+import React, { Suspense } from "react";
+import SettingsTabs from "./SettingsTabs";
+import { Loader2 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default function SettingsPage() {
   return (
-    <div className="py-5">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your account settings and security preferences.
-        </p>
-      </div>
-
-      <div className="flex justify-center">
-        <ChangePasswordForm />
-      </div>
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex h-64 w-full items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <SettingsTabs />
+    </Suspense>
   );
 }

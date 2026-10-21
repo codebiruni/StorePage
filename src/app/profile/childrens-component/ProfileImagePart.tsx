@@ -34,10 +34,6 @@ export default function ProfileImagePart({
   username,
   role,
 }: ProfileImagePartProps) {
-  const defaultProfileImage = "https://i.postimg.cc/XJDtkf1V/images.jpg";
-  const coverImage =
-    "https://i.postimg.cc/FH556xrz/desktop-wallpaper-ecommerce-website-design-company-noida-e-commerce-banner-design-e-commerce.jpg";
-
   const getInitials = (value: string | null) => {
     if (!value) return "U";
     return value
@@ -52,22 +48,22 @@ export default function ProfileImagePart({
     switch (value?.toLowerCase()) {
       case "admin":
         return {
-          color: "bg-red-100 text-red-800 border-red-200",
+          color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-400",
           icon: <Shield className="h-3 w-3" />,
         };
       case "super-admin":
         return {
-          color: "bg-purple-100 text-purple-800 border-purple-200",
+          color: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400",
           icon: <Crown className="h-3 w-3" />,
         };
       case "moderator":
         return {
-          color: "bg-blue-100 text-blue-800 border-blue-200",
+          color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400",
           icon: <Star className="h-3 w-3" />,
         };
       default:
         return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
+          color: "bg-primary/10 text-primary border-primary/20",
           icon: <User className="h-3 w-3" />,
         };
     }
@@ -76,26 +72,20 @@ export default function ProfileImagePart({
   const roleDetails = getRoleDetails(role);
 
   return (
-    <Card className="overflow-hidden border-0 shadow-lg">
-      <div className="relative h-32 md:h-40 bg-gradient-to-r from-blue-600 to-purple-600">
-        <Image
-          width={1000}
-          height={160}
-          src={coverImage}
-          alt="Cover"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/20" />
+    <Card className="overflow-hidden border border-border/60 shadow-md bg-card/80 backdrop-blur-sm">
+      <div className="relative h-28 md:h-36 bg-gradient-to-r from-primary/25 via-primary/15 to-primary/5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
       </div>
 
       <CardContent className="p-6">
         <div className="flex flex-col items-center text-center gap-4">
-          <Avatar className="h-24 w-24 md:h-28 md:w-28 border-4 border-white shadow-lg -mt-16 md:-mt-20">
+          <Avatar className="h-24 w-24 md:h-28 md:w-28 border-4 border-background shadow-lg -mt-16 md:-mt-20">
             <AvatarImage
-              src={image || defaultProfileImage}
+              src={image || undefined}
               alt={name || "User"}
+              className="object-cover"
             />
-            <AvatarFallback className="text-2xl font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+            <AvatarFallback className="text-2xl font-bold bg-primary/15 text-primary">
               {getInitials(name)}
             </AvatarFallback>
           </Avatar>

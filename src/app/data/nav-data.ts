@@ -91,14 +91,6 @@ export const data = {
       ],
     },
     {
-      title: "Site",
-      icon: Settings2,
-      items: [
-        { title: "Website Info", url: "/dashboard/website-info" },
-        { title: "Site Settings", url: "/dashboard/website-info/settings" },
-      ],
-    },
-    {
       title: "Tools",
       icon: ListChecks,
       items: [
@@ -112,8 +104,8 @@ export const data = {
       title: "Account",
       icon: Settings,
       items: [
-        { title: "Change Password", url: "/dashboard/settings" },
-        { title: "Courier API", url: "/dashboard/account/courier-api" },
+        { title: "Store Profile", url: "/dashboard/website-info" },
+        { title: "Settings", url: "/dashboard/settings" },
       ],
     },
   ],
@@ -128,7 +120,7 @@ export const data = {
     { name: "Customer Lookup", url: "/dashboard/customer-checker", icon: Search },
     { name: "Stock Report", url: "/dashboard/product-report", icon: PieChart },
     { name: "Pending Orders", url: "/dashboard/orders", icon: ClipboardList },
-    { name: "Site Settings", url: "/dashboard/website-info/settings", icon: Truck },
+    { name: "Settings", url: "/dashboard/settings", icon: Settings },
     { name: "Cash & Payments", url: "/dashboard/orders", icon: Wallet },
     { name: "Calculator", url: "/dashboard/calculator", icon: Calculator },
     { name: "Calendar", url: "/dashboard/calendar", icon: CalendarDays },

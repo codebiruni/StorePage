@@ -71,7 +71,7 @@ export default function ChangePasswordForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full sm:max-w-xl md:max-w-2xl space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm"
+      className="w-full space-y-6 rounded-xl border border-border/60 bg-card p-6 shadow-none"
     >
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">

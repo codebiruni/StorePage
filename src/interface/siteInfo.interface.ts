@@ -64,5 +64,11 @@ export interface ISiteInfo {
   themeColor?: string;
   buttonColor?: string;
   buttonTextColor?: string;
+  deliveryCharge?: {
+    insideDhaka?: number;
+    outsideDhaka?: number;
+  };
+  metaPixelId?: string;
+  gaMeasurementId?: string;
   courier?: ICourierCredentials;
 }

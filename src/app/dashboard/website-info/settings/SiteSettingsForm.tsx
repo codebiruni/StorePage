@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,31 +14,71 @@ import {
 import { BarChart3, Loader2, Megaphone, Truck } from "lucide-react";
 import { toast } from "sonner";
 
-type InitialValues = {
-  deliveryInsideDhaka: number;
-  deliveryOutsideDhaka: number;
-  metaPixelId: string;
-  gaMeasurementId: string;
+export type SiteSettingsInitialValues = {
+  deliveryInsideDhaka?: number;
+  deliveryOutsideDhaka?: number;
+  metaPixelId?: string;
+  gaMeasurementId?: string;
 };
 
 export default function SiteSettingsForm({
   initialValues,
 }: {
-  initialValues: InitialValues;
+  initialValues?: SiteSettingsInitialValues;
 }) {
   const [deliveryInsideDhaka, setDeliveryInsideDhaka] = useState<number>(
-    initialValues.deliveryInsideDhaka,
+    initialValues?.deliveryInsideDhaka ?? 60,
   );
   const [deliveryOutsideDhaka, setDeliveryOutsideDhaka] = useState<number>(
-    initialValues.deliveryOutsideDhaka,
+    initialValues?.deliveryOutsideDhaka ?? 120,
   );
   const [metaPixelId, setMetaPixelId] = useState<string>(
-    initialValues.metaPixelId,
+    initialValues?.metaPixelId ?? "",
   );
   const [gaMeasurementId, setGaMeasurementId] = useState<string>(
-    initialValues.gaMeasurementId,
+    initialValues?.gaMeasurementId ?? "",
   );
+  const [isLoading, setIsLoading] = useState<boolean>(!initialValues);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCurrentConfig = async () => {
+      try {
+        const res = await fetch("/api/v1/web-info", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (isMounted && res.ok && data.success && data.data) {
+          const doc = data.data;
+          if (doc.deliveryCharge) {
+            if (typeof doc.deliveryCharge.insideDhaka === "number") {
+              setDeliveryInsideDhaka(doc.deliveryCharge.insideDhaka);
+            }
+            if (typeof doc.deliveryCharge.outsideDhaka === "number") {
+              setDeliveryOutsideDhaka(doc.deliveryCharge.outsideDhaka);
+            }
+          }
+          if (typeof doc.metaPixelId === "string") {
+            setMetaPixelId(doc.metaPixelId);
+          }
+          if (typeof doc.gaMeasurementId === "string") {
+            setGaMeasurementId(doc.gaMeasurementId);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch site config:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchCurrentConfig();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

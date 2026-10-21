@@ -57,6 +57,19 @@ const userSchema: Schema<Iuser> = new Schema<Iuser>(
       type: Boolean,
       default: false,
     },
+    telegram_chat_id: {
+      type: String,
+      default: "",
+    },
+    telegram_link_token: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    is_telegram_active: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

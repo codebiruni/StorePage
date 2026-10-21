@@ -32,17 +32,26 @@ export default function UserStats() {
         });
         const data = await res.json();
         if (!cancelled && data?.success) {
-          const list: any[] = data.data || [];
-          setKpis({
-            total: data.pagination?.total ?? list.length,
-            active: list.filter(
-              (u) => u.status !== "blocked" && u.isActive,
-            ).length,
-            blocked: list.filter((u) => u.status === "blocked").length,
-            admins: list.filter(
-              (u) => u.role === "admin" || u.role === "super-admin",
-            ).length,
-          });
+          if (data.stats) {
+            setKpis({
+              total: data.stats.total ?? 0,
+              active: data.stats.active ?? 0,
+              blocked: data.stats.blocked ?? 0,
+              admins: data.stats.admins ?? 0,
+            });
+          } else {
+            const list: any[] = data.data || [];
+            setKpis({
+              total: data.pagination?.total ?? list.length,
+              active: list.filter(
+                (u) => u.status !== "blocked" && u.isActive,
+              ).length,
+              blocked: list.filter((u) => u.status === "blocked").length,
+              admins: list.filter(
+                (u) => u.role === "admin" || u.role === "super-admin",
+              ).length,
+            });
+          }
         }
       } catch {
         /* ignore */

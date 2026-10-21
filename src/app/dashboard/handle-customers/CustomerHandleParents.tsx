@@ -11,8 +11,8 @@ export default function CustomerHandleParents() {
     <div className="space-y-6">
       <WorkspaceHeader
         title="Customers Directory"
-        subtitle="Manage customer profiles, contact details and account status"
-        badges={["CRM", "People"]}
+        subtitle="Store shoppers and clients with shipping addresses, order histories, and loyalty points"
+        badges={["Shoppers", "People"]}
         action={
           <Button asChild>
             <Link href="/dashboard/create-customer">

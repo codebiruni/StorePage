@@ -4,6 +4,7 @@ import connectDb from "@/lib/connectdb";
 import OrderModel from "@/models/order.model";
 import Product from "@/models/product.model";
 import { NextRequest, NextResponse } from "next/server";
+import { sendTelegramOrderAlert } from "@/lib/telegram";
 
 /**
  * Create a new Order
@@ -154,6 +155,11 @@ export async function POST(request: NextRequest) {
       ).populate('products', 'name images generalPrice brand quentity');
 
       if (promoted) {
+        // Trigger Telegram alert in background (non-blocking)
+        sendTelegramOrderAlert(promoted).catch((err) =>
+          console.error("[order] Failed to send Telegram alert for promoted order:", err)
+        );
+
         return NextResponse.json(
           {
             success: true,
@@ -174,6 +180,11 @@ export async function POST(request: NextRequest) {
     const populatedOrder = await OrderModel.findById(createdOrder._id)
       .populate('products', 'name images generalPrice brand quentity')
       .exec();
+
+    // Trigger Telegram alert in background (non-blocking)
+    sendTelegramOrderAlert(populatedOrder || createdOrder).catch((err) =>
+      console.error("[order] Failed to send Telegram alert:", err)
+    );
 
     return NextResponse.json(
       {

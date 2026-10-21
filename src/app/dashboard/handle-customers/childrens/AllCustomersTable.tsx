@@ -204,11 +204,23 @@ export default function AllCustomersTable() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/30">
+      {/* People Architecture Banner */}
+      <div className="bg-muted/40 border-b px-4 py-3 text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-background text-[11px] font-normal">
+            Store Customers
+          </Badge>
+          <span>
+            Registered buyers and clients with delivery coordinates, purchase history, and linked user credentials.
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/20">
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold">All customers</p>
+          <p className="text-sm font-semibold">All Store Customers</p>
           <p className="text-xs text-muted-foreground">
-            Search, review and manage every customer profile
+            Search, review, and manage customer accounts and shopping profiles
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -218,7 +230,7 @@ export default function AllCustomersTable() {
             onChange={handleSearch}
             className="max-w-xs"
           />
-          <Badge variant="secondary" className="px-3 py-1.5 text-xs">
+          <Badge variant="secondary" className="px-3 py-1.5 text-xs whitespace-nowrap">
             Total {totalCustomers}
           </Badge>
         </div>

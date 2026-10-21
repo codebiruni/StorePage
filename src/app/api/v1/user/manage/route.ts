@@ -12,6 +12,8 @@ import jwt from "jsonwebtoken";
 const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
+const MAX_OTP_ATTEMPTS = 5;
+
 export async function POST(request: NextRequest) {
   try {
     const signUpData = await request.json();
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     if (!email && !number) {
       return NextResponse.json(
-        { success: false, error: "Email or number is required" },
+        { success: false, error: "Email or phone number is required" },
         { status: 400 }
       );
     }
@@ -37,31 +39,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normEmail = email ? email.toLowerCase().trim() : undefined;
+    const normNumber = number ? number.trim().replace(/\s+/g, "") : undefined;
+
     // Check if user exists with email or number
     let existingUser;
-    if (email) {
+    if (normEmail) {
       existingUser = await UserModel.findOne({
         $or: [
-          { email: email.toLowerCase().trim(), isDeleted: false },
-          { email: email.toLowerCase().trim(), isDeleted: { $exists: false } },
+          { email: normEmail, isDeleted: false },
+          { email: normEmail, isDeleted: { $exists: false } },
         ],
       });
-    } else if (number) {
+    } else if (normNumber) {
       existingUser = await UserModel.findOne({
         $or: [
-          { number: number.trim(), isDeleted: false },
-          { number: number.trim(), isDeleted: { $exists: false } },
+          { number: normNumber, isDeleted: false },
+          { number: normNumber, isDeleted: { $exists: false } },
         ],
       });
     }
 
     if (existingUser) {
       if (existingUser.isActive) {
-        // User exists and is active
+        // User exists and is verified
         return NextResponse.json(
           {
             success: false,
-            error: "User already exists with this email/number",
+            error: "An active account already exists with this email or phone number.",
             user: {
               _id: existingUser._id,
               email: existingUser.email,
@@ -72,19 +77,25 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         );
       } else {
-        // User exists but is inactive - delete and create new account
+        // User exists but is unverified - delete old entry and recreate cleanly
         await UserModel.findByIdAndDelete(existingUser._id);
-
-        // Also delete any pending OTPs for this identifier
-        const identifier = email || number;
-        await OtpModel.deleteMany({ identifier });
+        const oldIdentifier = normEmail || normNumber;
+        if (oldIdentifier) {
+          await OtpModel.deleteMany({ identifier: oldIdentifier });
+        }
       }
+    }
+
+    // Clean up any stale OTPs for this identifier before creating new one
+    const identifier = normEmail || normNumber;
+    if (identifier) {
+      await OtpModel.deleteMany({ identifier });
     }
 
     // Prepare user data
     const userData: any = {
-      email: email ? email.toLowerCase().trim() : undefined,
-      number: number ? number.trim() : undefined,
+      email: normEmail,
+      number: normNumber,
       password: password || undefined,
       isSocial,
       isActive: isSocial, // Social users are active immediately
@@ -95,28 +106,28 @@ export async function POST(request: NextRequest) {
     const newUser = new UserModel(userData);
     const savedUser = await newUser.save();
 
-    if (!isSocial) {
+    if (!isSocial && identifier) {
       // Generate and send OTP for non-social signups
       const otp = generateOTP();
-      const identifier = email || number;
 
       await OtpModel.create({
         identifier,
         code: otp,
+        attempts: 0,
         expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes expiry
       });
 
-      if (email) {
+      if (normEmail) {
         const siteConfig = await getSiteConfig();
         await EmailTemplates.sendOtpEmail(
-          email,
+          normEmail,
           otp,
-          siteConfig.name,
-          email || email.split("@")[0]
+          siteConfig?.name ?? "Online Shop",
+          normEmail.split("@")[0]
         );
-      } else if (number) {
+      } else if (normNumber) {
         await sendSMS({
-          to: number,
+          to: normNumber,
           message: `Your verification code is ${otp}. This code will expire in 15 minutes.`,
         });
       }
@@ -143,7 +154,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `User with this ${field} already exists`,
+          error: `User with this ${field} already exists.`,
         },
         { status: 409 }
       );
@@ -159,30 +170,72 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const { identifier, code } = await request.json();
-    await connectDb();
-    console.log(identifier, code);
 
-    const otpEntry = await OtpModel.findOne({ identifier, code });
+    if (!identifier || !code) {
+      return NextResponse.json(
+        { success: false, message: "Identifier and OTP code are required" },
+        { status: 400 }
+      );
+    }
+
+    await connectDb();
+
+    const trimmed = String(identifier).trim();
+    const isEmail = trimmed.includes("@");
+    const normIdentifier = isEmail ? trimmed.toLowerCase() : trimmed.replace(/\s+/g, "");
+
+    const otpEntry = await OtpModel.findOne({ identifier: normIdentifier });
 
     if (!otpEntry) {
       return NextResponse.json(
-        { success: false, message: "Invalid OTP" },
+        { success: false, message: "No active verification code found. Please request a new code." },
         { status: 400 }
       );
     }
 
     if (otpEntry.expiresAt < new Date()) {
+      await OtpModel.deleteOne({ _id: otpEntry._id });
       return NextResponse.json(
-        { success: false, message: "OTP expired" },
+        { success: false, message: "Verification code has expired. Please request a new one." },
         { status: 400 }
       );
     }
 
+    // Attempt counter & brute force protection
+    if ((otpEntry.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+      await OtpModel.deleteOne({ _id: otpEntry._id });
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Too many incorrect attempts. For security, this code was invalidated. Please request a new one.",
+        },
+        { status: 429 }
+      );
+    }
+
+    if (otpEntry.code !== String(code).trim()) {
+      const updatedAttempts = (otpEntry.attempts || 0) + 1;
+      await OtpModel.updateOne({ _id: otpEntry._id }, { $set: { attempts: updatedAttempts } });
+      const remaining = MAX_OTP_ATTEMPTS - updatedAttempts;
+
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            remaining > 0
+              ? `Invalid verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`
+              : "Too many incorrect attempts. Please request a new code.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // OTP is valid! Activate user
     const user = await UserModel.findOneAndUpdate(
-      { $or: [{ email: identifier }, { number: identifier }] },
-      { isActive: true },
+      { $or: [{ email: normIdentifier }, { number: normIdentifier }] },
+      { isActive: true, status: "in-progress" },
       { new: true }
-    );
+    ).select("-password");
 
     if (!user) {
       return NextResponse.json(
@@ -191,7 +244,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    await OtpModel.deleteOne({ _id: otpEntry._id });
+    // Delete all used OTPs for this identifier
+    await OtpModel.deleteMany({ identifier: normIdentifier });
 
     // Create JWT tokens
     const accessToken = jwt.sign(
@@ -249,7 +303,7 @@ export async function PATCH(request: NextRequest) {
   } catch (err) {
     console.error("OTP verification error:", err);
     return NextResponse.json(
-      { success: false, error: "Verification failed" },
+      { success: false, error: "Verification failed. Please try again." },
       { status: 500 }
     );
   }
@@ -263,11 +317,12 @@ export async function GET(request: NextRequest) {
 
     const page = parseInt(searchParams.get("page") || "1", 10);
     const search = searchParams.get("search") || "";
-
-    const limit = 50;
+    const role = searchParams.get("role") || "";
+    const status = searchParams.get("status") || "";
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
     const skip = (page - 1) * limit;
 
-    const query: any = {};
+    const query: any = { isDeleted: false };
 
     if (search) {
       query.$or = [
@@ -277,25 +332,51 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const users = await UserModel.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .select("-password");
+    if (role && role !== "all") {
+      query.role = role;
+    }
 
-    const total = await UserModel.countDocuments(query);
+    if (status && status !== "all") {
+      query.status = status;
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: users,
-      pagination: {
-        total,
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
+    const [users, total, totalAll, activeCount, blockedCount, staffCount, customerCount] =
+      await Promise.all([
+        UserModel.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .select("-password"),
+        UserModel.countDocuments(query),
+        UserModel.countDocuments({ isDeleted: false }),
+        UserModel.countDocuments({ isDeleted: false, isActive: true, status: { $ne: "blocked" } }),
+        UserModel.countDocuments({ isDeleted: false, status: "blocked" }),
+        UserModel.countDocuments({ isDeleted: false, role: { $in: ["admin", "menager", "super-admin"] } }),
+        UserModel.countDocuments({ isDeleted: false, role: "user" }),
+      ]);
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: users,
+        pagination: {
+          total,
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+        },
+        stats: {
+          total: totalAll,
+          active: activeCount,
+          blocked: blockedCount,
+          admins: staffCount,
+          staff: staffCount,
+          customers: customerCount,
+        },
       },
-    }, { 
-        status: 200
-      });
+      {
+        status: 200,
+      }
+    );
   } catch (err) {
     console.error("Fetch users error:", err);
     return NextResponse.json(
@@ -304,4 +385,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

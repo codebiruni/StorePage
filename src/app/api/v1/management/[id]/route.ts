@@ -16,25 +16,24 @@ export async function GET(request: NextRequest, context: ParamsType) {
   const { id } = await context.params;
   try {
     await connectDb();
-    const customer = await Management.findById(id).populate(
+    const member = await Management.findById(id).populate(
       "user",
       "-password"
     );
-    // Removed .populate("orders") to avoid MissingSchemaError
 
-    if (!customer || customer.isDeleted) {
+    if (!member || member.isDeleted) {
       return NextResponse.json(
-        { success: false, message: "Customer not found" },
+        { success: false, message: "Team member not found" },
         { status: 404 }
       );
     }
-    return NextResponse.json({ success: true, data: customer }, { 
+    return NextResponse.json({ success: true, data: member }, { 
         status: 200
       });
   } catch (err) {
-    console.error("GET customer error:", err);
+    console.error("GET team member error:", err);
     return NextResponse.json(
-      { success: false, message: "Failed to fetch customer" },
+      { success: false, message: "Failed to fetch team member" },
       { status: 500 }
     );
   }
@@ -49,30 +48,29 @@ export async function PATCH(request: NextRequest, context: ParamsType) {
     // Remove fields that shouldn't be updated directly
     const { user, orders, isDeleted, ...updateData } = body;
 
-    const updatedCustomer = await Management.findByIdAndUpdate(id, updateData, {
+    const updatedMember = await Management.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     })
       .select("-password")
       .populate("user", "-password");
-    // Removed .populate("orders") to avoid MissingSchemaError
 
-    if (!updatedCustomer || updatedCustomer.isDeleted) {
+    if (!updatedMember || updatedMember.isDeleted) {
       return NextResponse.json(
-        { success: false, message: "Customer not found" },
+        { success: false, message: "Team member not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Customer updated successfully",
-      data: updatedCustomer,
+      message: "Team member updated successfully",
+      data: updatedMember,
     });
   } catch (err) {
-    console.error("PATCH customer error:", err);
+    console.error("PATCH team member error:", err);
     return NextResponse.json(
-      { success: false, message: "Failed to update customer" },
+      { success: false, message: "Failed to update team member" },
       { status: 500 }
     );
   }
@@ -83,19 +81,19 @@ export async function DELETE(request: NextRequest, context: ParamsType) {
   try {
     await connectDb();
     await auth(USER_ROLE.SUPER_ADMIN);
-    const customer = await Management.findById(id);
-    if (!customer) {
+    const member = await Management.findById(id);
+    if (!member) {
       return NextResponse.json(
-        { success: false, message: "Customer not found" },
+        { success: false, message: "Team member not found" },
         { status: 404 }
       );
     }
 
     // Toggle isDeleted value (true becomes false, false becomes true)
-    const newIsDeletedValue = !customer.isDeleted;
+    const newIsDeletedValue = !member.isDeleted;
 
     await UserModel.findByIdAndUpdate(
-      customer.user,
+      member.user,
       { isDeleted: newIsDeletedValue },
       {
         new: true,
@@ -103,7 +101,7 @@ export async function DELETE(request: NextRequest, context: ParamsType) {
       }
     ).select("-password");
 
-    const updatedCustomer = await Management.findByIdAndUpdate(
+    const updatedMember = await Management.findByIdAndUpdate(
       id,
       { isDeleted: newIsDeletedValue },
       {
@@ -113,21 +111,20 @@ export async function DELETE(request: NextRequest, context: ParamsType) {
     )
       .select("-password")
       .populate("user", "-password");
-    // Removed .populate("orders") to avoid MissingSchemaError
 
     const actionMessage = newIsDeletedValue
-      ? "Customer deleted successfully"
-      : "Customer restored successfully";
+      ? "Team member deleted successfully"
+      : "Team member restored successfully";
 
     return NextResponse.json({
       success: true,
       message: actionMessage,
-      data: updatedCustomer,
+      data: updatedMember,
     });
   } catch (err) {
-    console.error("DELETE customer error:", err);
+    console.error("DELETE team member error:", err);
     return NextResponse.json(
-      { success: false, message: "Failed to update customer status" },
+      { success: false, message: "Failed to update team member status" },
       { status: 500 }
     );
   }

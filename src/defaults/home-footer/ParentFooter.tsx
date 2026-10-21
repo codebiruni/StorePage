@@ -41,8 +41,8 @@ export default function ParentFooter() {
   const pathname = usePathname();
   const { config } = useSiteConfig();
 
-  // Landing page funnel suppression (/step/[id])
-  if (pathname?.startsWith("/step")) return null;
+  // Landing page funnel (/step/[id]) and administrative dashboard (/dashboard) suppression
+  if (pathname?.startsWith("/step") || pathname?.startsWith("/dashboard")) return null;
 
   const name = config?.name ?? "My Store";
   const tagline =

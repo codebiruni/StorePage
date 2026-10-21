@@ -11,8 +11,8 @@ export default function TeamMeatHeader({
 }: TeamMeatHeaderProps = {}) {
   return (
     <WorkspaceHeader
-      title="Members Directory"
-      subtitle="Manage staff members and their linked system accounts"
+      title="Team Members Directory"
+      subtitle="Internal store staff, managers, and branch employees with operational dashboard privileges"
       badges={["Staff", "People"]}
       action={action}
     />

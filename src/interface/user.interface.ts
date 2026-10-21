@@ -9,4 +9,7 @@ export interface Iuser {
   // activationExpiresAt: Date;
   isActive: boolean;
   isDeleted: boolean;
+  telegram_chat_id?: string;
+  telegram_link_token?: string;
+  is_telegram_active?: boolean;
 }

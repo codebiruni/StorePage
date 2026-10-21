@@ -5,7 +5,11 @@ import { SearchResults } from "@/interface/types";
 import DesktopSearch from "./DesktopSearch";
 import MobileSearch from "./MobileSearch";
 
-export default function SearchBar() {
+export default function SearchBar({
+  mode = "all",
+}: {
+  mode?: "desktop" | "mobile" | "all";
+} = {}) {
   const [searchValue, setSearchValue] = useState("");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
@@ -19,7 +23,7 @@ export default function SearchBar() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchValue);
-    }, 300);
+    }, 250);
 
     return () => {
       clearTimeout(handler);
@@ -96,31 +100,35 @@ export default function SearchBar() {
 
   return (
     <>
-      <DesktopSearch
-        searchValue={searchValue}
-        onInputChange={handleInputChange}
-        searchInputRef={searchInputRef}
-        searchResults={searchResults}
-        isLoading={isLoading}
-        debouncedSearch={debouncedSearch}
-        onProductClick={handleProductClick}
-        onCategoryClick={handleCategoryClick}
-        onSubCategoryClick={handleSubCategoryClick}
-      />
-      <MobileSearch
-        searchValue={searchValue}
-        onInputChange={handleInputChange}
-        mobileSearchInputRef={mobileSearchInputRef}
-        isMobileSearchOpen={isMobileSearchOpen}
-        onSearchToggle={handleSearchToggle}
-        onCloseMobileSearch={handleCloseMobileSearch}
-        searchResults={searchResults}
-        isLoading={isLoading}
-        debouncedSearch={debouncedSearch}
-        onProductClick={handleProductClick}
-        onCategoryClick={handleCategoryClick}
-        onSubCategoryClick={handleSubCategoryClick}
-      />
+      {mode !== "mobile" && (
+        <DesktopSearch
+          searchValue={searchValue}
+          onInputChange={handleInputChange}
+          searchInputRef={searchInputRef}
+          searchResults={searchResults}
+          isLoading={isLoading}
+          debouncedSearch={debouncedSearch}
+          onProductClick={handleProductClick}
+          onCategoryClick={handleCategoryClick}
+          onSubCategoryClick={handleSubCategoryClick}
+        />
+      )}
+      {mode !== "desktop" && (
+        <MobileSearch
+          searchValue={searchValue}
+          onInputChange={handleInputChange}
+          mobileSearchInputRef={mobileSearchInputRef}
+          isMobileSearchOpen={isMobileSearchOpen}
+          onSearchToggle={handleSearchToggle}
+          onCloseMobileSearch={handleCloseMobileSearch}
+          searchResults={searchResults}
+          isLoading={isLoading}
+          debouncedSearch={debouncedSearch}
+          onProductClick={handleProductClick}
+          onCategoryClick={handleCategoryClick}
+          onSubCategoryClick={handleSubCategoryClick}
+        />
+      )}
     </>
   );
 }

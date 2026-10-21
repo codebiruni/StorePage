@@ -217,24 +217,16 @@ export default function CreateWebsiteInfoForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Logo *</FormLabel>
-                  <div className="flex items-center gap-4">
-                    <FormControl>
-                      <SingleImageUpload
-                        onUpload={(url: string) => field.onChange(url)}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    {field.value && (
-                      <div className="relative w-20 h-20 rounded-md overflow-hidden border">
-                        <Image
-                          src={field.value}
-                          alt="Logo preview"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
+                  <FormControl>
+                    <SingleImageUpload
+                      value={field.value}
+                      onUpload={(url: string) => field.onChange(url)}
+                      onRemove={() => field.onChange("")}
+                      disabled={isSubmitting}
+                      aspectRatio={1}
+                      recommendedSize="512 × 512 px (Square Logo)"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -254,24 +246,16 @@ export default function CreateWebsiteInfoForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Image *</FormLabel>
-                        <div className="flex flex-col gap-2">
-                          <FormControl>
-                            <SingleImageUpload
-                              onUpload={(url: string) => field.onChange(url)}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                          {field.value && (
-                            <div className="relative w-full h-40 rounded-md overflow-hidden border">
-                              <Image
-                                src={field.value}
-                                alt="First banner preview"
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        <FormControl>
+                          <SingleImageUpload
+                            value={field.value}
+                            onUpload={(url: string) => field.onChange(url)}
+                            onRemove={() => field.onChange("")}
+                            disabled={isSubmitting}
+                            aspectRatio={16 / 9}
+                            recommendedSize="1920 × 600 px (Banner)"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -302,24 +286,16 @@ export default function CreateWebsiteInfoForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Image *</FormLabel>
-                        <div className="flex flex-col gap-2">
-                          <FormControl>
-                            <SingleImageUpload
-                              onUpload={(url: string) => field.onChange(url)}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                          {field.value && (
-                            <div className="relative w-full h-40 rounded-md overflow-hidden border">
-                              <Image
-                                src={field.value}
-                                alt="Second banner preview"
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        <FormControl>
+                          <SingleImageUpload
+                            value={field.value}
+                            onUpload={(url: string) => field.onChange(url)}
+                            onRemove={() => field.onChange("")}
+                            disabled={isSubmitting}
+                            aspectRatio={16 / 9}
+                            recommendedSize="1920 × 600 px (Banner)"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -352,26 +328,18 @@ export default function CreateWebsiteInfoForm() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Image {index + 1} *</FormLabel>
-                            <div className="flex flex-col gap-2">
-                              <FormControl>
-                                <SingleImageUpload
-                                  onUpload={(url: string) =>
-                                    field.onChange(url)
-                                  }
-                                  disabled={isSubmitting}
-                                />
-                              </FormControl>
-                              {field.value && (
-                                <div className="relative w-full h-40 rounded-md overflow-hidden border">
-                                  <Image
-                                    src={field.value}
-                                    alt={`Carousel image ${index + 1} preview`}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                              )}
-                            </div>
+                            <FormControl>
+                              <SingleImageUpload
+                                value={field.value}
+                                onUpload={(url: string) =>
+                                  field.onChange(url)
+                                }
+                                onRemove={() => field.onChange("")}
+                                disabled={isSubmitting}
+                                aspectRatio={16 / 9}
+                                recommendedSize="1920 × 600 px (Carousel slide)"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}

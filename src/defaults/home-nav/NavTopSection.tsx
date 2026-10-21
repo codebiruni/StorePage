@@ -47,13 +47,14 @@ export default function NavTopSection() {
 
           {/* Search (desktop) */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-4">
-              <SearchBar />
-            </div>
+            <SearchBar mode="desktop" />
+          </div>
+
           {/* Right actions */}
           <div className="flex items-center gap-0.5 sm:gap-1">
-            {/* Mobile search trigger comes from SearchBar (built-in icon) */}
+            {/* Mobile search trigger */}
             <div className="md:hidden">
-              <SearchBar />
+              <SearchBar mode="mobile" />
             </div>
 
             {/* Wishlist */}

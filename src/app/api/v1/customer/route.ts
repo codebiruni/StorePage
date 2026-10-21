@@ -82,13 +82,21 @@ export async function GET(request: NextRequest) {
       query.name = { $regex: search, $options: "i" };
     }
 
-    const total = await CustomerModel.countDocuments(query);
-    const customers = await CustomerModel.find(query)
-      .populate("user", "email number username role")
-      .select("name image createdAt")
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [total, customers, totalAll, activeCount, withImageCount, thisWeekCount] =
+      await Promise.all([
+        CustomerModel.countDocuments(query),
+        CustomerModel.find(query)
+          .populate("user", "email number username role")
+          .select("name image createdAt")
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .sort({ createdAt: -1 }),
+        CustomerModel.countDocuments({ isDeleted: false }),
+        CustomerModel.countDocuments({ isDeleted: false }),
+        CustomerModel.countDocuments({ isDeleted: false, image: { $exists: true, $ne: "" } }),
+        CustomerModel.countDocuments({ isDeleted: false, createdAt: { $gte: oneWeekAgo } }),
+      ]);
 
     return NextResponse.json(
       {
@@ -99,6 +107,12 @@ export async function GET(request: NextRequest) {
           page,
           limit,
           totalPages: Math.ceil(total / limit),
+        },
+        stats: {
+          total: totalAll,
+          active: activeCount,
+          withImage: withImageCount,
+          thisWeek: thisWeekCount,
         },
       },
       { 

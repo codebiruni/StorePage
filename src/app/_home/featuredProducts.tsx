@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { resolveProductImage } from "@/lib/productImage";
 
@@ -140,12 +141,10 @@ export default function FeaturedProducts() {
             ) : currentProducts.length > 0 ? (
               <div ref={carouselRef} className="space-y-6">
                 {currentProducts.map((product) => (
-                  <div
-                    onClick={() =>
-                      router.push(`/product/product-details/${product._id}`)
-                    }
+                  <Link
+                    href={`/product/product-details/${product._id}`}
                     key={product._id}
-                    className="transform transition-all duration-300 hover:-translate-y-1"
+                    className="block transform transition-all duration-300 hover:-translate-y-1"
                   >
                     <div className="relative bg-background rounded-xl border overflow-hidden shadow-md p-4 flex">
                       <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
@@ -202,7 +201,7 @@ export default function FeaturedProducts() {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

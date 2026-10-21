@@ -31,16 +31,25 @@ export default function CustomerStats() {
         });
         const data = await res.json();
         if (!cancelled && data?.success) {
-          const list = data.data || [];
-          const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          setKpis({
-            total: data.pagination?.total ?? list.length,
-            active: list.filter((c: any) => !c.isDeleted).length,
-            withImage: list.filter((c: any) => !!c.image).length,
-            thisWeek: list.filter(
-              (c: any) => new Date(c.createdAt).getTime() >= oneWeekAgo,
-            ).length,
-          });
+          if (data.stats) {
+            setKpis({
+              total: data.stats.total ?? 0,
+              active: data.stats.active ?? 0,
+              withImage: data.stats.withImage ?? 0,
+              thisWeek: data.stats.thisWeek ?? 0,
+            });
+          } else {
+            const list = data.data || [];
+            const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            setKpis({
+              total: data.pagination?.total ?? list.length,
+              active: list.filter((c: any) => !c.isDeleted).length,
+              withImage: list.filter((c: any) => !!c.image).length,
+              thisWeek: list.filter(
+                (c: any) => new Date(c.createdAt).getTime() >= oneWeekAgo,
+              ).length,
+            });
+          }
         }
       } catch {
         /* swallow; UI shows zero */

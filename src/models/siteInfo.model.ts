@@ -69,6 +69,13 @@ const SiteInfoSchema: Schema = new Schema<ISiteInfo>(
     buttonColor: { type: String, default: "" },
     buttonTextColor: { type: String, default: "" },
 
+    deliveryCharge: {
+      insideDhaka: { type: Number, default: 0 },
+      outsideDhaka: { type: Number, default: 0 },
+    },
+    metaPixelId: { type: String, default: "" },
+    gaMeasurementId: { type: String, default: "" },
+
     // Courier credentials for Pathao / Steadfast / RedX integrations.
     // Stored per-store inside the (single-tenant) siteInfo doc so admins can
     // configure their own keys from /dashboard/account/courier-api.
@@ -154,7 +161,8 @@ SiteInfoSchema.pre<SiteInfoDocument>(
 
 if (
   models.SiteInfo &&
-  !(models.SiteInfo.schema.paths as Record<string, unknown>).buttonColor
+  (!(models.SiteInfo.schema.paths as Record<string, unknown>).buttonColor ||
+    !(models.SiteInfo.schema.paths as Record<string, unknown>).metaPixelId)
 ) {
   mongoose.deleteModel("SiteInfo");
 }

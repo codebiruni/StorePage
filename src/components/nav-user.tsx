@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   ChevronsUpDown,
   LogOut,
   Loader2,
   Mail,
   ShieldCheck,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,6 +57,7 @@ export function NavUser() {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const { UserData } = useContextData();
+  const { theme, setTheme } = useTheme();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -180,6 +184,26 @@ export function NavUser() {
                 <span className="capitalize">{role.replace("-", " ")}</span>
               </DropdownMenuItem>
             ) : null}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setTheme(theme === "dark" ? "light" : "dark");
+              }}
+              className="cursor-pointer"
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="mr-2 h-4 w-4 text-amber-500" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="mr-2 h-4 w-4 text-indigo-500" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={(event) => {

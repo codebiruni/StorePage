@@ -188,7 +188,7 @@ export default function SingleImageUpload({
                 "relative overflow-hidden rounded-lg border border-black/10 bg-white flex-none flex items-center justify-center shrink-0",
                 compact
                   ? "h-16 max-w-[120px] sm:h-20 sm:max-w-[150px]"
-                  : "h-18 max-w-[140px] sm:h-22 sm:max-w-[180px]"
+                  : "h-20 max-w-[160px] sm:h-24 sm:max-w-[220px]"
               )}
               style={{
                 aspectRatio: `${aspectRatio}`,
@@ -198,8 +198,11 @@ export default function SingleImageUpload({
               <img
                 src={currentImage}
                 alt={label || "Uploaded preview"}
-                className="h-full w-full object-contain p-1"
+                className="h-full w-full object-cover"
                 loading="lazy"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                }}
               />
               {isUploading && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center">

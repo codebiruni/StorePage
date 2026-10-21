@@ -40,6 +40,16 @@ export async function POST(request: NextRequest) {
 
     const result = await CustomerModel.create(customerData);
 
+    // Keep UserModel in sync with profile username/contact
+    const userUpdates: any = {};
+    if (body.username) userUpdates.username = body.username;
+    if (body.email) userUpdates.email = body.email.toLowerCase().trim();
+    if (body.number) userUpdates.number = body.number.trim();
+
+    if (Object.keys(userUpdates).length > 0) {
+      await UserModel.findByIdAndUpdate(decoded.id, { $set: userUpdates });
+    }
+
     return NextResponse.json(
       {
         success: true,

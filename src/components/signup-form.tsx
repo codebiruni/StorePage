@@ -169,7 +169,7 @@ export default function SignupForm({
       toast.success("Account created!", {
         description: "Please verify your account to continue.",
       });
-      const identifier = email || number;
+      const identifier = (method === "email" ? email : number).trim();
       router.push(`/sign-up/${encodeURIComponent(identifier)}`);
     } catch (err) {
       const message =

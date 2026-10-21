@@ -5,6 +5,7 @@ import connectDb from "@/lib/connectdb";
 import OrderModel from "@/models/order.model";
 import { productTag } from "@/app/step/_lib/landing-data";
 import { getSiteConfig } from "@/lib/siteConfig";
+import { sendTelegramOrderAlert } from "@/lib/telegram";
 
 // Body validation -----------------------------------------------------
 
@@ -121,6 +122,10 @@ export async function POST(req: Request) {
       ).lean();
 
       if (promoted) {
+        sendTelegramOrderAlert(promoted).catch((err) =>
+          console.error("[landing-orders] Failed to send Telegram alert for promoted draft:", err)
+        );
+
         return NextResponse.json(
           {
             ok: true,
@@ -164,6 +169,11 @@ export async function POST(req: Request) {
         /* revalidation failures shouldn't break the order */
       }
     });
+
+    // Send Telegram alert in background
+    sendTelegramOrderAlert(order).catch((err) =>
+      console.error("[landing-orders] Failed to send Telegram alert:", err)
+    );
 
     return NextResponse.json(
       {

@@ -24,6 +24,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,6 +63,7 @@ interface Address {
 interface FormData
   extends Omit<IManagement, "id" | "user" | "orders" | "isDeleted" | "branch"> {
   password: string;
+  role: "menager" | "admin";
   contacts: Contact[];
   address: Address[];
   branch: string;
@@ -68,6 +76,7 @@ export default function CreateMemberForm() {
     email: "",
     number: "",
     password: "",
+    role: "menager",
     dateOfBirth: undefined,
     contacts: [{ contactName: "", contact: "" }],
     address: [{ addressName: "", district: "", city: "", addressLine: "" }],
@@ -256,6 +265,7 @@ export default function CreateMemberForm() {
         email: "",
         number: "",
         password: "",
+        role: "menager",
         dateOfBirth: undefined,
         contacts: [{ contactName: "", contact: "" }],
         address: [{ addressName: "", district: "", city: "", addressLine: "" }],
@@ -337,7 +347,25 @@ export default function CreateMemberForm() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="role">Staff Role *</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(val: "menager" | "admin") =>
+                    setFormData((prev) => ({ ...prev, role: val }))
+                  }
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select staff role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="menager">Manager (Branch Staff)</SelectItem>
+                    <SelectItem value="admin">Administrator (Full Access)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password *</Label>
                 <Input

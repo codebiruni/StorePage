@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import AddCart from "./add-cart";
 import AddWishlist from "./add-wishlist";
@@ -13,7 +13,6 @@ import QuickOrderModal from "./QuickOrderModal";
 import { resolveProductImage } from "@/lib/productImage";
 
 export default function ProductCard({ product }: { product: any }) {
-  const router = useRouter();
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
 
   const firstImage =
@@ -40,10 +39,6 @@ export default function ProductCard({ product }: { product: any }) {
     price: currentPrice,
   };
 
-  const navigateToDetails = () => {
-    router.push(`/product/product-details/${product?._id}`);
-  };
-
   return (
     <>
       <Card className="relative group flex flex-col justify-between cursor-pointer p-0 overflow-hidden border border-border/80 rounded-2xl shadow-xs hover:shadow-md transition-all bg-card">
@@ -54,9 +49,9 @@ export default function ProductCard({ product }: { product: any }) {
         </div>
 
         {/* Product Image */}
-        <div
-          onClick={navigateToDetails}
-          className="relative w-full aspect-square overflow-hidden bg-muted/20"
+        <Link
+          href={`/product/product-details/${product?._id}`}
+          className="relative w-full aspect-square overflow-hidden bg-muted/20 block"
         >
           <Image
             width={300}
@@ -82,32 +77,34 @@ export default function ProductCard({ product }: { product: any }) {
               </span>
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Product Info */}
-        <CardContent
-          onClick={navigateToDetails}
-          className="p-3 space-y-1.5"
+        <Link
+          href={`/product/product-details/${product?._id}`}
+          className="block"
         >
-          <h3 className="text-xs sm:text-sm font-semibold line-clamp-2 text-foreground group-hover:text-primary transition-colors min-h-[2.5rem] leading-snug">
-            {product?.name || "Unnamed Product"}
-          </h3>
-          <div className="flex items-center gap-2">
-            <span className="text-sm sm:text-base font-bold text-primary font-mono">
-              ৳{currentPrice.toLocaleString()}
-            </span>
-            {prevPrice && prevPrice > currentPrice ? (
-              <span className="text-[11px] sm:text-xs line-through text-muted-foreground font-mono">
-                ৳{prevPrice.toLocaleString()}
+          <CardContent className="p-3 space-y-1.5">
+            <h3 className="text-xs sm:text-sm font-semibold line-clamp-2 text-foreground group-hover:text-primary transition-colors min-h-[2.5rem] leading-snug">
+              {product?.name || "Unnamed Product"}
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-sm sm:text-base font-bold text-primary font-mono">
+                ৳{currentPrice.toLocaleString()}
               </span>
-            ) : null}
-            {discountPercentage > 0 && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                -{discountPercentage}%
-              </span>
-            )}
-          </div>
-        </CardContent>
+              {prevPrice && prevPrice > currentPrice ? (
+                <span className="text-[11px] sm:text-xs line-through text-muted-foreground font-mono">
+                  ৳{prevPrice.toLocaleString()}
+                </span>
+              ) : null}
+              {discountPercentage > 0 && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  -{discountPercentage}%
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Link>
 
         {/* Footer with Un-clipped, Full-Width CTAs */}
         <CardFooter className="p-3 pt-0 flex flex-col gap-1.5">
@@ -125,16 +122,15 @@ export default function ProductCard({ product }: { product: any }) {
           </Button>
 
           <Button
+            asChild
             type="button"
             variant="outline"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigateToDetails();
-            }}
             className="w-full cursor-pointer text-xs font-medium h-7.5 px-2 border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl transition-colors"
           >
-            বিস্তারিত দেখুন
+            <Link href={`/product/product-details/${product?._id}`}>
+              বিস্তারিত দেখুন
+            </Link>
           </Button>
         </CardFooter>
       </Card>

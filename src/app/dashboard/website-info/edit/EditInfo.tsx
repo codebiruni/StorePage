@@ -732,11 +732,14 @@ export default function EditInfo() {
                               <div className="flex items-center justify-center">
                                 <div className="relative w-36 h-36 rounded-2xl overflow-hidden border bg-muted/40 shadow-inner flex items-center justify-center">
                                   {field.value ? (
-                                    <NextImage
+                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                    <img
                                       src={field.value}
                                       alt="Logo preview"
-                                      fill
-                                      className="object-contain p-3"
+                                      className="h-full w-full object-contain p-3"
+                                      onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                                      }}
                                     />
                                   ) : (
                                     <div className="text-xs text-muted-foreground text-center p-2">
@@ -747,7 +750,11 @@ export default function EditInfo() {
                               </div>
                               <Input placeholder="https://…" {...field} />
                               <SingleImageUpload
+                                value={field.value}
                                 onUpload={(url: string) => field.onChange(url)}
+                                onRemove={() => field.onChange("")}
+                                aspectRatio={1}
+                                recommendedSize="512 × 512 px (Square Logo)"
                               />
                             </div>
                           </FormControl>
@@ -817,16 +824,23 @@ export default function EditInfo() {
                             <div className="flex-1 space-y-2">
                               <Input placeholder="https://…" {...field} />
                               <SingleImageUpload
+                                value={field.value}
                                 onUpload={(url: string) => field.onChange(url)}
+                                onRemove={() => field.onChange("")}
+                                aspectRatio={1}
+                                recommendedSize="512 × 512 px (Square Logo)"
                               />
                             </div>
                             {field.value && (
-                              <div className="relative h-28 w-28 rounded-md overflow-hidden border bg-muted/30 flex items-center justify-center">
-                                <NextImage
+                              <div className="relative h-28 w-28 rounded-md overflow-hidden border bg-muted/30 flex items-center justify-center shrink-0">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
                                   src={field.value}
                                   alt="Logo preview"
-                                  fill
-                                  className="object-contain"
+                                  className="h-full w-full object-contain p-2"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                                  }}
                                 />
                               </div>
                             )}
@@ -1084,7 +1098,7 @@ export default function EditInfo() {
             {/* BANNERS */}
             <TabsContent value="banners" className="space-y-6 min-w-0">
               <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
+                <Card className="min-w-0 overflow-hidden">
                   <CardHeader>
                     <CardTitle>First Banner</CardTitle>
                     <CardDescription>Top hero area image</CardDescription>
@@ -1097,23 +1111,15 @@ export default function EditInfo() {
                         <FormItem>
                           <FormLabel>Image URL</FormLabel>
                           <FormControl>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                              <div className="flex-1 space-y-2">
-                                <Input placeholder="https://…" {...field} />
-                                <SingleImageUpload
-                                  onUpload={(url: string) => field.onChange(url)}
-                                />
-                              </div>
-                              {field.value && (
-                                <div className="relative h-24 w-32 rounded-md overflow-hidden border bg-muted/30">
-                                  <NextImage
-                                    src={field.value}
-                                    alt="First banner preview"
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                              )}
+                            <div className="space-y-3">
+                              <Input placeholder="https://…" {...field} />
+                              <SingleImageUpload
+                                value={field.value}
+                                onUpload={(url: string) => field.onChange(url)}
+                                onRemove={() => field.onChange("")}
+                                aspectRatio={16 / 9}
+                                recommendedSize="1920 × 600 px (Banner)"
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -1138,7 +1144,7 @@ export default function EditInfo() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="min-w-0 overflow-hidden">
                   <CardHeader>
                     <CardTitle>Second Banner</CardTitle>
                     <CardDescription>Secondary promo image</CardDescription>
@@ -1151,23 +1157,15 @@ export default function EditInfo() {
                         <FormItem>
                           <FormLabel>Image URL</FormLabel>
                           <FormControl>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                              <div className="flex-1 space-y-2">
-                                <Input placeholder="https://…" {...field} />
-                                <SingleImageUpload
-                                  onUpload={(url: string) => field.onChange(url)}
-                                />
-                              </div>
-                              {field.value && (
-                                <div className="relative h-24 w-32 rounded-md overflow-hidden border bg-muted/30">
-                                  <NextImage
-                                    src={field.value}
-                                    alt="Second banner preview"
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                              )}
+                            <div className="space-y-3">
+                              <Input placeholder="https://…" {...field} />
+                              <SingleImageUpload
+                                value={field.value}
+                                onUpload={(url: string) => field.onChange(url)}
+                                onRemove={() => field.onChange("")}
+                                aspectRatio={16 / 9}
+                                recommendedSize="1920 × 600 px (Banner)"
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -1242,44 +1240,50 @@ export default function EditInfo() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                        <div className="space-y-2">
-                          <FormField
-                            control={form.control}
-                            name={`banner.carousel.${index}.image`}
-                            render={({ field: f }) => (
-                              <FormItem>
-                                <FormLabel>Image URL</FormLabel>
-                                <FormControl>
+                      <div className="space-y-3">
+                        <FormField
+                          control={form.control}
+                          name={`banner.carousel.${index}.image`}
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel>Image URL</FormLabel>
+                              <FormControl>
+                                <div className="space-y-3">
                                   <Input
                                     placeholder="https://…"
                                     {...f}
                                   />
-                                </FormControl>
-                                <SingleImageUpload
-                                  onUpload={(url: string) => f.onChange(url)}
-                                />
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`banner.carousel.${index}.link`}
-                            render={({ field: f }) => (
-                              <FormItem>
-                                <FormLabel>Link</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="/products/…"
-                                    {...f}
+                                  <SingleImageUpload
+                                    value={f.value}
+                                    onUpload={(url: string) => f.onChange(url)}
+                                    onRemove={() => f.onChange("")}
+                                    aspectRatio={16 / 9}
+                                    recommendedSize="1920 × 600 px (Carousel slide)"
                                   />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`banner.carousel.${index}.link`}
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-1.5">
+                                <Link2 className="h-3.5 w-3.5 text-muted-foreground" /> Link URL (optional)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="/products/…"
+                                  {...f}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
                   ))}

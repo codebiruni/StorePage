@@ -11,9 +11,9 @@ export default function UserPageHeader({
 }: UserPageHeaderProps = {}) {
   return (
     <WorkspaceHeader
-      title="User Directory"
-      subtitle="Manage system users, roles, and access permissions"
-      badges={["Access", "People"]}
+      title="User Accounts Directory"
+      subtitle="Authentication and login accounts for shoppers (Customers), branch staff (Team Members), and Administrators"
+      badges={["Auth Accounts", "People"]}
       action={action}
     />
   );

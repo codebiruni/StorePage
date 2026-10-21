@@ -228,6 +228,20 @@ export default function UserTable() {
     setCurrentPage(1); // Reset to first page when searching
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "super-admin":
+        return "Super Admin";
+      case "admin":
+        return "Administrator";
+      case "menager":
+        return "Manager (Staff)";
+      case "user":
+      default:
+        return "Customer (User)";
+    }
+  };
+
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "admin":
@@ -256,11 +270,23 @@ export default function UserTable() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/30">
+      {/* People Definition Banner */}
+      <div className="bg-muted/40 border-b px-4 py-3 text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-background text-[11px] font-normal">
+            People Architecture
+          </Badge>
+          <span>
+            <strong>Users</strong> are login credentials. <strong>Customers</strong> have shopping profiles. <strong>Team Members</strong> are branch staff.
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/20">
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold">All users</p>
+          <p className="text-sm font-semibold">All User Accounts</p>
           <p className="text-xs text-muted-foreground">
-            Review roles, status and access for every system user
+            Review login credentials, authentication status, and role assignments
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -270,7 +296,7 @@ export default function UserTable() {
             onChange={handleSearch}
             className="max-w-xs"
           />
-          <Badge variant="secondary" className="px-3 py-1.5 text-xs">
+          <Badge variant="secondary" className="px-3 py-1.5 text-xs whitespace-nowrap">
             Total {totalUsers}
           </Badge>
         </div>
@@ -282,10 +308,10 @@ export default function UserTable() {
             <TableRow>
               <TableHead>Email/Number</TableHead>
               <TableHead>Username</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Social</TableHead>
+              <TableHead>Account Type</TableHead>
+              <TableHead>Account Status</TableHead>
+              <TableHead>Verification</TableHead>
+              <TableHead>Social Login</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -309,24 +335,24 @@ export default function UserTable() {
                   <TableCell>
                     <Badge
                       variant={getRoleVariant(user.role)}
-                      className="flex items-center gap-1"
+                      className="inline-flex items-center gap-1.5 font-medium"
                     >
                       {getRoleIcon(user.role)}
-                      {user.role}
+                      {getRoleLabel(user.role)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        user.status === "blocked" ? "destructive" : "default"
+                        user.status === "blocked" ? "destructive" : "outline"
                       }
                     >
-                      {user.status}
+                      {user.status === "blocked" ? "Blocked" : "Active"}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.isActive ? "default" : "secondary"}>
-                      {user.isActive ? "Yes" : "No"}
+                      {user.isActive ? "Verified" : "Pending OTP"}
                     </Badge>
                   </TableCell>
                   <TableCell>

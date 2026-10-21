@@ -194,6 +194,19 @@ export default function MembersTable() {
     setCurrentPage(1); // Reset to first page when searching
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "super-admin":
+        return "Super Admin";
+      case "admin":
+        return "Administrator";
+      case "menager":
+        return "Manager (Staff)";
+      default:
+        return role;
+    }
+  };
+
   const getRoleVariant = (role: string) => {
     switch (role) {
       case "admin":
@@ -217,11 +230,23 @@ export default function MembersTable() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/30">
+      {/* People Architecture Banner */}
+      <div className="bg-muted/40 border-b px-4 py-3 text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-background text-[11px] font-normal">
+            Store Staff
+          </Badge>
+          <span>
+            Internal branch managers, staff, and administrators with operational dashboard access.
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b bg-muted/20">
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold">All members</p>
+          <p className="text-sm font-semibold">All Team Members</p>
           <p className="text-xs text-muted-foreground">
-            Search, review and manage every staff member
+            Search, review, and manage staff profiles, branch assignments, and permissions
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -231,7 +256,7 @@ export default function MembersTable() {
             onChange={handleSearch}
             className="max-w-xs"
           />
-          <Badge variant="secondary" className="px-3 py-1.5 text-xs">
+          <Badge variant="secondary" className="px-3 py-1.5 text-xs whitespace-nowrap">
             Total {totalManagement}
           </Badge>
         </div>
@@ -284,7 +309,7 @@ export default function MembersTable() {
                   <TableCell>
                     {item.user ? (
                       <Badge variant={getRoleVariant(item.user.role)}>
-                        {item.user.role}
+                        {getRoleLabel(item.user.role)}
                       </Badge>
                     ) : (
                       <Badge variant="outline">No Role</Badge>
