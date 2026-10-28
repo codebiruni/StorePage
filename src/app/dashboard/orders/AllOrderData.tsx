@@ -544,7 +544,7 @@ export default function AllOrderData() {
 
   if (loading && orders.length === 0) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto w-full min-w-0 py-4 sm:py-6">
         <Card>
           <CardContent className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -558,20 +558,20 @@ export default function AllOrderData() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto w-full min-w-0 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Order Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Order Management</h1>
           <p className="text-muted-foreground">
             Manage and track all customer orders
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:mr-6">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:mr-6">
           <Button
             onClick={fetchOrders}
             variant="outline"
-            className="gap-2 transition-all duration-200 hover:bg-accent active:scale-[0.97]"
+            className="flex-1 gap-2 transition-all duration-200 hover:bg-accent active:scale-[0.97] sm:flex-none"
             disabled={loading}
           >
             <RefreshCw
@@ -584,7 +584,7 @@ export default function AllOrderData() {
               <DropdownMenuTrigger asChild>
                 <Button className="gap-2 bg-blue-600 hover:bg-blue-700 transition-all duration-200 active:scale-[0.97]">
                   <Truck className="h-4 w-4" />
-                  Push to Courier ({selectedOrders.length})
+                  <span className="hidden sm:inline">Push to Courier </span>({selectedOrders.length})
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -624,7 +624,7 @@ export default function AllOrderData() {
 
       {/* Search and Filters Bar (like product page) */}
       <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -635,7 +635,7 @@ export default function AllOrderData() {
               className="pl-9 h-10 w-full"
             />
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex w-full min-w-0 items-center gap-2 flex-wrap sm:w-auto sm:justify-end">
             <Button
               variant={showFilters || ((orderStatus && orderStatus !== 'all') || (paymentStatus && paymentStatus !== 'all') || (paymentMethod && paymentMethod !== 'all')) ? "default" : "outline"}
               size="sm"
@@ -669,7 +669,7 @@ export default function AllOrderData() {
               </Button>
             )}
 
-            <Button variant="secondary" size="sm" className="h-9">
+            <Button variant="secondary" size="sm" className="h-9 shrink-0">
               Total: {orders.length}
             </Button>
           </div>
@@ -733,9 +733,9 @@ export default function AllOrderData() {
       </div>
 
       {/* Orders Table */}
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex min-w-0 flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <CardTitle>All Orders</CardTitle>
               <CardDescription>
@@ -753,8 +753,8 @@ export default function AllOrderData() {
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {/* Orders Table */}
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="w-full overflow-x-auto">
+            <Table className="min-w-[920px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12 min-w-[48px]">

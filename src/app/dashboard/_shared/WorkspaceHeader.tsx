@@ -36,14 +36,14 @@ export default function WorkspaceHeader({
       <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10" />
       <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-primary/5" />
 
-      <CardHeader className="relative flex flex-col gap-4 justify-between items-start z-10 p-8 sm:flex-row sm:items-center">
+      <CardHeader className="relative flex flex-col gap-4 justify-between items-start z-10 p-4 sm:p-8 sm:flex-row sm:items-center">
         <div className="space-y-2 min-w-0">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {title}
           </h1>
           {subtitle && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <p className="text-lg text-muted-foreground">{subtitle}</p>
+              <p className="text-sm sm:text-lg text-muted-foreground">{subtitle}</p>
               {badges.length > 0 && (
                 <>
                   <div className="h-1 w-8 rounded-full bg-primary/30" />

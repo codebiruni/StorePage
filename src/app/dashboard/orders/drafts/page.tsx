@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function DraftsPage() {
   return (
-    <div className="overflow-x-auto">
+    <div className="min-w-0">
       <WorkspaceHeader
         title="Uncompleted Orders"
         subtitle="Incomplete checkouts and abandoned carts — recoverable leads"

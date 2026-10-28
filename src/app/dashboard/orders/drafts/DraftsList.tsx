@@ -133,18 +133,18 @@ export default function DraftsList() {
   }, [orders, pagination.total]);
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="min-w-0 space-y-4 p-3 sm:p-6">
       {/* Toolbar */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-3">
-          <div className="flex items-center gap-3">
+        <CardHeader className="flex flex-col items-stretch justify-between gap-3 space-y-0 pb-3 sm:flex-row sm:items-center">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <CardTitle className="text-base">Incomplete Orders</CardTitle>
             <Badge variant="secondary">{pagination.total}</Badge>
             <Badge variant="outline" className="text-green-700">
               {summary.withPhone} w/ phone
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <Select
               value={status}
               onValueChange={(v: DraftStatus) => {
@@ -152,7 +152,7 @@ export default function DraftsList() {
                 setPagination((p) => ({ ...p, page: 1 }));
               }}
             >
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="min-w-0 flex-1 sm:w-[160px] sm:flex-none">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -165,14 +165,15 @@ export default function DraftsList() {
               size="sm"
               onClick={fetchDrafts}
               disabled={loading}
+              className="shrink-0"
             >
               <RefreshCcw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="p-0 sm:p-6">
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Customer</TableHead>
@@ -280,7 +281,7 @@ export default function DraftsList() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex flex-wrap justify-end gap-2 mt-4">
               <Button
                 variant="outline"
                 size="sm"
