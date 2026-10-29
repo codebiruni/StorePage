@@ -24,6 +24,11 @@ export interface ICourierCredentials {
   redxEnabled?: boolean;
 }
 
+export interface IAutomationSettings {
+  n8nWebhookUrl?: string;
+  facebookAccessToken?: string;
+}
+
 export interface ISiteInfo {
   number: string;
   email: string;
@@ -71,4 +76,5 @@ export interface ISiteInfo {
   metaPixelId?: string;
   gaMeasurementId?: string;
   courier?: ICourierCredentials;
+  automation?: IAutomationSettings;
 }

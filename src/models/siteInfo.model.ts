@@ -110,6 +110,11 @@ const SiteInfoSchema: Schema = new Schema<ISiteInfo>(
       redxApiToken: { type: String, default: "" },
       redxEnabled: { type: Boolean, default: false },
     },
+
+    automation: {
+      n8nWebhookUrl: { type: String, default: "" },
+      facebookAccessToken: { type: String, default: "" },
+    },
   },
   {
     timestamps: true,

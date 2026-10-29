@@ -2,13 +2,14 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sliders, MessageSquare, Truck, Lock } from "lucide-react";
+import { Sliders, MessageSquare, Truck, Lock, Workflow } from "lucide-react";
 import SiteSettingsForm from "../website-info/settings/SiteSettingsForm";
 import TelegramSettingsCard from "./TelegramSettingsCard";
 import CouriersApiForm from "../account/courier-api/CouriersApiForm";
 import ChangePasswordForm from "./ChangePasswordForm";
+import AutomationForm from "./AutomationForm";
 
-const VALID_TABS = ["site", "telegram", "courier", "security"] as const;
+const VALID_TABS = ["site", "telegram", "courier", "automation", "security"] as const;
 type TabKey = (typeof VALID_TABS)[number];
 
 export default function SettingsTabs() {
@@ -35,7 +36,7 @@ export default function SettingsTabs() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1 bg-muted/60">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto p-1 bg-muted/60">
             <TabsTrigger
               value="site"
               className="flex items-center gap-2 py-2.5 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm"
@@ -56,6 +57,13 @@ export default function SettingsTabs() {
             >
               <Truck className="h-4 w-4" />
               <span>Courier API</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="automation"
+              className="flex items-center gap-2 py-2.5 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Workflow className="h-4 w-4" />
+              <span>Automation</span>
             </TabsTrigger>
             <TabsTrigger
               value="security"
@@ -81,6 +89,10 @@ export default function SettingsTabs() {
             <CouriersApiForm />
           </TabsContent>
 
+          <TabsContent value="automation" className="mt-6 focus-visible:outline-none">
+            <AutomationForm />
+          </TabsContent>
+
           {/* Tab 4: Account Security */}
           <TabsContent value="security" className="mt-6 focus-visible:outline-none">
             <ChangePasswordForm />
@@ -90,4 +102,3 @@ export default function SettingsTabs() {
     </div>
   );
 }
-
