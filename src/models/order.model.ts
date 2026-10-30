@@ -141,8 +141,15 @@ const orderSchema = new Schema<IOrder>(
     },
     source: {
       type: String,
-      enum: ["landing", "buy-product", "manual"],
+      enum: ["landing", "buy-product", "manual", "automation"],
       default: "manual",
+      index: true,
+    },
+    externalOrderId: {
+      type: String,
+      default: undefined,
+      unique: true,
+      sparse: true,
       index: true,
     },
     landingProductId: {

@@ -1,4 +1,4 @@
-export type OrderSource = "landing" | "buy-product" | "manual";
+export type OrderSource = "landing" | "buy-product" | "manual" | "automation";
 
 export interface IOrder {
   orderId: string; // Auto-generated unique order ID (e.g., ORD-20251028-XYZ)
@@ -34,6 +34,7 @@ export interface IOrder {
   isCompleted: boolean;
   /** Where the order originated — useful for funnel analytics. */
   source?: OrderSource;
+  externalOrderId?: string;
   /** Convenience link for landing-page single-product orders. */
   landingProductId?: string;
   /** Last time the user touched the draft. Used by the abandonment sweep. */
